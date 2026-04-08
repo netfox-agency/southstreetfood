@@ -10,11 +10,11 @@
   --color-brand: #e8416f;
   --color-brand-dark: #d13a63;
   --color-brand-light: #ff6b8a;
-  --color-accent: #2f1c6a;
-  --color-accent-light: #673de6;
-  --color-neon-cyan: #00e5ff;
-  --color-neon-yellow: #ffcd35;
-  --color-neon-green: #00b090;
+  --color-accent: #1a1a1a;
+  --color-accent-light: #3a3a3a;
+  --color-success: #34c759;
+  --color-warning: #ff9500;
+  --color-danger: #ff3b30;
 
   --color-background: #ffffff;
   --color-foreground: #1a1a1a;
@@ -69,7 +69,7 @@ body {
 /* ── Dark section variant ────────────────── */
 
 .dark-section {
-  background: #0f0f1a;
+  background: #111111;
   color: #ffffff;
 }
 

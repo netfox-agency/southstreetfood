@@ -6,30 +6,22 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   UtensilsCrossed,
-  FolderOpen,
   ShoppingBag,
-  Users,
-  Gift,
-  Truck,
+  CalendarCheck,
   Settings,
-  BarChart3,
   ChevronLeft,
   Menu,
+  X,
+  LogOut,
 } from "lucide-react";
-import { Logo } from "@/components/shared/logo";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/admin/menu", icon: UtensilsCrossed, label: "Menu" },
-  { href: "/admin/categories", icon: FolderOpen, label: "Categories" },
   { href: "/admin/orders", icon: ShoppingBag, label: "Commandes" },
-  { href: "/admin/customers", icon: Users, label: "Clients" },
-  { href: "/admin/loyalty", icon: Gift, label: "Fidelite" },
-  { href: "/admin/delivery", icon: Truck, label: "Livraison" },
+  { href: "/admin/reservations", icon: CalendarCheck, label: "Reservations" },
+  { href: "/admin/menu", icon: UtensilsCrossed, label: "Menu" },
   { href: "/admin/settings", icon: Settings, label: "Parametres" },
-  { href: "/admin/reports", icon: BarChart3, label: "Rapports" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
@@ -38,32 +30,34 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-dvh bg-background flex">
-      {/* Sidebar */}
+    <div className="min-h-dvh bg-[#f5f5f7] flex">
+      {/* Sidebar — Apple clean */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border bg-card transition-all duration-300",
-          sidebarCollapsed ? "w-[68px]" : "w-60",
+          "fixed inset-y-0 left-0 z-50 flex flex-col bg-white border-r border-[#e5e5ea] transition-all duration-300",
+          sidebarCollapsed ? "w-[68px]" : "w-56",
           "hidden lg:flex"
         )}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-border">
-          {!sidebarCollapsed && <Logo size="sm" />}
-          <Button
-            variant="ghost"
-            size="icon"
+        <div className="flex items-center justify-between h-14 px-4 border-b border-[#e5e5ea]">
+          {!sidebarCollapsed && (
+            <span className="font-bold text-[15px] text-[#1d1d1f] tracking-tight">
+              SSF Manager
+            </span>
+          )}
+          <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="shrink-0"
+            className="shrink-0 p-1.5 rounded-lg hover:bg-[#f5f5f7] transition-colors cursor-pointer"
           >
             <ChevronLeft
               className={cn(
-                "h-4 w-4 transition-transform",
+                "h-4 w-4 text-[#86868b] transition-transform",
                 sidebarCollapsed && "rotate-180"
               )}
             />
-          </Button>
+          </button>
         </div>
-        <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
           {sidebarItems.map((item) => {
             const isActive =
               item.href === "/admin"
@@ -74,43 +68,56 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                  "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all",
                   isActive
-                    ? "bg-accent text-brand-purple"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    ? "bg-[#1d1d1f] text-white"
+                    : "text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]"
                 )}
                 title={sidebarCollapsed ? item.label : undefined}
               >
-                <item.icon className="h-5 w-5 shrink-0" />
+                <item.icon className="h-[18px] w-[18px] shrink-0" />
                 {!sidebarCollapsed && <span>{item.label}</span>}
               </Link>
             );
           })}
         </nav>
+        <div className="p-2 border-t border-[#e5e5ea]">
+          <Link
+            href="/kitchen"
+            className="flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] transition-all"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+            {!sidebarCollapsed && <span>Vue Cuisine</span>}
+          </Link>
+        </div>
       </aside>
 
       {/* Mobile header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 border-b border-border bg-card flex items-center px-4 gap-3">
-        <Button
-          variant="ghost"
-          size="icon"
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-12 border-b border-[#e5e5ea] bg-white/80 backdrop-blur-xl flex items-center px-4 gap-3">
+        <button
           onClick={() => setMobileOpen(!mobileOpen)}
+          className="p-1.5 cursor-pointer"
         >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <Logo size="sm" />
+          <Menu className="h-5 w-5 text-[#1d1d1f]" />
+        </button>
+        <span className="font-bold text-[15px] text-[#1d1d1f]">SSF Manager</span>
       </div>
 
       {/* Mobile sidebar overlay */}
       {mobileOpen && (
         <div className="lg:hidden fixed inset-0 z-50">
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-60 bg-card border-r border-border p-4">
-            <Logo size="sm" className="mb-6" />
-            <nav className="space-y-1">
+          <aside className="absolute inset-y-0 left-0 w-64 bg-white p-4">
+            <div className="flex items-center justify-between mb-6">
+              <span className="font-bold text-[15px] text-[#1d1d1f]">SSF Manager</span>
+              <button onClick={() => setMobileOpen(false)} className="cursor-pointer">
+                <X className="h-5 w-5 text-[#86868b]" />
+              </button>
+            </div>
+            <nav className="space-y-0.5">
               {sidebarItems.map((item) => {
                 const isActive =
                   item.href === "/admin"
@@ -122,13 +129,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all",
                       isActive
-                        ? "bg-accent text-brand-purple"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "bg-[#1d1d1f] text-white"
+                        : "text-[#86868b] hover:text-[#1d1d1f] hover:bg-[#f5f5f7]"
                     )}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-[18px] w-[18px]" />
                     {item.label}
                   </Link>
                 );
@@ -142,11 +149,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       <main
         className={cn(
           "flex-1 transition-all duration-300",
-          sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-60",
-          "mt-14 lg:mt-0"
+          sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-56",
+          "mt-12 lg:mt-0"
         )}
       >
-        <div className="p-6 lg:p-8">{children}</div>
+        <div className="p-5 lg:p-8">{children}</div>
       </main>
     </div>
   );
