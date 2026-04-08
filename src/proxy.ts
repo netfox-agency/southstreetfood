@@ -31,12 +31,16 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Allow login page without auth
+  if (pathname === "/login") {
+    return supabaseResponse;
+  }
+
   // Protect kitchen routes - require kitchen or admin role
   if (pathname.startsWith("/kitchen")) {
     if (!user) {
       const url = request.nextUrl.clone();
-      url.pathname = "/auth/login";
-      url.searchParams.set("redirect", pathname);
+      url.pathname = "/login";
       return NextResponse.redirect(url);
     }
 
@@ -46,9 +50,11 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (!profile || !["kitchen", "admin"].includes(profile.role)) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const role = (profile as any)?.role;
+    if (!role || !["kitchen", "admin"].includes(role)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = "/login";
       return NextResponse.redirect(url);
     }
   }
@@ -57,8 +63,7 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     if (!user) {
       const url = request.nextUrl.clone();
-      url.pathname = "/auth/login";
-      url.searchParams.set("redirect", pathname);
+      url.pathname = "/login";
       return NextResponse.redirect(url);
     }
 
@@ -68,9 +73,11 @@ export async function proxy(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (!profile || profile.role !== "admin") {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const role = (profile as any)?.role;
+    if (!role || role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = "/login";
       return NextResponse.redirect(url);
     }
   }
@@ -89,5 +96,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/kitchen/:path*", "/admin/:path*", "/account/:path*"],
+  matcher: ["/kitchen/:path*", "/admin/:path*", "/account/:path*", "/login"],
 };
