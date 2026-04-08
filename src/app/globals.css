@@ -1,26 +1,223 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ============================================
+   SOUTH STREET FOOD - Design System
+   Apple HIG inspired with SSF brand colors
+   ============================================ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Brand Colors */
+  --color-brand-purple-dark: #2f1c6a;
+  --color-brand-purple: #673de6;
+  --color-brand-purple-light: #8b6cef;
+  --color-brand-purple-subtle: #f0ebff;
+  --color-brand-pink: #fc5185;
+  --color-brand-yellow: #ffcd35;
+  --color-brand-green: #00b090;
+
+  /* Semantic Colors */
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card-bg);
+  --color-card-foreground: var(--card-fg);
+  --color-muted: var(--muted-bg);
+  --color-muted-foreground: var(--muted-fg);
+  --color-border: var(--border-color);
+  --color-input: var(--input-color);
+  --color-ring: var(--ring-color);
+  --color-primary: var(--primary-bg);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--secondary-bg);
+  --color-secondary-foreground: var(--secondary-fg);
+  --color-accent: var(--accent-bg);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive: var(--destructive-bg);
+  --color-destructive-foreground: var(--destructive-fg);
+  --color-success: var(--success-bg);
+  --color-success-foreground: var(--success-fg);
+  --color-warning: var(--warning-bg);
+  --color-warning-foreground: var(--warning-fg);
+
+  /* Typography */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: "Pricedown", "Impact", sans-serif;
+
+  /* Spacing (8px base) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  --spacing-3xl: 64px;
+
+  /* Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Light Mode */
+:root {
+  --bg: #ffffff;
+  --fg: #0f0f0f;
+  --card-bg: #ffffff;
+  --card-fg: #0f0f0f;
+  --muted-bg: #f5f5f7;
+  --muted-fg: #6e6e73;
+  --border-color: #e5e5ea;
+  --input-color: #e5e5ea;
+  --ring-color: #673de6;
+  --primary-bg: #673de6;
+  --primary-fg: #ffffff;
+  --secondary-bg: #f5f5f7;
+  --secondary-fg: #1d1d1f;
+  --accent-bg: #f0ebff;
+  --accent-fg: #673de6;
+  --destructive-bg: #fc5185;
+  --destructive-fg: #ffffff;
+  --success-bg: #00b090;
+  --success-fg: #ffffff;
+  --warning-bg: #ffcd35;
+  --warning-fg: #1d1d1f;
+}
+
+/* Dark Mode */
+.dark {
+  --bg: #0a0a12;
+  --fg: #f5f5f7;
+  --card-bg: #1c1c2e;
+  --card-fg: #f5f5f7;
+  --muted-bg: #2a2a3e;
+  --muted-fg: #a1a1aa;
+  --border-color: #2f2f45;
+  --input-color: #2f2f45;
+  --ring-color: #8b6cef;
+  --primary-bg: #673de6;
+  --primary-fg: #ffffff;
+  --secondary-bg: #2a2a3e;
+  --secondary-fg: #f5f5f7;
+  --accent-bg: #2f1c6a;
+  --accent-fg: #c4b5fd;
+  --destructive-bg: #fc5185;
+  --destructive-fg: #ffffff;
+  --success-bg: #00b090;
+  --success-fg: #ffffff;
+  --warning-bg: #ffcd35;
+  --warning-fg: #1d1d1f;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+* {
+  border-color: var(--border-color);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   Apple-style Glass Morphism
+   ============================================ */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 20px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-card {
+  background: rgba(44, 44, 68, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+}
+
+.glass-nav {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.dark .glass-nav {
+  background: rgba(10, 10, 18, 0.85);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ============================================
+   Smooth Scrolling & Selection
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
+}
+
+::selection {
+  background: #673de6;
+  color: white;
+}
+
+/* ============================================
+   Scrollbar (thin, brand-colored)
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d1d6;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3a3a52;
+}
+
+/* ============================================
+   Animation utilities
+   ============================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(103, 61, 230, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(103, 61, 230, 0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
