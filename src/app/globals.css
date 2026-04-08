@@ -1,223 +1,330 @@
 @import "tailwindcss";
 
 /* ============================================
-   SOUTH STREET FOOD - Design System
-   Apple HIG inspired with SSF brand colors
+   SOUTH STREET FOOD - Premium Design System
+   Apple UX + GTA Neon Brand Identity
    ============================================ */
 
 @theme inline {
-  /* Brand Colors */
-  --color-brand-purple-dark: #2f1c6a;
-  --color-brand-purple: #673de6;
-  --color-brand-purple-light: #8b6cef;
-  --color-brand-purple-subtle: #f0ebff;
-  --color-brand-pink: #fc5185;
-  --color-brand-yellow: #ffcd35;
-  --color-brand-green: #00b090;
+  /* Brand - Neon GTA palette */
+  --color-neon-pink: #fc5185;
+  --color-neon-cyan: #00e5ff;
+  --color-neon-purple: #673de6;
+  --color-neon-purple-deep: #5025d1;
+  --color-neon-yellow: #ffcd35;
+  --color-neon-green: #00b090;
 
-  /* Semantic Colors */
-  --color-background: var(--bg);
-  --color-foreground: var(--fg);
-  --color-card: var(--card-bg);
-  --color-card-foreground: var(--card-fg);
-  --color-muted: var(--muted-bg);
-  --color-muted-foreground: var(--muted-fg);
-  --color-border: var(--border-color);
-  --color-input: var(--input-color);
-  --color-ring: var(--ring-color);
-  --color-primary: var(--primary-bg);
-  --color-primary-foreground: var(--primary-fg);
-  --color-secondary: var(--secondary-bg);
-  --color-secondary-foreground: var(--secondary-fg);
-  --color-accent: var(--accent-bg);
-  --color-accent-foreground: var(--accent-fg);
-  --color-destructive: var(--destructive-bg);
-  --color-destructive-foreground: var(--destructive-fg);
-  --color-success: var(--success-bg);
-  --color-success-foreground: var(--success-fg);
-  --color-warning: var(--warning-bg);
-  --color-warning-foreground: var(--warning-fg);
+  /* Backgrounds */
+  --color-dark: #0a0a12;
+  --color-dark-card: #141422;
+  --color-dark-elevated: #1c1c2e;
+  --color-dark-surface: #242438;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.65);
+  --color-text-tertiary: rgba(255, 255, 255, 0.4);
+
+  /* Borders */
+  --color-border-subtle: rgba(255, 255, 255, 0.06);
+  --color-border-medium: rgba(255, 255, 255, 0.12);
+
+  /* Semantic */
+  --color-background: #0a0a12;
+  --color-foreground: #ffffff;
+  --color-card: #141422;
+  --color-muted: #1c1c2e;
+  --color-muted-foreground: rgba(255, 255, 255, 0.5);
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-ring: #fc5185;
+  --color-primary: #fc5185;
+  --color-primary-foreground: #ffffff;
+  --color-destructive: #ff4444;
+  --color-success: #00b090;
 
   /* Typography */
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --font-display: "Pricedown", "Impact", sans-serif;
-
-  /* Spacing (8px base) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
-  --spacing-3xl: 64px;
-
-  /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
-  --radius-full: 9999px;
-}
-
-/* Light Mode */
-:root {
-  --bg: #ffffff;
-  --fg: #0f0f0f;
-  --card-bg: #ffffff;
-  --card-fg: #0f0f0f;
-  --muted-bg: #f5f5f7;
-  --muted-fg: #6e6e73;
-  --border-color: #e5e5ea;
-  --input-color: #e5e5ea;
-  --ring-color: #673de6;
-  --primary-bg: #673de6;
-  --primary-fg: #ffffff;
-  --secondary-bg: #f5f5f7;
-  --secondary-fg: #1d1d1f;
-  --accent-bg: #f0ebff;
-  --accent-fg: #673de6;
-  --destructive-bg: #fc5185;
-  --destructive-fg: #ffffff;
-  --success-bg: #00b090;
-  --success-fg: #ffffff;
-  --warning-bg: #ffcd35;
-  --warning-fg: #1d1d1f;
-}
-
-/* Dark Mode */
-.dark {
-  --bg: #0a0a12;
-  --fg: #f5f5f7;
-  --card-bg: #1c1c2e;
-  --card-fg: #f5f5f7;
-  --muted-bg: #2a2a3e;
-  --muted-fg: #a1a1aa;
-  --border-color: #2f2f45;
-  --input-color: #2f2f45;
-  --ring-color: #8b6cef;
-  --primary-bg: #673de6;
-  --primary-fg: #ffffff;
-  --secondary-bg: #2a2a3e;
-  --secondary-fg: #f5f5f7;
-  --accent-bg: #2f1c6a;
-  --accent-fg: #c4b5fd;
-  --destructive-bg: #fc5185;
-  --destructive-fg: #ffffff;
-  --success-bg: #00b090;
-  --success-fg: #ffffff;
-  --warning-bg: #ffcd35;
-  --warning-fg: #1d1d1f;
 }
 
 /* ============================================
-   Base Styles
+   Base
    ============================================ */
 
 * {
-  border-color: var(--border-color);
+  border-color: var(--color-border);
 }
-
-body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* ============================================
-   Apple-style Glass Morphism
-   ============================================ */
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 20px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
-}
-
-.dark .glass-card {
-  background: rgba(44, 44, 68, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-}
-
-.glass-nav {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-.dark .glass-nav {
-  background: rgba(10, 10, 18, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* ============================================
-   Smooth Scrolling & Selection
-   ============================================ */
 
 html {
   scroll-behavior: smooth;
+  background: #0a0a12;
+}
+
+body {
+  background: #0a0a12;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
 ::selection {
-  background: #673de6;
+  background: #fc5185;
   color: white;
 }
 
 /* ============================================
-   Scrollbar (thin, brand-colored)
+   Scrollbar
    ============================================ */
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+/* ============================================
+   Glass Morphism - Apple Level
+   ============================================ */
+
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.glass-strong {
+  background: rgba(20, 20, 34, 0.7);
+  backdrop-filter: blur(60px) saturate(200%);
+  -webkit-backdrop-filter: blur(60px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #d1d1d6;
-  border-radius: 3px;
+.glass-nav {
+  background: rgba(10, 10, 18, 0.75);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: #3a3a52;
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: translateY(-6px);
 }
 
 /* ============================================
-   Animation utilities
+   Neon Glow Effects
    ============================================ */
 
-@keyframes fade-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+.neon-pink {
+  text-shadow: 0 0 10px rgba(252, 81, 133, 0.5), 0 0 40px rgba(252, 81, 133, 0.2);
 }
 
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.neon-cyan {
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.2);
 }
 
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(103, 61, 230, 0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(103, 61, 230, 0); }
+.neon-glow-pink {
+  box-shadow: 0 0 15px rgba(252, 81, 133, 0.3), 0 0 60px rgba(252, 81, 133, 0.1);
 }
 
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
+.neon-glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.3), 0 0 60px rgba(0, 229, 255, 0.1);
 }
 
-.animate-slide-up {
-  animation: slide-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+/* ============================================
+   Hero Video Overlay
+   ============================================ */
+
+.hero-overlay {
+  background: linear-gradient(
+    to bottom,
+    rgba(10, 10, 18, 0.3) 0%,
+    rgba(10, 10, 18, 0.5) 50%,
+    rgba(10, 10, 18, 0.95) 100%
+  );
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+/* ============================================
+   Premium Animations (Apple-level)
+   ============================================ */
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    filter: blur(16px);
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse-neon {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes blob {
+  0%, 100% { border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+  25% { border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+  50% { border-radius: 50% 60% 30% 60% / 30% 60% 70% 40%; }
+  75% { border-radius: 60% 40% 60% 30% / 60% 30% 40% 70%; }
+}
+
+.animate-reveal {
+  animation: reveal 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.reveal-delay-1 { animation-delay: 0.1s; }
+.reveal-delay-2 { animation-delay: 0.2s; }
+.reveal-delay-3 { animation-delay: 0.4s; }
+.reveal-delay-4 { animation-delay: 0.6s; }
+.reveal-delay-5 { animation-delay: 0.8s; }
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-blob {
+  animation: blob 8s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* Hover lift - Apple style */
+.hover-lift {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================
+   Gradient backgrounds
+   ============================================ */
+
+.gradient-dark {
+  background: linear-gradient(180deg, #0a0a12 0%, #141422 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #1c1c2e 0%, #2f1c6a 50%, #1c1c2e 100%);
+}
+
+.gradient-neon {
+  background: linear-gradient(135deg, #fc5185 0%, #673de6 50%, #00e5ff 100%);
+}
+
+/* ============================================
+   Button Styles - Premium
+   ============================================ */
+
+.btn-primary {
+  background: linear-gradient(135deg, #fc5185, #e8416f);
+  color: white;
+  padding: 16px 40px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 20px rgba(252, 81, 133, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 40px rgba(252, 81, 133, 0.4);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  color: white;
+  padding: 16px 40px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   Section spacing - generous Apple style
+   ============================================ */
+
+.section-padding {
+  padding: 120px 0;
+}
+
+@media (max-width: 768px) {
+  .section-padding {
+    padding: 80px 0;
+  }
+}
+
+/* ============================================
+   Image styles
+   ============================================ */
+
+.img-glow {
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.img-neon-border {
+  border-radius: 24px;
+  border: 1px solid rgba(252, 81, 133, 0.2);
+  box-shadow: 0 0 40px rgba(252, 81, 133, 0.1), 0 20px 60px rgba(0, 0, 0, 0.4);
 }
