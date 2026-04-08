@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { OrderStatus } from "@/types/database";
 
@@ -39,7 +38,7 @@ export async function createOrder(data: {
     .from("orders")
     .insert({
       order_type: data.orderType,
-      status: "pending_payment" as OrderStatus,
+      status: "paid" as OrderStatus, // No online payment — order goes directly to kitchen
       customer_name: data.customerName,
       customer_phone: data.customerPhone,
       customer_email: data.customerEmail || null,
@@ -136,9 +135,10 @@ export async function updateOrderStatus(
 }
 
 export async function getOrderById(orderId: string) {
-  const supabase = await createClient();
+  // Use admin client to bypass RLS
+  const supabase = createAdminClient();
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("orders")
     .select("*, order_items(*)")
     .eq("id", orderId)

@@ -16,24 +16,29 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // Map items with REAL prices from client
     const items = data.items.map((item) => ({
       menuItemId: item.menuItemId,
       variantId: item.variantId || null,
       quantity: item.quantity,
-      unitPrice: 0,
-      extrasPrice: 0,
-      itemName: "Item",
-      variantName: null as string | null,
+      unitPrice: item.unitPrice,
+      extrasPrice: item.extrasPrice,
+      itemName: item.itemName,
+      variantName: item.variantName || null,
       extrasJson: item.extras as Array<{ name: string; price: number }>,
       specialInstructions: item.specialInstructions || null,
     }));
 
-    const subtotal = data.items.reduce((s, i) => s + i.quantity * 100, 0);
+    // Calculate totals from actual item prices
+    const subtotal = data.items.reduce(
+      (sum, item) => sum + (item.unitPrice + item.extrasPrice) * item.quantity,
+      0
+    );
     const deliveryFee = data.orderType === "delivery" ? 350 : 0;
     const total = subtotal + deliveryFee;
 
     const result = await createOrder({
-      orderType: data.orderType,
+      orderType: data.orderType as "collect" | "delivery",
       customerName: data.customerName,
       customerPhone: data.customerPhone,
       customerEmail: data.customerEmail || undefined,
@@ -56,7 +61,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ orderId: order.id });
-  } catch {
+  } catch (err) {
+    console.error("Order creation error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

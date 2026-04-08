@@ -1,17 +1,15 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Lock, CreditCard } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { PriceDisplay } from "@/components/shared/price-display";
+import { ArrowLeft, User, Phone, Mail, MessageSquare, ShoppingBag, MapPin, Truck, Check } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
-import { formatPrice } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
-  const { items, orderType, subtotal, clear } = useCartStore();
+  const router = useRouter();
+  const { items, orderType, deliveryAddress, customerNotes, subtotal, clear } = useCartStore();
   const [loading, setLoading] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
@@ -20,15 +18,15 @@ export default function CheckoutPage() {
   const deliveryFee = orderType === "delivery" ? 350 : 0;
   const total = subtotal() + deliveryFee;
 
+  const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
+
   if (items.length === 0) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
-        <div className="text-6xl mb-4">🛒</div>
-        <h1 className="text-2xl font-bold text-foreground mb-2">
-          Panier vide
-        </h1>
-        <Link href="/menu">
-          <Button>Retour au menu</Button>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center px-5">
+        <ShoppingBag className="h-12 w-12 text-[#d1d1d6] mb-4" />
+        <h1 className="text-xl font-bold text-[#1d1d1f] mb-2">Panier vide</h1>
+        <Link href="/menu" className="text-sm text-[#86868b] underline">
+          Retour au menu
         </Link>
       </div>
     );
@@ -36,142 +34,222 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName || !customerPhone) {
-      toast.error("Veuillez remplir tous les champs obligatoires");
+
+    if (!customerName.trim() || !customerPhone.trim()) {
+      toast.error("Remplissez votre nom et telephone");
+      return;
+    }
+
+    if (customerPhone.replace(/\s/g, "").length < 10) {
+      toast.error("Numero de telephone invalide");
+      return;
+    }
+
+    if (orderType === "delivery" && (!deliveryAddress?.street || !deliveryAddress?.city)) {
+      toast.error("Remplissez l'adresse de livraison dans le panier");
       return;
     }
 
     setLoading(true);
 
-    // TODO: Create order via API, then create Stripe PaymentIntent
-    // For now, simulate success
-    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const orderData = {
+        orderType,
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim() || undefined,
+        notes: customerNotes || undefined,
+        items: items.map((item) => ({
+          menuItemId: item.menuItemId,
+          variantId: item.variantId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          extrasPrice: item.extrasPrice,
+          itemName: item.menuItemName,
+          variantName: item.variantName,
+          extras: item.extras,
+          specialInstructions: item.specialInstructions,
+        })),
+        deliveryAddress: orderType === "delivery" && deliveryAddress ? {
+          street: deliveryAddress.street,
+          city: deliveryAddress.city,
+          postalCode: deliveryAddress.postalCode,
+          instructions: deliveryAddress.instructions,
+        } : null,
+      };
 
-    clear();
-    toast.success("Commande envoyee !");
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
 
-    // TODO: Redirect to /order/confirmation/[id]
-    window.location.href = "/order/confirmation/demo";
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Erreur lors de la commande");
+      }
+
+      clear();
+      toast.success("Commande envoyee !");
+      router.push(`/order/confirmation/${result.orderId}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur lors de la commande";
+      toast.error(message);
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-xl px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[#f5f5f7]">
+      <div className="mx-auto max-w-lg px-5 py-8">
         <Link
           href="/cart"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
+          className="inline-flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           Retour au panier
         </Link>
 
-        <h1 className="text-3xl font-extrabold tracking-tight text-foreground mb-8">
+        <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight mb-6">
           Finaliser la commande
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Customer info */}
-          <div className="space-y-4">
-            <h2 className="font-semibold text-foreground">
-              Vos informations
-            </h2>
-            <Input
-              label="Nom complet *"
-              placeholder="Jean Dupont"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              required
-            />
-            <Input
-              label="Telephone *"
-              type="tel"
-              placeholder="06 12 34 56 78"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              required
-            />
-            <Input
-              label="Email (optionnel)"
-              type="email"
-              placeholder="jean@exemple.fr"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
-            />
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
+            <h2 className="font-semibold text-[15px] text-[#1d1d1f]">Vos informations</h2>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                <User className="h-4 w-4 text-[#86868b]" />
+                Nom complet
+              </label>
+              <input
+                type="text"
+                placeholder="Jean Dupont"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                required
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                <Phone className="h-4 w-4 text-[#86868b]" />
+                Telephone
+              </label>
+              <input
+                type="tel"
+                placeholder="06 12 34 56 78"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                required
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                <Mail className="h-4 w-4 text-[#86868b]" />
+                Email <span className="text-[#aeaeb2] font-normal">(optionnel)</span>
+              </label>
+              <input
+                type="email"
+                placeholder="jean@email.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+              />
+            </div>
           </div>
 
           {/* Order summary */}
-          <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-            <h2 className="font-semibold text-foreground mb-3">
-              Recapitulatif
-            </h2>
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="flex justify-between text-sm"
-              >
-                <span className="text-muted-foreground">
-                  {item.quantity}x {item.menuItemName}
-                  {item.variantName && ` (${item.variantName})`}
-                </span>
-                <PriceDisplay
-                  cents={
-                    (item.unitPrice + item.extrasPrice) * item.quantity
-                  }
-                  size="sm"
-                />
-              </div>
-            ))}
-            {orderType === "delivery" && (
-              <>
-                <div className="h-px bg-border" />
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Frais de livraison
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5">
+            <h2 className="font-semibold text-[15px] text-[#1d1d1f] mb-4">Recapitulatif</h2>
+
+            {/* Order type */}
+            <div className="flex items-center gap-2 text-sm text-[#86868b] mb-4 pb-4 border-b border-[#f0f0f2]">
+              {orderType === "delivery" ? (
+                <>
+                  <Truck className="h-4 w-4" />
+                  <span>Livraison</span>
+                </>
+              ) : (
+                <>
+                  <MapPin className="h-4 w-4" />
+                  <span>{orderType === "collect" ? "A emporter" : "Sur place"}</span>
+                </>
+              )}
+            </div>
+
+            {/* Items */}
+            <div className="space-y-2.5 mb-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span className="text-[#1d1d1f]">
+                    <span className="text-[#86868b]">{item.quantity}x</span>{" "}
+                    {item.menuItemName}
+                    {item.variantName && <span className="text-[#aeaeb2]"> ({item.variantName})</span>}
                   </span>
-                  <PriceDisplay cents={deliveryFee} size="sm" />
+                  <span className="font-medium text-[#1d1d1f] tabular-nums">
+                    {formatPrice((item.unitPrice + item.extrasPrice) * item.quantity)}
+                  </span>
                 </div>
+              ))}
+            </div>
+
+            <div className="border-t border-[#f0f0f2] pt-3 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-[#86868b]">Sous-total</span>
+                <span className="text-[#1d1d1f] tabular-nums">{formatPrice(subtotal())}</span>
+              </div>
+              {orderType === "delivery" && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-[#86868b]">Frais de livraison</span>
+                  <span className="text-[#1d1d1f] tabular-nums">{formatPrice(deliveryFee)}</span>
+                </div>
+              )}
+              <div className="flex justify-between pt-2 border-t border-[#f0f0f2]">
+                <span className="font-bold text-[#1d1d1f]">Total</span>
+                <span className="font-bold text-lg text-[#1d1d1f] tabular-nums">{formatPrice(total)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment note */}
+          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 flex items-start gap-3">
+            <div className="h-8 w-8 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
+              <Check className="h-4 w-4 text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#1d1d1f]">Paiement sur place</p>
+              <p className="text-[13px] text-[#86868b]">
+                {orderType === "delivery"
+                  ? "Vous payez a la reception de votre commande"
+                  : "Vous payez au comptoir lors du retrait"}
+              </p>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] hover:bg-[#1d1d1f]/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <div className="h-5 w-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                Envoyer la commande &middot; {formatPrice(total)}
               </>
             )}
-            <div className="h-px bg-border" />
-            <div className="flex justify-between">
-              <span className="font-semibold">Total</span>
-              <PriceDisplay cents={total} size="lg" />
-            </div>
-          </div>
+          </button>
 
-          {/* Stripe Payment Element placeholder */}
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <h2 className="font-semibold text-foreground mb-4 flex items-center gap-2">
-              <CreditCard className="h-4 w-4" />
-              Paiement securise
-            </h2>
-            <div className="rounded-xl bg-muted p-8 text-center text-muted-foreground">
-              <Lock className="h-8 w-8 mx-auto mb-2 text-muted-foreground/50" />
-              <p className="text-sm">
-                Stripe Payment Element
-              </p>
-              <p className="text-xs mt-1">
-                Carte bancaire, Apple Pay, Google Pay
-              </p>
-              <p className="text-xs text-brand-purple mt-2">
-                Se connectera une fois les cles Stripe configurees
-              </p>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full"
-            loading={loading}
-          >
-            <Lock className="h-4 w-4" />
-            Payer {formatPrice(total)}
-          </Button>
-
-          <p className="text-xs text-center text-muted-foreground">
-            Paiement securise par Stripe. Vos donnees bancaires ne sont
-            jamais stockees sur nos serveurs.
+          <p className="text-xs text-center text-[#aeaeb2]">
+            Votre commande sera envoyee directement en cuisine
           </p>
         </form>
       </div>

@@ -8,18 +8,20 @@ export const createOrderSchema = z.object({
     .min(10, "Numero de telephone invalide")
     .regex(/^[\d\s+()-]+$/, "Format invalide"),
   customerEmail: z.string().email("Email invalide").optional().or(z.literal("")),
-  scheduledAt: z.string().optional(),
   notes: z.string().max(500).optional(),
-  loyaltyRewardId: z.string().uuid().optional().nullable(),
   items: z
     .array(
       z.object({
-        menuItemId: z.string().uuid(),
-        variantId: z.string().uuid().optional().nullable(),
+        menuItemId: z.string(),
+        variantId: z.string().optional().nullable(),
         quantity: z.number().int().positive(),
+        unitPrice: z.number().int().nonnegative(),
+        extrasPrice: z.number().int().nonnegative(),
+        itemName: z.string(),
+        variantName: z.string().optional().nullable(),
         extras: z.array(
           z.object({
-            id: z.string().uuid(),
+            id: z.string(),
             name: z.string(),
             price: z.number().int().nonnegative(),
           })
@@ -32,9 +34,7 @@ export const createOrderSchema = z.object({
     .object({
       street: z.string().min(3, "Adresse requise"),
       city: z.string().min(2, "Ville requise"),
-      postalCode: z
-        .string()
-        .regex(/^\d{5}$/, "Code postal invalide"),
+      postalCode: z.string().min(4, "Code postal invalide"),
       lat: z.number().optional(),
       lng: z.number().optional(),
       instructions: z.string().max(200).optional(),
