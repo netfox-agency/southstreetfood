@@ -33,7 +33,11 @@ export default function StaffLoginPage() {
 
     // Auth succeeded — check role via API to avoid RLS issues
     try {
-      const res = await fetch("/api/auth/check-role");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      const res = await fetch("/api/auth/check-role", {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
       const data = await res.json();
 
       if (!data.role || !["admin", "kitchen"].includes(data.role)) {
