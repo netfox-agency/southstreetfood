@@ -1,7 +1,7 @@
 import { getCategoriesWithItems } from "@/lib/queries/menu";
 import { MenuClient } from "./menu-client";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function MenuPage() {
   const categories = await getCategoriesWithItems();

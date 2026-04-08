@@ -2,7 +2,7 @@ import { getMenuItemBySlug } from "@/lib/queries/menu";
 import { notFound } from "next/navigation";
 import { ItemClient } from "./item-client";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ItemPage({
   params,
