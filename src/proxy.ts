@@ -36,46 +36,18 @@ export async function proxy(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Protect kitchen routes - require kitchen or admin role
+  // Protect kitchen routes - require auth (role check done server-side in pages)
   if (pathname.startsWith("/kitchen")) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const role = (profile as any)?.role;
-    if (!role || !["kitchen", "admin"].includes(role)) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
   }
 
-  // Protect admin routes - require admin role
+  // Protect admin routes - require auth (role check done server-side in pages)
   if (pathname.startsWith("/admin")) {
     if (!user) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const role = (profile as any)?.role;
-    if (!role || role !== "admin") {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
