@@ -1,0 +1,58 @@
+import { NextRequest, NextResponse } from "next/server";
+import { stripe } from "@/lib/stripe";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function POST(request: NextRequest) {
+  try {
+    const { orderId } = await request.json();
+
+    if (!orderId) {
+      return NextResponse.json({ error: "orderId required" }, { status: 400 });
+    }
+
+    const supabase = createAdminClient();
+
+    // Fetch order - use any to avoid complex type narrowing with Supabase
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const order = data as any;
+
+    if (error || !order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    if (order.status !== "pending_payment") {
+      return NextResponse.json(
+        { error: "Order already processed" },
+        { status: 400 }
+      );
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: order.total,
+      currency: "eur",
+      automatic_payment_methods: { enabled: true },
+      metadata: { orderId: order.id, orderNumber: String(order.order_number) },
+    });
+
+    await supabase
+      .from("orders")
+      .update({
+        stripe_payment_intent_id: paymentIntent.id,
+      } as never)
+      .eq("id", orderId);
+
+    return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+  } catch (err) {
+    console.error("Stripe error:", err);
+    return NextResponse.json(
+      { error: "Failed to create payment" },
+      { status: 500 }
+    );
+  }
+}

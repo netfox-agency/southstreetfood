@@ -191,3 +191,17 @@ body {
 .dark-section .btn-outline:hover {
   border-color: rgba(255,255,255,0.5);
 }
+
+/* ── Scrollbar hide utility ──────────────── */
+
+.scrollbar-none::-webkit-scrollbar { display: none; }
+.scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Accessibility: reduced motion ───────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-reveal { animation: none; opacity: 1; }
+  .animate-float { animation: none; }
+  .hover-lift:hover { transform: none; }
+  * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
