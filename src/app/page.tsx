@@ -2,43 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, useInView } from "framer-motion";
-import {
-  ArrowRight,
-  Clock,
-  MapPin,
-  Truck,
-  Star,
-  ChevronRight,
-  Phone,
-} from "lucide-react";
+import { ArrowRight, Clock, MapPin, Truck, Star, Phone } from "lucide-react";
 
-/* ─────────────────────────────────────────────
-   Animation variants (Apple-level cubic-bezier)
-   ───────────────────────────────────────────── */
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 40, filter: "blur(12px)" },
+  hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
-    transition: { delay: i * 0.15, duration: 1.2, ease },
+    transition: { delay: i * 0.12, duration: 0.9, ease },
   }),
 };
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: (i: number) => ({
-    opacity: 1,
-    scale: 1,
-    transition: { delay: i * 0.1, duration: 0.8, ease },
-  }),
-};
-
-function Section({
+function Reveal({
   children,
   className = "",
   id,
@@ -48,13 +27,13 @@ function Section({
   id?: string;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-100px" });
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
     <motion.section
       ref={ref}
       id={id}
       initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
+      animate={inView ? "visible" : "hidden"}
       className={className}
     >
       {children}
@@ -62,14 +41,15 @@ function Section({
   );
 }
 
-/* ─────────────────────────────────────────────
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    NAVBAR
-   ───────────────────────────────────────────── */
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 50);
+    const h = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", h, { passive: true });
     return () => window.removeEventListener("scroll", h);
   }, []);
@@ -77,35 +57,23 @@ function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? "glass-nav py-3" : "py-5"
+        scrolled ? "glass-nav" : ""
       }`}
     >
-      <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-neon-pink to-neon-purple flex items-center justify-center">
-            <span className="text-white font-extrabold text-sm">SS</span>
-          </div>
-          <div className="hidden sm:block">
-            <span className="text-white font-bold text-sm tracking-tight">
-              SOUTH STREET
-            </span>
-            <span className="text-neon-pink font-bold text-[10px] tracking-[0.2em] block leading-none">
-              FOOD
-            </span>
-          </div>
+      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link href="/" className="font-extrabold text-lg tracking-tight">
+          South Street Food
         </Link>
-
-        {/* Nav links */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-6">
           <Link
             href="/menu"
-            className="px-5 py-2.5 text-sm font-medium text-white/70 hover:text-white rounded-xl hover:bg-white/5 transition-all duration-300"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
           >
-            Menu
+            La carte
           </Link>
-          <Link href="/menu" className="btn-primary text-sm !py-2.5 !px-6">
+          <Link href="/menu" className="btn-primary !py-2.5 !px-5 text-sm">
             Commander
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -113,339 +81,374 @@ function Navbar() {
   );
 }
 
-/* ─────────────────────────────────────────────
-   HERO - Video background + neon logo
-   ───────────────────────────────────────────── */
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   HERO — Clean, bold, Burger King / G La Dalle level
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function Hero() {
   return (
-    <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden">
-      {/* Video background - using gradient placeholder until real video */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a2e] via-[#0a0a12] to-[#0f1a0a]" />
-        {/* Neon glow orbs */}
-        <div className="absolute top-[20%] left-[10%] w-[500px] h-[500px] rounded-full bg-neon-pink/8 blur-[150px] animate-blob" />
-        <div className="absolute bottom-[20%] right-[10%] w-[400px] h-[400px] rounded-full bg-neon-cyan/8 blur-[120px] animate-blob" style={{ animationDelay: "4s" }} />
-        <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-neon-purple/5 blur-[200px]" />
-      </div>
+    <section className="dark-section relative min-h-screen flex items-center overflow-hidden">
+      {/* Subtle warm gradient — not neon overload */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a14] via-[#0f0f1a] to-[#0a1a1a]" />
 
-      {/* Overlay */}
-      <div className="absolute inset-0 hero-overlay" />
+      {/* One soft ambient glow — restrained */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand/5 rounded-full blur-[200px]" />
 
-      {/* Content */}
-      <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-        {/* Status badge */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease, delay: 0.2 }}
-          className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full glass mb-10"
-        >
-          <span className="h-2 w-2 rounded-full bg-neon-green animate-pulse" />
-          <span className="text-sm text-white/80 font-medium">
-            Ouvert maintenant — livraison jusqu&apos;a 4h
-          </span>
-        </motion.div>
-
-        {/* Main title - GTA Pricedown style would go here with @font-face */}
-        <motion.h1
-          initial={{ opacity: 0, y: 60, filter: "blur(20px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.4, ease, delay: 0.4 }}
-          className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-black tracking-tight leading-[0.85] mb-8"
-        >
-          <span className="text-white">SOUTH</span>
-          <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-neon-pink via-neon-purple to-neon-cyan neon-pink">
-            STREET FOOD
-          </span>
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 30, filter: "blur(12px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.2, ease, delay: 0.7 }}
-          className="text-lg sm:text-xl text-white/50 max-w-md mx-auto mb-12 leading-relaxed"
-        >
-          Le concept street food exclusif de Bayonne.
-          <br />
-          Burgers, tacos &amp; wraps artisanaux.
-        </motion.p>
-
-        {/* CTAs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease, delay: 1 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-4"
-        >
-          <Link href="/menu" className="btn-primary text-base !py-4 !px-10 flex items-center gap-2">
-            Je passe commande
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link href="#concept" className="btn-secondary text-base !py-4 !px-10">
-            Decouvrir
-          </Link>
-        </motion.div>
-
-        {/* Features pills */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1.3 }}
-          className="flex flex-wrap items-center justify-center gap-3 mt-16"
-        >
-          {[
-            { icon: Clock, text: "Jusqu'a 4h du matin", color: "text-neon-yellow" },
-            { icon: Truck, text: "Livraison BAB", color: "text-neon-cyan" },
-            { icon: MapPin, text: "Click & Collect", color: "text-neon-pink" },
-          ].map((f) => (
-            <div
-              key={f.text}
-              className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-sm text-white/60"
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left — Text */}
+          <div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.2 }}
+              className="text-brand font-semibold text-sm tracking-wide uppercase mb-4"
             >
-              <f.icon className={`h-3.5 w-3.5 ${f.color}`} />
-              {f.text}
-            </div>
-          ))}
-        </motion.div>
-      </div>
+              Bayonne &middot; Anglet &middot; Biarritz
+            </motion.p>
 
-      {/* Scroll indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2, duration: 1 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
-      >
-        <div className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5">
+            <motion.h1
+              initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 1.2, ease, delay: 0.3 }}
+              className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[0.95] tracking-tight"
+            >
+              Burgers, tacos
+              <br />
+              &amp; wraps
+              <br />
+              <span className="text-brand">artisanaux.</span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.6 }}
+              className="mt-6 text-white/45 text-lg leading-relaxed max-w-sm"
+            >
+              Le concept street food exclusif de Bayonne.
+              Livraison jusqu&apos;a 4h du matin sur tout le BAB.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.8 }}
+              className="mt-10 flex flex-wrap gap-4"
+            >
+              <Link href="/menu" className="btn-primary text-base !py-4 !px-8">
+                Je commande
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="#concept" className="btn-outline text-base !py-4 !px-8 text-white border-white/15 hover:border-white/40">
+                Decouvrir
+              </Link>
+            </motion.div>
+
+            {/* Minimal info chips */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2, duration: 0.8 }}
+              className="mt-12 flex flex-wrap gap-3"
+            >
+              {[
+                { icon: Clock, text: "Jusqu'a 4h" },
+                { icon: Truck, text: "Livraison 30 min" },
+                { icon: MapPin, text: "Click & Collect" },
+              ].map((f) => (
+                <span
+                  key={f.text}
+                  className="flex items-center gap-2 text-white/30 text-sm"
+                >
+                  <f.icon className="h-3.5 w-3.5" />
+                  {f.text}
+                </span>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Right — Hero image */}
           <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-            className="w-1.5 h-1.5 rounded-full bg-neon-pink"
-          />
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease, delay: 0.5 }}
+            className="hidden lg:block"
+          >
+            <div className="relative">
+              <div className="aspect-square rounded-[32px] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] overflow-hidden flex items-center justify-center">
+                {/* Replace with real hero burger photo */}
+                <div className="text-center">
+                  <div className="text-[120px] leading-none">🍔</div>
+                  <p className="text-white/15 text-sm mt-4">Photo hero burger</p>
+                </div>
+              </div>
+
+              {/* Floating card — reviews */}
+              <div className="absolute -bottom-6 -left-6 glass rounded-2xl px-5 py-4 flex items-center gap-3">
+                <div className="flex -space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-4 w-4 text-neon-yellow fill-neon-yellow"
+                    />
+                  ))}
+                </div>
+                <div>
+                  <div className="text-white text-sm font-semibold">4.8/5</div>
+                  <div className="text-white/40 text-xs">+500 avis</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SECTION: Livraison toute la nuit
-   ───────────────────────────────────────────── */
-function DeliverySection() {
-  return (
-    <Section className="section-padding relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-neon-pink/5 rounded-full blur-[200px]" />
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   BEST SELLERS — G La Dalle style product cards
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+const BEST_SELLERS = [
+  { name: "Le Classic Smash", desc: "Double smash, cheddar fondu, sauce maison", price: "9,90", emoji: "🍔" },
+  { name: "Tacos XL", desc: "Tortilla geante, viande, frites, sauce fromagere", price: "8,90", emoji: "🌮" },
+  { name: "Le South Burger", desc: "Triple viande, bacon, jalapenos, sauce BBQ", price: "12,90", emoji: "🍔" },
+  { name: "Wrap Chicken Avocado", desc: "Poulet grille, avocat, salade, ranch", price: "8,50", emoji: "🌯" },
+];
+
+function BestSellers() {
+  return (
+    <Reveal className="py-24 sm:py-32">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div variants={fadeUp} custom={0} className="mb-12">
+          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
+            Les best sellers
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+            Nos incontournables
+          </h2>
+        </motion.div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {BEST_SELLERS.map((item, i) => (
+            <motion.div key={item.name} variants={fadeUp} custom={i + 1}>
+              <Link href="/menu" className="block">
+                <div className="card-premium hover-lift p-0 overflow-hidden cursor-pointer">
+                  {/* Image area */}
+                  <div className="aspect-square bg-gradient-to-br from-muted to-white flex items-center justify-center">
+                    <span className="text-7xl">{item.emoji}</span>
+                  </div>
+                  {/* Content */}
+                  <div className="p-5">
+                    <h3 className="font-bold text-base">{item.name}</h3>
+                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2">
+                      {item.desc}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-bold text-brand text-lg">
+                        {item.price} &euro;
+                      </span>
+                      <span className="h-9 w-9 rounded-xl bg-brand text-white flex items-center justify-center text-lg font-bold">
+                        +
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+
+        <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
+          <Link href="/menu" className="btn-outline">
+            Voir toute la carte
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </motion.div>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CONCEPT — Le concept
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Concept() {
+  return (
+    <Reveal id="concept" className="dark-section py-24 sm:py-32">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Images */}
+          <motion.div variants={fadeUp} custom={0}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="aspect-[3/4] rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-6xl">
+                🍔
+              </div>
+              <div className="space-y-4">
+                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                  🍟
+                </div>
+                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                  🌮
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Text */}
           <div>
-            <motion.div
+            <motion.p
               variants={fadeUp}
               custom={0}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neon-pink/10 border border-neon-pink/20 text-neon-pink text-sm font-medium mb-6"
+              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
             >
-              <Truck className="h-3.5 w-3.5" />
-              Livraison
-            </motion.div>
-
+              Le concept
+            </motion.p>
             <motion.h2
               variants={fadeUp}
               custom={1}
-              className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[0.95] mb-6"
+              className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[0.95] mb-6"
             >
-              Livraison
+              Concept exclusif
               <br />
-              <span className="text-neon-pink neon-pink">toute la nuit</span>
+              a Bayonne
             </motion.h2>
-
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="text-lg text-white/50 leading-relaxed max-w-md mb-8"
+              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md"
             >
-              Nous sommes ouvert jusqu&apos;a{" "}
-              <span className="text-neon-yellow font-semibold">4h du matin</span>{" "}
-              avec une livraison sur tout le BAB et ses alentours.
-              Bayonne, Anglet, Biarritz.
+              Notre menu varie vous regale a petit prix, sans contrainte,
+              a tout moment de la soiree. Seul, en famille ou entre amis.
+              Des ingredients frais, des recettes qui envoient.
             </motion.p>
-
             <motion.div variants={fadeUp} custom={3}>
-              <Link
-                href="/menu"
-                className="btn-primary inline-flex items-center gap-2"
-              >
-                Commander maintenant
+              <Link href="/menu" className="btn-primary">
+                Voir la carte
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </motion.div>
           </div>
-
-          {/* Image - Delivery rider */}
-          <motion.div variants={scaleIn} custom={2} className="relative">
-            <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-dark-elevated to-dark-surface overflow-hidden img-neon-border">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white/20">
-                  <Truck className="h-16 w-16 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Image livreur a ajouter</p>
-                </div>
-              </div>
-            </div>
-            {/* Floating badge */}
-            <div className="absolute -bottom-4 -left-4 glass-strong rounded-2xl px-5 py-3 neon-glow-pink">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-neon-pink" />
-                <div>
-                  <div className="text-white font-bold text-sm">30 min</div>
-                  <div className="text-white/40 text-xs">Temps moyen</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
       </div>
-    </Section>
+    </Reveal>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SECTION: Concept exclusif
-   ───────────────────────────────────────────── */
-function ConceptSection() {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DELIVERY — Livraison section
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Delivery() {
   return (
-    <Section id="concept" className="section-padding relative overflow-hidden">
-      <div className="absolute left-0 top-0 w-[400px] h-[400px] bg-neon-purple/5 rounded-full blur-[180px]" />
-
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          {/* Images grid */}
-          <motion.div variants={scaleIn} custom={0} className="relative order-2 lg:order-1">
-            <div className="grid grid-cols-5 gap-4">
-              <div className="col-span-3 aspect-[3/4] rounded-3xl bg-gradient-to-br from-dark-elevated to-dark-surface overflow-hidden img-glow">
-                <div className="h-full flex items-center justify-center text-6xl">🍔</div>
-              </div>
-              <div className="col-span-2 flex flex-col gap-4">
-                <div className="flex-1 rounded-3xl bg-gradient-to-br from-dark-elevated to-dark-surface overflow-hidden img-glow">
-                  <div className="h-full flex items-center justify-center text-4xl">🍟</div>
-                </div>
-                <div className="flex-1 rounded-3xl bg-gradient-to-br from-dark-elevated to-dark-surface overflow-hidden img-glow">
-                  <div className="h-full flex items-center justify-center text-4xl">🌮</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
+    <Reveal className="py-24 sm:py-32 bg-muted">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Text */}
-          <div className="order-1 lg:order-2">
-            <motion.div
+          <div>
+            <motion.p
               variants={fadeUp}
               custom={0}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neon-cyan/10 border border-neon-cyan/20 text-neon-cyan text-sm font-medium mb-6"
+              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
             >
-              <Star className="h-3.5 w-3.5" />
-              Concept
-            </motion.div>
-
+              Livraison
+            </motion.p>
             <motion.h2
               variants={fadeUp}
               custom={1}
-              className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[0.95] mb-6"
+              className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.95] mb-6"
             >
-              Concept exclusif
+              Livraison toute
               <br />
-              <span className="text-neon-cyan neon-cyan">a Bayonne</span>
+              la nuit
             </motion.h2>
-
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="text-lg text-white/50 leading-relaxed max-w-md mb-8"
+              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md"
             >
-              Notre menu varie vous regale a petit prix, sans contrainte,
-              a tout moment de la soiree, que vous soyez seul, en famille
-              ou entre amis.
+              Ouvert jusqu&apos;a 4h du matin avec livraison rapide
+              sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
+              chez vous.
             </motion.p>
 
-            <motion.div variants={fadeUp} custom={3}>
-              <Link
-                href="/menu"
-                className="btn-secondary inline-flex items-center gap-2"
-              >
-                Voir la carte
-                <ChevronRight className="h-4 w-4" />
-              </Link>
+            {/* Stats */}
+            <motion.div
+              variants={fadeUp}
+              custom={3}
+              className="grid grid-cols-3 gap-6"
+            >
+              {[
+                { value: "30", unit: "min", label: "Temps moyen" },
+                { value: "4h", unit: "", label: "Ouvert jusqu'a" },
+                { value: "BAB", unit: "", label: "Zone couverte" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="text-3xl font-black text-brand">
+                    {s.value}
+                    <span className="text-lg">{s.unit}</span>
+                  </div>
+                  <div className="text-muted-foreground text-sm mt-1">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
             </motion.div>
           </div>
+
+          {/* Image */}
+          <motion.div variants={fadeUp} custom={2}>
+            <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-accent/10 to-muted border border-border overflow-hidden flex items-center justify-center img-premium">
+              <div className="text-center text-muted-foreground">
+                <Truck className="h-16 w-16 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Photo livreur scooter</p>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
-    </Section>
+    </Reveal>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SECTION: Features (3 cards)
-   ───────────────────────────────────────────── */
-function FeaturesSection() {
-  const features = [
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FEATURES — 3 features propres
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Features() {
+  const items = [
     {
       icon: Star,
       title: "Qualite artisanale",
-      desc: "Des ingredients frais selectionnes et des recettes elaborees pour un street food d'exception.",
-      color: "text-neon-yellow",
-      glow: "bg-neon-yellow/10",
+      desc: "Ingredients frais selectionnes chaque jour. Des recettes maison qui font la difference.",
     },
     {
       icon: Truck,
-      title: "Livraison rapide",
-      desc: "Livraison dans toute la zone BAB. Chez vous en 30 minutes, chaud et pret a deguster.",
-      color: "text-neon-cyan",
-      glow: "bg-neon-cyan/10",
+      title: "Livre en 30 min",
+      desc: "Commandez en ligne, on livre chaud chez vous. Bayonne, Anglet, Biarritz et alentours.",
     },
     {
       icon: MapPin,
       title: "Click & Collect",
-      desc: "Commandez en ligne et recuperez votre commande directement au restaurant. Zero attente.",
-      color: "text-neon-pink",
-      glow: "bg-neon-pink/10",
+      desc: "Commandez, choisissez votre creneau, et recuperez au restaurant. Zero attente.",
     },
   ];
 
   return (
-    <Section className="section-padding">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <motion.h2
-            variants={fadeUp}
-            custom={0}
-            className="text-4xl sm:text-5xl font-black tracking-tight mb-4"
-          >
-            Pourquoi nous choisir
-          </motion.h2>
-          <motion.p
-            variants={fadeUp}
-            custom={1}
-            className="text-white/40 text-lg max-w-md mx-auto"
-          >
-            Le meilleur du street food, a portee de clic
-          </motion.p>
-        </div>
-
+    <Reveal className="py-24 sm:py-32">
+      <div className="max-w-6xl mx-auto px-6">
         <div className="grid sm:grid-cols-3 gap-6">
-          {features.map((f, i) => (
-            <motion.div key={f.title} variants={scaleIn} custom={i}>
-              <div className="glass-card p-8 h-full text-center">
-                <div
-                  className={`inline-flex items-center justify-center h-14 w-14 rounded-2xl ${f.glow} mb-6`}
-                >
-                  <f.icon className={`h-7 w-7 ${f.color}`} />
+          {items.map((f, i) => (
+            <motion.div key={f.title} variants={fadeUp} custom={i}>
+              <div className="card-premium p-8 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-brand/8 flex items-center justify-center mb-5">
+                  <f.icon className="h-6 w-6 text-brand" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-3">
-                  {f.title}
-                </h3>
-                <p className="text-white/40 text-sm leading-relaxed">
+                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {f.desc}
                 </p>
               </div>
@@ -453,171 +456,139 @@ function FeaturesSection() {
           ))}
         </div>
       </div>
-    </Section>
+    </Reveal>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SECTION: Le restaurant
-   ───────────────────────────────────────────── */
-function RestaurantSection() {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   RESTAURANT — Photo lieu
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Restaurant() {
   return (
-    <Section className="section-padding relative overflow-hidden">
-      <div className="absolute right-0 bottom-0 w-[500px] h-[500px] bg-neon-purple/5 rounded-full blur-[200px]" />
-
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-12">
-          <motion.h2
-            variants={fadeUp}
-            custom={0}
-            className="text-4xl sm:text-5xl font-black tracking-tight mb-4"
-          >
+    <Reveal className="py-24 sm:py-32 bg-muted">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div variants={fadeUp} custom={0} className="text-center mb-12">
+          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
+            Le restaurant
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
             Sur place ou a emporter
-          </motion.h2>
-        </div>
+          </h2>
+        </motion.div>
 
-        <motion.div
-          variants={scaleIn}
-          custom={1}
-          className="relative rounded-3xl overflow-hidden img-neon-border"
-        >
-          <div className="aspect-[21/9] bg-gradient-to-br from-dark-elevated to-dark-surface flex items-center justify-center">
-            <div className="text-center text-white/20">
-              <MapPin className="h-16 w-16 mx-auto mb-3 opacity-30" />
-              <p className="text-sm">Photo du restaurant a ajouter</p>
+        <motion.div variants={fadeUp} custom={1}>
+          <div className="relative aspect-[21/9] rounded-3xl bg-gradient-to-br from-accent/5 to-muted border border-border overflow-hidden img-premium">
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MapPin className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Photo interieur restaurant</p>
+              </div>
+            </div>
+            {/* Bottom gradient overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-6 left-8">
+              <h3 className="text-white text-xl font-bold">
+                South Street Food
+              </h3>
+              <p className="text-white/60 text-sm">Bayonne, France</p>
             </div>
           </div>
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-dark/80 via-transparent to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-12">
-            <p className="text-white/60 text-sm mb-2">Restaurant</p>
-            <h3 className="text-2xl sm:text-3xl font-bold text-white">
-              South Street Food — Bayonne
-            </h3>
-          </div>
         </motion.div>
       </div>
-    </Section>
+    </Reveal>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SECTION: CTA Final
-   ───────────────────────────────────────────── */
-function CTASection() {
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   CTA Final
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function CTA() {
   return (
-    <Section className="section-padding">
-      <div className="max-w-4xl mx-auto px-6">
-        <motion.div
-          variants={scaleIn}
+    <Reveal className="py-24 sm:py-32">
+      <div className="max-w-4xl mx-auto px-6 text-center">
+        <motion.h2
+          variants={fadeUp}
           custom={0}
-          className="relative rounded-3xl overflow-hidden p-12 sm:p-20 text-center"
-          style={{
-            background:
-              "linear-gradient(135deg, rgba(252,81,133,0.15) 0%, rgba(103,61,230,0.15) 50%, rgba(0,229,255,0.1) 100%)",
-          }}
+          className="text-4xl sm:text-5xl font-black tracking-tight mb-6"
         >
-          {/* Border glow */}
-          <div className="absolute inset-0 rounded-3xl border border-neon-pink/20" />
-
-          <motion.h2
-            variants={fadeUp}
-            custom={1}
-            className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight mb-6"
-          >
-            Une faim de
-            <br />
-            <span className="text-neon-pink neon-pink">loup ?</span>
-          </motion.h2>
-          <motion.p
-            variants={fadeUp}
-            custom={2}
-            className="text-lg text-white/50 mb-10 max-w-md mx-auto"
-          >
-            Commandez maintenant et recevez votre commande en 30 minutes.
-            Ou recuperez-la au restaurant.
-          </motion.p>
-          <motion.div variants={fadeUp} custom={3}>
-            <Link
-              href="/menu"
-              className="btn-primary text-lg !py-5 !px-12 inline-flex items-center gap-3"
-            >
-              Commander maintenant
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </motion.div>
+          Une faim de loup ?
+        </motion.h2>
+        <motion.p
+          variants={fadeUp}
+          custom={1}
+          className="text-muted-foreground text-lg mb-10 max-w-md mx-auto"
+        >
+          Commandez maintenant et recevez votre commande en 30 minutes,
+          ou recuperez-la au restaurant.
+        </motion.p>
+        <motion.div variants={fadeUp} custom={2}>
+          <Link href="/menu" className="btn-primary text-base !py-4 !px-10">
+            Commander maintenant
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </motion.div>
       </div>
-    </Section>
+    </Reveal>
   );
 }
 
-/* ─────────────────────────────────────────────
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    FOOTER
-   ───────────────────────────────────────────── */
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 function Footer() {
   return (
-    <footer className="border-t border-white/[0.04] py-16">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid sm:grid-cols-3 gap-12">
-          {/* Brand */}
+    <footer className="border-t border-border py-16">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid sm:grid-cols-3 gap-12 mb-12">
           <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-neon-pink to-neon-purple flex items-center justify-center">
-                <span className="text-white font-extrabold text-sm">SS</span>
-              </div>
-              <div>
-                <span className="text-white font-bold text-sm">SOUTH STREET</span>
-                <span className="text-neon-pink font-bold text-[10px] tracking-[0.2em] block leading-none">FOOD</span>
-              </div>
-            </div>
-            <p className="text-white/30 text-sm leading-relaxed">
+            <h4 className="font-bold text-base mb-1">South Street Food</h4>
+            <p className="text-muted-foreground text-sm leading-relaxed">
               Le concept street food exclusif de Bayonne.
               Ouvert jusqu&apos;a 4h du matin.
             </p>
           </div>
-
-          {/* Navigation */}
           <div>
-            <h4 className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
+            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
               Navigation
             </h4>
-            <ul className="space-y-3">
-              {["Menu", "Commander", "Mon compte"].map((link) => (
-                <li key={link}>
+            <ul className="space-y-2.5">
+              {["La carte", "Commander", "Mon compte"].map((l) => (
+                <li key={l}>
                   <Link
                     href="/menu"
-                    className="text-white/30 hover:text-white text-sm transition-colors duration-300"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    {link}
+                    {l}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* Contact */}
           <div>
-            <h4 className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
-              Contact
+            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
+              Infos
             </h4>
-            <ul className="space-y-3 text-sm text-white/30">
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
               <li>Bayonne, France</li>
-              <li>Livraison Bayonne · Anglet · Biarritz</li>
-              <li className="text-neon-green font-medium">Ouvert jusqu&apos;a 4h</li>
+              <li>Livraison Bayonne &middot; Anglet &middot; Biarritz</li>
+              <li className="text-neon-green font-medium">
+                Ouvert jusqu&apos;a 4h
+              </li>
             </ul>
           </div>
         </div>
-
-        <div className="mt-12 pt-8 border-t border-white/[0.04] flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-white/20 text-xs">
-            &copy; {new Date().getFullYear()} South Street Food. Tous droits reserves.
+        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-muted-foreground/50 text-xs">
+            &copy; {new Date().getFullYear()} South Street Food
           </p>
-          <div className="flex gap-6">
-            <Link href="#" className="text-white/20 hover:text-white/50 text-xs transition-colors">
+          <div className="flex gap-5">
+            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
               Mentions legales
             </Link>
-            <Link href="#" className="text-white/20 hover:text-white/50 text-xs transition-colors">
+            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
               CGV
             </Link>
           </div>
@@ -627,20 +598,22 @@ function Footer() {
   );
 }
 
-/* ─────────────────────────────────────────────
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    PAGE
-   ───────────────────────────────────────────── */
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
 export default function HomePage() {
   return (
     <>
       <Navbar />
       <main>
         <Hero />
-        <DeliverySection />
-        <ConceptSection />
-        <FeaturesSection />
-        <RestaurantSection />
-        <CTASection />
+        <BestSellers />
+        <Concept />
+        <Delivery />
+        <Features />
+        <Restaurant />
+        <CTA />
       </main>
       <Footer />
     </>
