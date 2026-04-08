@@ -31,36 +31,24 @@ export default function StaffLoginPage() {
       return;
     }
 
-    // Check role
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // Auth succeeded — check role via API to avoid RLS issues
+    try {
+      const res = await fetch("/api/auth/check-role");
+      const data = await res.json();
 
-    if (!user) {
-      setError("Erreur d'authentification");
+      if (!data.role || !["admin", "kitchen"].includes(data.role)) {
+        setError("Acces non autorise");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      router.push(data.role === "admin" ? "/admin" : "/kitchen");
+      router.refresh();
+    } catch {
+      setError("Erreur de verification");
       setLoading(false);
-      return;
     }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const role = (profile as any)?.role;
-
-    if (!role || !["admin", "kitchen"].includes(role)) {
-      setError("Acces non autorise");
-      await supabase.auth.signOut();
-      setLoading(false);
-      return;
-    }
-
-    // Redirect based on role
-    router.push(role === "admin" ? "/admin" : "/kitchen");
-    router.refresh();
   };
 
   return (
