@@ -107,6 +107,21 @@ export async function getMenuItemBySlug(slug: string) {
   };
 }
 
+export async function getBestSellers(limit = 4) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("menu_items")
+    .select("id, name, slug, base_price, description, image_url, is_featured")
+    .eq("is_featured", true)
+    .eq("is_available", true)
+    .order("display_order")
+    .limit(limit);
+
+  if (error) throw error;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data || []) as any[];
+}
+
 export async function getRestaurantSettings() {
   const supabase = await createClient();
   const { data, error } = await supabase

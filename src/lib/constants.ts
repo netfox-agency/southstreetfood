@@ -11,8 +11,8 @@ export const BRAND = {
 } as const;
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
-  pending_payment: "En attente de paiement",
-  paid: "Payee",
+  pending_payment: "En attente",
+  paid: "Nouvelle",
   accepted: "Acceptee",
   preparing: "En preparation",
   ready: "Prete",
