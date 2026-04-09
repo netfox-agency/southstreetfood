@@ -33,6 +33,21 @@ export const metadata: Metadata = {
     title: "SOUTH STREET FOOD | Le street food de Bayonne",
     description:
       "Commandez vos burgers, tacos et wraps en ligne. Livraison sur BAB jusqu'a 4h.",
+    images: [
+      {
+        url: "/brand/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "South Street Food",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SOUTH STREET FOOD | Le street food de Bayonne",
+    description:
+      "Commandez vos burgers, tacos et wraps en ligne. Livraison sur BAB jusqu'a 4h.",
+    images: ["/brand/og-image.png"],
   },
 };
 

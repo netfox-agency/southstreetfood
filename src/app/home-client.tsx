@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, useInView } from "framer-motion";
 import { ArrowRight, Clock, MapPin, Truck, Star } from "lucide-react";
 
@@ -61,8 +62,19 @@ function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="font-extrabold text-lg tracking-tight">
-          South Street Food
+        <Link
+          href="/"
+          aria-label="South Street Food"
+          className="flex items-center"
+        >
+          <Image
+            src="/brand/logo.avif"
+            alt="South Street Food"
+            width={68}
+            height={41}
+            priority
+            className="h-9 w-auto object-contain"
+          />
         </Link>
         <div className="flex items-center gap-6">
           <Link
@@ -567,7 +579,13 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid sm:grid-cols-3 gap-12 mb-12">
           <div>
-            <h4 className="font-bold text-base mb-1">South Street Food</h4>
+            <Image
+              src="/brand/logo.avif"
+              alt="South Street Food"
+              width={100}
+              height={60}
+              className="h-12 w-auto object-contain mb-3"
+            />
             <p className="text-muted-foreground text-sm leading-relaxed">
               Le concept street food exclusif de Bayonne.
               Ouvert jusqu&apos;a 4h du matin.

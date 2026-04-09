@@ -1,56 +1,52 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
   className?: string;
   size?: "sm" | "md" | "lg";
+  /** Wrap in a Link to /. Default true. */
+  asLink?: boolean;
 }
 
-const sizeStyles = {
-  sm: "text-lg",
-  md: "text-xl",
-  lg: "text-3xl",
+/** Native logo resolution (from the client asset). */
+const NATIVE_W = 768;
+const NATIVE_H = 463;
+
+const heights = {
+  sm: 28,
+  md: 36,
+  lg: 56,
 };
 
-export function Logo({ className, size = "md" }: LogoProps) {
+export function Logo({ className, size = "md", asLink = true }: LogoProps) {
+  const h = heights[size];
+  const w = Math.round((NATIVE_W / NATIVE_H) * h);
+
+  const img = (
+    <Image
+      src="/brand/logo.avif"
+      alt="South Street Food"
+      width={w}
+      height={h}
+      priority={size === "lg"}
+      className="object-contain transition-transform group-hover:scale-[1.03]"
+    />
+  );
+
+  if (!asLink) {
+    return <div className={cn("inline-flex items-center group", className)}>{img}</div>;
+  }
+
   return (
     <Link
       href="/"
-      className={cn("flex items-center gap-2 group", className)}
+      aria-label="South Street Food"
+      className={cn("inline-flex items-center group", className)}
     >
-      {/* Purple circle icon */}
-      <div
-        className={cn(
-          "rounded-xl bg-brand-purple flex items-center justify-center text-white font-bold transition-transform group-hover:scale-105",
-          size === "sm" && "h-8 w-8 text-xs",
-          size === "md" && "h-9 w-9 text-sm",
-          size === "lg" && "h-12 w-12 text-base"
-        )}
-      >
-        SS
-      </div>
-      <div className="flex flex-col">
-        <span
-          className={cn(
-            "font-extrabold tracking-tight leading-none text-foreground",
-            sizeStyles[size]
-          )}
-        >
-          SOUTH STREET
-        </span>
-        <span
-          className={cn(
-            "text-brand-purple font-bold tracking-widest leading-none",
-            size === "sm" && "text-[10px]",
-            size === "md" && "text-xs",
-            size === "lg" && "text-sm"
-          )}
-        >
-          FOOD
-        </span>
-      </div>
+      {img}
     </Link>
   );
 }

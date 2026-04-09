@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 
@@ -59,12 +60,18 @@ export default function StaffLoginPage() {
     <div className="min-h-dvh bg-[#0a0a12] flex items-center justify-center px-5">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="text-center mb-10">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-rose-500 to-purple-600 flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-extrabold text-lg">SS</span>
-          </div>
-          <h1 className="text-2xl font-black text-white">South Street Food</h1>
-          <p className="text-white/30 text-sm mt-1">Espace gestion</p>
+        <div className="flex flex-col items-center mb-10">
+          <Image
+            src="/brand/logo.avif"
+            alt="South Street Food"
+            width={160}
+            height={96}
+            priority
+            className="h-20 w-auto object-contain mb-4"
+          />
+          <p className="text-white/30 text-sm tracking-wide uppercase">
+            Espace gestion
+          </p>
         </div>
 
         {/* Login form */}
