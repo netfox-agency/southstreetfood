@@ -7,10 +7,8 @@ import type { OrderStatus } from "@/types/database";
 
 const ACTIVE_STATUSES: OrderStatus[] = [
   "paid",
-  "accepted",
   "preparing",
   "ready",
-  "out_for_delivery",
 ];
 
 export function useRealtimeOrders() {

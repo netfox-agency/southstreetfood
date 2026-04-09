@@ -9,10 +9,9 @@ import { cn, formatPrice } from "@/lib/utils";
 import type { OrderStatus } from "@/types/database";
 
 const STEPS: { status: OrderStatus; label: string; desc: string }[] = [
-  { status: "paid", label: "Commande recue", desc: "Votre commande a ete recue" },
-  { status: "accepted", label: "Acceptee", desc: "Le restaurant prepare votre commande" },
+  { status: "paid", label: "Commande recue", desc: "Le restaurant a recu votre commande" },
   { status: "preparing", label: "En preparation", desc: "Votre commande est en cuisine" },
-  { status: "ready", label: "Prete !", desc: "Votre commande est prete" },
+  { status: "ready", label: "Prete !", desc: "Vous pouvez la recuperer" },
 ];
 
 export default function TrackingPage({
