@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Search, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
@@ -119,10 +120,13 @@ function MenuItemRow({
 
         <div className="relative w-[140px] shrink-0 bg-muted">
           {item.image_url ? (
-            <img
+            <Image
               src={item.image_url}
               alt={item.name}
-              className="w-full h-full object-cover"
+              fill
+              sizes="140px"
+              className="object-cover"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-muted to-background flex items-center justify-center text-3xl">

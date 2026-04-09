@@ -92,6 +92,7 @@ export default function AdminReservationsPage() {
     const channel = supabase
       .channel("reservations-realtime")
       .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         "postgres_changes" as any,
         { event: "*", schema: "public", table: "reservations" },
         () => {

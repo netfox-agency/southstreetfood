@@ -388,7 +388,9 @@ export default function KitchenPage() {
 
   const [selected, setSelected] = useState<OrderWithItems | null>(null);
   const [filter, setFilter] = useState<FilterType>("all");
-  const [now, setNow] = useState(Date.now());
+  // Lazy initializer — Date.now() is impure, so we wrap it so React only
+  // calls it once on mount instead of on every render.
+  const [now, setNow] = useState(() => Date.now());
   const [todayStats, setTodayStats] = useState({
     count: 0,
     total: 0,
@@ -449,7 +451,9 @@ export default function KitchenPage() {
     const handleOffline = () => setOnline(false);
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-    setOnline(navigator.onLine);
+    // Capture current online state on mount, deferred to a microtask so
+    // the setState call doesn't run inside the synchronous effect body.
+    queueMicrotask(() => setOnline(navigator.onLine));
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);

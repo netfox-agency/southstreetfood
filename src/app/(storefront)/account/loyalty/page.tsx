@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowLeft, Gift, Star, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const DEMO_REWARDS = [

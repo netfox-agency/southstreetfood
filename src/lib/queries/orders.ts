@@ -138,6 +138,7 @@ export async function getOrderById(orderId: string) {
   // Use admin client to bypass RLS
   const supabase = createAdminClient();
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await (supabase as any)
     .from("orders")
     .select("*, order_items(*)")

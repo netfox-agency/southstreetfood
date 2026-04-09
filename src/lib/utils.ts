@@ -5,26 +5,34 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Module-level singleton formatters — Intl.* is expensive to construct and
+// these are called thousands of times per render in the admin/kitchen KDS.
+const priceFormatter = new Intl.NumberFormat("fr-FR", {
+  style: "currency",
+  currency: "EUR",
+});
+
+const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+});
+
+const timeFormatter = new Intl.DateTimeFormat("fr-FR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
 export function formatPrice(cents: number): string {
-  return new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-  }).format(cents / 100);
+  return priceFormatter.format(cents / 100);
 }
 
 export function formatDate(date: string | Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(new Date(date));
+  return dateFormatter.format(typeof date === "string" ? new Date(date) : date);
 }
 
 export function formatTime(date: string | Date): string {
-  return new Intl.DateTimeFormat("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
+  return timeFormatter.format(typeof date === "string" ? new Date(date) : date);
 }
 
 export function formatOrderNumber(num: number): string {

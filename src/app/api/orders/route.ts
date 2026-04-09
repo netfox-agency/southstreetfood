@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOrder } from "@/lib/queries/orders";
+import { priceCartServerSide, PricingError } from "@/lib/queries/pricing";
 import { createOrderSchema } from "@/lib/validators";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 10 orders / minute / IP. Legit customers never need more.
+  const ip = getClientIp(request);
+  const limit = rateLimit("orders.create", ip, 10, 60_000);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Trop de tentatives, veuillez patienter." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(limit.retryAfterSec),
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const parsed = createOrderSchema.safeParse(body);
@@ -16,37 +33,48 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // Map items with REAL prices from client
-    const items = data.items.map((item) => ({
-      menuItemId: item.menuItemId,
-      variantId: item.variantId || null,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      extrasPrice: item.extrasPrice,
-      itemName: item.itemName,
-      variantName: item.variantName || null,
-      extrasJson: item.extras as Array<{ name: string; price: number }>,
-      specialInstructions: item.specialInstructions || null,
-    }));
-
-    // Calculate totals from actual item prices
-    const subtotal = data.items.reduce(
-      (sum, item) => sum + (item.unitPrice + item.extrasPrice) * item.quantity,
-      0
-    );
-    const deliveryFee = data.orderType === "delivery" ? 350 : 0;
-    const total = subtotal + deliveryFee;
+    // Server-authoritative pricing — NEVER trust client-sent unitPrice /
+    // extrasPrice. We recompute from the DB, which also enforces
+    // availability.
+    let priced;
+    try {
+      priced = await priceCartServerSide({
+        items: data.items.map((it) => ({
+          menuItemId: it.menuItemId,
+          variantId: it.variantId ?? null,
+          quantity: it.quantity,
+          extras: it.extras.map((e) => ({ id: e.id })),
+          specialInstructions: it.specialInstructions ?? null,
+        })),
+        orderType: data.orderType,
+      });
+    } catch (err) {
+      if (err instanceof PricingError) {
+        return NextResponse.json({ error: err.message }, { status: 400 });
+      }
+      throw err;
+    }
 
     const result = await createOrder({
-      orderType: data.orderType as "collect" | "delivery" | "dine_in",
+      orderType: data.orderType,
       customerName: data.customerName,
       customerPhone: data.customerPhone,
       customerEmail: data.customerEmail || undefined,
       notes: data.notes,
-      subtotal,
-      deliveryFee,
-      total,
-      items,
+      subtotal: priced.subtotal,
+      deliveryFee: priced.deliveryFee,
+      total: priced.total,
+      items: priced.items.map((it) => ({
+        menuItemId: it.menuItemId,
+        variantId: it.variantId,
+        quantity: it.quantity,
+        unitPrice: it.unitPrice,
+        extrasPrice: it.extrasPrice,
+        itemName: it.itemName,
+        variantName: it.variantName,
+        extrasJson: it.extrasJson.map(({ name, price }) => ({ name, price })),
+        specialInstructions: it.specialInstructions,
+      })),
       deliveryAddress: data.deliveryAddress || null,
     });
 
@@ -62,7 +90,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ orderId: order.id });
   } catch (err) {
-    console.error("Order creation error:", err);
+    // Keep internal details out of client-visible responses and log locally
+    // with a short marker so we can grep them without shipping stack traces
+    // to production logs.
+    if (process.env.NODE_ENV !== "production") {
+      console.error("[api/orders] creation error:", err);
+    } else {
+      console.error("[api/orders] creation error");
+    }
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

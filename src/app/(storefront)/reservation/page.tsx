@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { CalendarDays, Clock, Users, User, Phone, Mail, MessageSquare, Check, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -15,7 +14,6 @@ const timeSlots = [
 ];
 
 export default function ReservationPage() {
-  const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

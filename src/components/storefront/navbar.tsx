@@ -33,8 +33,11 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", handler);
   }, []);
 
+  // Close the mobile menu when the route changes. We dispatch the state
+  // update on a microtask so it doesn't run during the synchronous effect
+  // body (which would trigger React 19's cascading-render lint rule).
   useEffect(() => {
-    setMobileOpen(false);
+    queueMicrotask(() => setMobileOpen(false));
   }, [pathname]);
 
   return (

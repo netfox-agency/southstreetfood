@@ -1,18 +1,46 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle, Circle, ArrowLeft, Phone, Clock } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { cn, formatPrice } from "@/lib/utils";
+import { CheckCircle, Circle, ArrowLeft, Phone } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { OrderStatus } from "@/types/database";
 
 const STEPS: { status: OrderStatus; label: string; desc: string }[] = [
-  { status: "paid", label: "Commande recue", desc: "Le restaurant a recu votre commande" },
-  { status: "preparing", label: "En preparation", desc: "Votre commande est en cuisine" },
+  {
+    status: "paid",
+    label: "Commande recue",
+    desc: "Le restaurant a recu votre commande",
+  },
+  {
+    status: "preparing",
+    label: "En preparation",
+    desc: "Votre commande est en cuisine",
+  },
   { status: "ready", label: "Prete !", desc: "Vous pouvez la recuperer" },
 ];
+
+const TERMINAL_STATUSES: OrderStatus[] = [
+  "picked_up",
+  "delivered",
+  "out_for_delivery",
+  "cancelled",
+];
+
+// Poll every 5s for active orders, 30s for terminal ones (rare but keeps the
+// browser from hammering the API if the tab is left open).
+const ACTIVE_POLL_MS = 5_000;
+const TERMINAL_POLL_MS = 30_000;
+
+type TrackedOrder = {
+  id: string;
+  order_number: number;
+  order_type: "collect" | "delivery" | "dine_in";
+  status: OrderStatus;
+  created_at: string;
+  estimated_ready_at: string | null;
+};
 
 export default function TrackingPage({
   params,
@@ -20,46 +48,63 @@ export default function TrackingPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const [order, setOrder] = useState<Record<string, unknown> | null>(null);
+  const [order, setOrder] = useState<TrackedOrder | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
+  // We read the current status inside the polling loop via this ref so the
+  // interval can adapt its cadence without tearing down the effect on
+  // every state change.
+  const statusRef = useRef<OrderStatus | null>(null);
+  statusRef.current = order?.status ?? null;
 
-  // Initial fetch
   useEffect(() => {
-    async function load() {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("orders")
-        .select("*, order_items(*)")
-        .eq("id", id)
-        .single();
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
 
-      setOrder(data);
-      setLoading(false);
-    }
-    load();
-  }, [id]);
+    async function fetchOnce() {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
 
-  // Realtime subscription
-  useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`track-${id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "orders",
-          filter: `id=eq.${id}`,
-        },
-        (payload) => {
-          setOrder((prev) => (prev ? { ...prev, ...payload.new } : payload.new));
+      try {
+        const res = await fetch(`/api/orders/${id}/track`, {
+          signal: ac.signal,
+          cache: "no-store",
+        });
+        if (res.status === 404) {
+          if (!cancelled) {
+            setNotFound(true);
+            setLoading(false);
+          }
+          return;
         }
-      )
-      .subscribe();
+        if (!res.ok) return;
+        const json = (await res.json()) as { order: TrackedOrder };
+        if (!cancelled) {
+          setOrder(json.order);
+          setLoading(false);
+        }
+      } catch {
+        // swallow abort / network errors; next tick will retry
+      } finally {
+        if (!cancelled) {
+          const interval =
+            statusRef.current &&
+            TERMINAL_STATUSES.includes(statusRef.current)
+              ? TERMINAL_POLL_MS
+              : ACTIVE_POLL_MS;
+          timer = setTimeout(fetchOnce, interval);
+        }
+      }
+    }
+
+    fetchOnce();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      abortRef.current?.abort();
+      if (timer) clearTimeout(timer);
     };
   }, [id]);
 
@@ -71,7 +116,7 @@ export default function TrackingPage({
     );
   }
 
-  if (!order) {
+  if (notFound || !order) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-center">
@@ -84,10 +129,10 @@ export default function TrackingPage({
     );
   }
 
-  const currentStatus = order.status as OrderStatus;
-  const orderNumber = order.order_number as number;
+  const currentStatus = order.status;
+  const orderNumber = order.order_number;
   const currentIdx = STEPS.findIndex((s) => s.status === currentStatus);
-  const isDone = ["picked_up", "delivered", "out_for_delivery"].includes(currentStatus);
+  const isDone = TERMINAL_STATUSES.includes(currentStatus);
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,11 +166,15 @@ export default function TrackingPage({
             <h2 className="text-xl font-bold text-foreground mb-2">
               {currentStatus === "out_for_delivery"
                 ? "En cours de livraison"
+                : currentStatus === "cancelled"
+                ? "Commande annulee"
                 : "Commande terminee"}
             </h2>
             <p className="text-muted-foreground">
               {currentStatus === "out_for_delivery"
                 ? "Votre livreur est en route"
+                : currentStatus === "cancelled"
+                ? "Contactez le restaurant pour plus d'infos"
                 : "Merci pour votre commande !"}
             </p>
           </div>
@@ -184,9 +233,7 @@ export default function TrackingPage({
         )}
 
         <div className="card-premium p-5 text-center">
-          <p className="text-sm text-muted-foreground mb-3">
-            Un probleme ?
-          </p>
+          <p className="text-sm text-muted-foreground mb-3">Un probleme ?</p>
           <a
             href="tel:"
             className="btn-outline inline-flex items-center gap-2 !py-2.5 !px-5 text-sm"

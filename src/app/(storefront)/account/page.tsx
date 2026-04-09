@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, ShoppingBag, Gift, ChevronRight, LogOut } from "lucide-react";
+import { ShoppingBag, Gift, ChevronRight, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
