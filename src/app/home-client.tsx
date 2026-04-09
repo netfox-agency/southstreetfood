@@ -2,56 +2,52 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import {
-  motion,
-  useInView,
-  useScroll,
-  useTransform,
-  type MotionValue,
-} from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { ArrowRight, Clock, MapPin, Truck, Star } from "lucide-react";
 
-const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   Motion primitives — subtle, Apple-grade
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+const fadeUp = {
+  hidden: { opacity: 0, y: 30, filter: "blur(8px)" },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { delay: i * 0.12, duration: 0.9, ease },
+  }),
+};
 
-function FadeIn({
+function Reveal({
   children,
-  delay = 0,
-  y = 20,
   className = "",
-  as = "div",
+  id,
 }: {
   children: React.ReactNode;
-  delay?: number;
-  y?: number;
   className?: string;
-  as?: "div" | "p" | "h1" | "h2" | "h3" | "span";
+  id?: string;
 }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-60px" });
-  const MotionTag = motion[as] as typeof motion.div;
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   return (
-    <MotionTag
+    <motion.section
       ref={ref}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
-      transition={{ duration: 0.9, ease, delay }}
+      id={id}
+      initial="hidden"
+      animate={inView ? "visible" : "hidden"}
       className={className}
     >
       {children}
-    </MotionTag>
+    </motion.section>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NAVBAR — glass, scroll-aware
+   NAVBAR
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", h, { passive: true });
@@ -65,34 +61,19 @@ function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          className={`font-semibold text-[15px] tracking-tight transition-colors ${
-            scrolled ? "text-foreground" : "text-white"
-          }`}
-        >
+        <Link href="/" className="font-extrabold text-lg tracking-tight">
           South Street Food
         </Link>
-        <div className="flex items-center gap-7">
+        <div className="flex items-center gap-6">
           <Link
             href="/menu"
-            className={`text-[13px] font-medium transition-colors hidden sm:block ${
-              scrolled
-                ? "text-muted-foreground hover:text-foreground"
-                : "text-white/75 hover:text-white"
-            }`}
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
           >
             La carte
           </Link>
-          <Link
-            href="/menu"
-            className={`text-[13px] font-semibold px-4 py-2 rounded-full transition-all ${
-              scrolled
-                ? "bg-foreground text-background hover:opacity-90"
-                : "bg-white text-foreground hover:bg-white/90"
-            }`}
-          >
+          <Link href="/menu" className="btn-primary !py-2.5 !px-5 text-sm">
             Commander
+            <ArrowRight className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -101,143 +82,139 @@ function Navbar() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HERO — Video + refined typography
-   Apple-style: restrained, centered, quiet confidence
+   HERO — Clean, bold, Burger King / G La Dalle level
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Hero() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  // Gentle parallax — nothing aggressive
-  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.08]);
-  const contentY = useTransform(scrollYProgress, [0, 1], ["0%", "-10%"]);
-  const contentOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
-
   return (
-    <section
-      ref={ref}
-      className="relative h-[100svh] w-full overflow-hidden bg-black"
-    >
-      {/* Video background */}
-      <motion.div style={{ scale: videoScale }} className="absolute inset-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          poster="/video/hero-poster.jpg"
-          className="w-full h-full object-cover"
-        >
-          <source src="/video/hero-burger.mp4" type="video/mp4" />
-        </video>
-      </motion.div>
+    <section className="dark-section relative min-h-screen flex items-center overflow-hidden">
+      {/* Subtle warm gradient — not neon overload */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a14] via-[#0f0f1a] to-[#0a1a1a]" />
 
-      {/* Subtle gradient — not heavy-handed */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/25 to-black/70 pointer-events-none" />
+      {/* One soft ambient glow — restrained */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand/5 rounded-full blur-[200px]" />
 
-      {/* Content */}
-      <motion.div
-        style={{ y: contentY, opacity: contentOpacity }}
-        className="relative z-10 h-full flex flex-col justify-center items-center text-center px-6"
-      >
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease, delay: 0.3 }}
-          className="text-white/70 text-[13px] font-medium tracking-[0.18em] uppercase mb-5"
-        >
-          Bayonne &middot; Anglet &middot; Biarritz
-        </motion.p>
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 w-full">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Left — Text */}
+          <div>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.2 }}
+              className="text-brand font-semibold text-sm tracking-wide uppercase mb-4"
+            >
+              Bayonne &middot; Anglet &middot; Biarritz
+            </motion.p>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.1, ease, delay: 0.5 }}
-          className="text-white font-semibold text-[44px] sm:text-[72px] lg:text-[96px] leading-[1.02] tracking-[-0.035em] max-w-4xl"
-        >
-          La street food,
-          <br />
-          réinventée.
-        </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 1.2, ease, delay: 0.3 }}
+              className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[0.95] tracking-tight"
+            >
+              Burgers, tacos
+              <br />
+              &amp; wraps
+              <br />
+              <span className="text-brand">artisanaux.</span>
+            </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease, delay: 0.75 }}
-          className="mt-6 text-white/75 text-[17px] sm:text-[19px] leading-relaxed max-w-lg font-normal"
-        >
-          Burgers, tacos et wraps artisanaux.
-          Livraison jusqu&apos;à 4h du matin.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.6 }}
+              className="mt-6 text-white/45 text-lg leading-relaxed max-w-sm"
+            >
+              Le concept street food exclusif de Bayonne.
+              Livraison jusqu&apos;a 4h du matin sur tout le BAB.
+            </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease, delay: 0.95 }}
-          className="mt-10 flex items-center gap-6"
-        >
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-1.5 bg-white text-foreground font-medium text-[15px] px-6 py-3 rounded-full hover:bg-white/90 transition-all"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease, delay: 0.8 }}
+              className="mt-10 flex flex-wrap gap-4"
+            >
+              <Link href="/menu" className="btn-primary text-base !py-4 !px-8">
+                Je commande
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="#concept" className="btn-outline text-base !py-4 !px-8 text-white border-white/15 hover:border-white/40">
+                Decouvrir
+              </Link>
+            </motion.div>
+
+            {/* Minimal info chips */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.2, duration: 0.8 }}
+              className="mt-12 flex flex-wrap gap-3"
+            >
+              {[
+                { icon: Clock, text: "Jusqu'a 4h" },
+                { icon: Truck, text: "Livraison 30 min" },
+                { icon: MapPin, text: "Click & Collect" },
+              ].map((f) => (
+                <span
+                  key={f.text}
+                  className="flex items-center gap-2 text-white/30 text-sm"
+                >
+                  <f.icon className="h-3.5 w-3.5" />
+                  {f.text}
+                </span>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Right — Hero video */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1, ease, delay: 0.5 }}
+            className="hidden lg:block"
           >
-            Commander
-          </Link>
-          <Link
-            href="#story"
-            className="inline-flex items-center gap-1.5 text-white text-[15px] font-medium hover:opacity-80 transition-opacity"
-          >
-            Découvrir
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </motion.div>
-      </motion.div>
-    </section>
-  );
-}
+            <div className="relative">
+              <div className="aspect-square rounded-[32px] border border-white/[0.06] overflow-hidden shadow-2xl shadow-black/40">
+                <video
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  preload="metadata"
+                  poster="/video/hero-poster.jpg"
+                  className="w-full h-full object-cover"
+                >
+                  <source src="/video/hero-burger.mp4" type="video/mp4" />
+                </video>
+              </div>
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   STORY — Single bold statement on white
-   Apple does this everywhere: one sentence, tons of space
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Story() {
-  return (
-    <section id="story" className="bg-background py-32 sm:py-48">
-      <div className="max-w-5xl mx-auto px-6">
-        <FadeIn as="p" className="text-[13px] font-medium tracking-[0.18em] uppercase text-muted-foreground mb-8">
-          Notre approche
-        </FadeIn>
-        <FadeIn
-          as="h2"
-          delay={0.1}
-          className="text-foreground font-semibold text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.05] tracking-[-0.03em] max-w-4xl"
-        >
-          De vrais ingrédients.
-          <br />
-          <span className="text-muted-foreground">
-            De vraies recettes.
-          </span>
-        </FadeIn>
-        <FadeIn
-          as="p"
-          delay={0.2}
-          className="mt-8 text-muted-foreground text-[17px] sm:text-[19px] leading-relaxed max-w-2xl"
-        >
-          Rien de surgelé. Rien de préparé à l&apos;avance. Chaque burger,
-          chaque tacos, chaque wrap est assemblé à la minute, à la commande,
-          avec des produits frais sélectionnés le matin même.
-        </FadeIn>
+              {/* Floating card — reviews */}
+              <div className="absolute -bottom-6 -left-6 glass rounded-2xl px-5 py-4 flex items-center gap-3">
+                <div className="flex -space-x-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className="h-4 w-4 text-neon-yellow fill-neon-yellow"
+                    />
+                  ))}
+                </div>
+                <div>
+                  <div className="text-white text-sm font-semibold">4.8/5</div>
+                  <div className="text-white/40 text-xs">+500 avis</div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   SHOWCASE — Scroll-pinned, but refined
+   BEST SELLERS — Real items from Supabase
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 export interface BestSellerItem {
@@ -253,306 +230,330 @@ function formatPrice(cents: number) {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
-function ShowcaseSlide({
-  item,
-  progress,
-  index,
-  total,
-}: {
-  item: BestSellerItem;
-  progress: MotionValue<number>;
-  index: number;
-  total: number;
-}) {
-  const step = 1 / total;
-  const start = index * step;
-  const end = start + step;
-  const fadeIn = start + step * 0.15;
-  const fadeOut = end - step * 0.15;
-
-  const opacity = useTransform(
-    progress,
-    [start, fadeIn, fadeOut, end],
-    [0, 1, 1, 0]
-  );
-  const scale = useTransform(
-    progress,
-    [start, fadeIn, fadeOut, end],
-    [0.94, 1, 1, 0.98]
-  );
-  const y = useTransform(
-    progress,
-    [start, fadeIn, fadeOut, end],
-    [30, 0, 0, -20]
-  );
-
+function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <motion.div style={{ opacity }} className="absolute inset-0 flex items-center">
-      <div className="w-full grid lg:grid-cols-2 gap-12 lg:gap-20 items-center px-6 lg:px-20 max-w-7xl mx-auto">
-        {/* Image */}
-        <motion.div
-          style={{ scale, y }}
-          className="relative aspect-square lg:aspect-auto lg:h-[60vh] w-full max-w-lg mx-auto"
-        >
-          {item.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <div className="flex items-center justify-center w-full h-full text-[180px]">
-              🍔
-            </div>
-          )}
-        </motion.div>
-
-        {/* Text */}
-        <motion.div style={{ y }} className="text-foreground">
-          <div className="text-muted-foreground text-[12px] font-medium tracking-[0.2em] uppercase mb-5">
-            N°{String(index + 1).padStart(2, "0")} &mdash; Incontournable
-          </div>
-          <h3 className="font-semibold text-[40px] sm:text-[56px] lg:text-[64px] leading-[1.02] tracking-[-0.03em] mb-5">
-            {item.name}
-          </h3>
-          {item.description && (
-            <p className="text-muted-foreground text-[17px] leading-relaxed max-w-md mb-8">
-              {item.description}
-            </p>
-          )}
-          <div className="flex items-center gap-5">
-            <span className="text-[22px] font-semibold text-foreground">
-              {formatPrice(item.base_price)} &euro;
-            </span>
-            <Link
-              href={`/item/${item.slug}`}
-              className="inline-flex items-center gap-1.5 text-[15px] font-medium text-foreground hover:opacity-70 transition-opacity"
-            >
-              Composer
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-}
-
-function ProgressDot({
-  progress,
-  index,
-  total,
-}: {
-  progress: MotionValue<number>;
-  index: number;
-  total: number;
-}) {
-  const step = 1 / total;
-  const opacity = useTransform(
-    progress,
-    [index * step, index * step + step * 0.15, (index + 1) * step - step * 0.15, (index + 1) * step],
-    [0.25, 1, 1, 0.25]
-  );
-  const width = useTransform(
-    progress,
-    [index * step, index * step + step * 0.15, (index + 1) * step - step * 0.15, (index + 1) * step],
-    [16, 32, 32, 16]
-  );
-  return (
-    <motion.div
-      style={{ opacity, width }}
-      className="h-[3px] rounded-full bg-foreground"
-    />
-  );
-}
-
-function Showcase({ items }: { items: BestSellerItem[] }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end end"],
-  });
-
-  if (items.length === 0) return null;
-  const total = items.length;
-
-  return (
-    <section
-      ref={ref}
-      className="relative bg-background"
-      style={{ height: `${total * 100}vh` }}
-    >
-      <div className="sticky top-0 h-screen overflow-hidden">
-        {/* Section label */}
-        <div className="absolute top-24 left-6 sm:left-12 lg:left-20 z-10">
-          <div className="text-[12px] font-medium tracking-[0.2em] uppercase text-muted-foreground">
+    <Reveal className="py-24 sm:py-32">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div variants={fadeUp} custom={0} className="mb-12">
+          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
+            Les best sellers
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
             Nos incontournables
-          </div>
-        </div>
+          </h2>
+        </motion.div>
 
-        {/* Progress dots (bottom center) */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2">
-          {items.map((_, i) => (
-            <ProgressDot
-              key={i}
-              progress={scrollYProgress}
-              index={i}
-              total={total}
-            />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {items.map((item, i) => (
+            <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
+              <Link href={`/item/${item.slug}`} className="block">
+                <div className="card-premium hover-lift p-0 overflow-hidden cursor-pointer">
+                  {/* Image area */}
+                  <div className="aspect-square bg-gradient-to-br from-muted to-white flex items-center justify-center overflow-hidden">
+                    {item.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={item.image_url}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-7xl">🍔</span>
+                    )}
+                  </div>
+                  {/* Content */}
+                  <div className="p-5">
+                    <h3 className="font-bold text-base line-clamp-1">
+                      {item.name}
+                    </h3>
+                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2 min-h-[2.5rem]">
+                      {item.description || ""}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="font-bold text-brand text-lg">
+                        {formatPrice(item.base_price)} &euro;
+                      </span>
+                      <span className="h-9 w-9 rounded-xl bg-brand text-white flex items-center justify-center text-lg font-bold">
+                        +
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
           ))}
         </div>
 
-        {/* Slides */}
-        {items.map((item, i) => (
-          <ShowcaseSlide
-            key={item.id}
-            item={item}
-            progress={scrollYProgress}
-            index={i}
-            total={total}
-          />
-        ))}
+        <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
+          <Link href="/menu" className="btn-outline">
+            Voir toute la carte
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </motion.div>
       </div>
-    </section>
+    </Reveal>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   FEATURES — 3 columns, minimal, lots of space
+   CONCEPT — Le concept
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Concept() {
+  return (
+    <Reveal id="concept" className="dark-section py-24 sm:py-32">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Images */}
+          <motion.div variants={fadeUp} custom={0}>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="aspect-[3/4] rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-6xl">
+                🍔
+              </div>
+              <div className="space-y-4">
+                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                  🍟
+                </div>
+                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                  🌮
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Text */}
+          <div>
+            <motion.p
+              variants={fadeUp}
+              custom={0}
+              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
+            >
+              Le concept
+            </motion.p>
+            <motion.h2
+              variants={fadeUp}
+              custom={1}
+              className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[0.95] mb-6"
+            >
+              Concept exclusif
+              <br />
+              a Bayonne
+            </motion.h2>
+            <motion.p
+              variants={fadeUp}
+              custom={2}
+              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md"
+            >
+              Notre menu varie vous regale a petit prix, sans contrainte,
+              a tout moment de la soiree. Seul, en famille ou entre amis.
+              Des ingredients frais, des recettes qui envoient.
+            </motion.p>
+            <motion.div variants={fadeUp} custom={3}>
+              <Link href="/menu" className="btn-primary">
+                Voir la carte
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DELIVERY — Livraison section
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Delivery() {
+  return (
+    <Reveal className="py-24 sm:py-32 bg-muted">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          {/* Text */}
+          <div>
+            <motion.p
+              variants={fadeUp}
+              custom={0}
+              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
+            >
+              Livraison
+            </motion.p>
+            <motion.h2
+              variants={fadeUp}
+              custom={1}
+              className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.95] mb-6"
+            >
+              Livraison toute
+              <br />
+              la nuit
+            </motion.h2>
+            <motion.p
+              variants={fadeUp}
+              custom={2}
+              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md"
+            >
+              Ouvert jusqu&apos;a 4h du matin avec livraison rapide
+              sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
+              chez vous.
+            </motion.p>
+
+            {/* Stats */}
+            <motion.div
+              variants={fadeUp}
+              custom={3}
+              className="grid grid-cols-3 gap-6"
+            >
+              {[
+                { value: "30", unit: "min", label: "Temps moyen" },
+                { value: "4h", unit: "", label: "Ouvert jusqu'a" },
+                { value: "BAB", unit: "", label: "Zone couverte" },
+              ].map((s) => (
+                <div key={s.label}>
+                  <div className="text-3xl font-black text-brand">
+                    {s.value}
+                    <span className="text-lg">{s.unit}</span>
+                  </div>
+                  <div className="text-muted-foreground text-sm mt-1">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+
+          {/* Image */}
+          <motion.div variants={fadeUp} custom={2}>
+            <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-accent/10 to-muted border border-border overflow-hidden flex items-center justify-center img-premium">
+              <div className="text-center text-muted-foreground">
+                <Truck className="h-16 w-16 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Photo livreur scooter</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   FEATURES — 3 features propres
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Features() {
   const items = [
     {
       icon: Star,
-      title: "Qualité artisanale",
-      desc: "Ingrédients frais sélectionnés chaque jour. Des recettes maison qui font la différence.",
+      title: "Qualite artisanale",
+      desc: "Ingredients frais selectionnes chaque jour. Des recettes maison qui font la difference.",
     },
     {
       icon: Truck,
-      title: "Livré en 30 min",
-      desc: "Commandez en ligne, on livre chaud chez vous. Sur tout le BAB et alentours.",
+      title: "Livre en 30 min",
+      desc: "Commandez en ligne, on livre chaud chez vous. Bayonne, Anglet, Biarritz et alentours.",
     },
     {
       icon: MapPin,
       title: "Click & Collect",
-      desc: "Commandez, choisissez votre créneau, et récupérez au restaurant. Zéro attente.",
+      desc: "Commandez, choisissez votre creneau, et recuperez au restaurant. Zero attente.",
     },
   ];
 
   return (
-    <section className="py-32 sm:py-48 bg-background">
+    <Reveal className="py-24 sm:py-32">
       <div className="max-w-6xl mx-auto px-6">
-        <FadeIn
-          as="p"
-          className="text-[13px] font-medium tracking-[0.18em] uppercase text-muted-foreground mb-4 text-center"
-        >
-          Pourquoi nous
-        </FadeIn>
-        <FadeIn
-          as="h2"
-          delay={0.1}
-          className="text-foreground font-semibold text-[36px] sm:text-[48px] lg:text-[56px] leading-[1.05] tracking-[-0.03em] text-center max-w-3xl mx-auto"
-        >
-          Trois bonnes raisons.
-        </FadeIn>
-
-        <div className="mt-20 grid sm:grid-cols-3 gap-x-12 gap-y-16">
+        <div className="grid sm:grid-cols-3 gap-6">
           {items.map((f, i) => (
-            <FadeIn key={f.title} delay={0.15 + i * 0.08}>
-              <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mb-6">
-                <f.icon className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+            <motion.div key={f.title} variants={fadeUp} custom={i}>
+              <div className="card-premium p-8 h-full">
+                <div className="h-12 w-12 rounded-2xl bg-brand/8 flex items-center justify-center mb-5">
+                  <f.icon className="h-6 w-6 text-brand" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {f.desc}
+                </p>
               </div>
-              <h3 className="font-semibold text-[19px] text-foreground mb-2 tracking-tight">
-                {f.title}
-              </h3>
-              <p className="text-muted-foreground text-[15px] leading-relaxed">
-                {f.desc}
-              </p>
-            </FadeIn>
+            </motion.div>
           ))}
         </div>
       </div>
-    </section>
+    </Reveal>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NIGHT — Subtle dark section
+   RESTAURANT — Photo lieu
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-function Night() {
+function Restaurant() {
   return (
-    <section className="bg-[#0a0a0a] text-white py-32 sm:py-48">
-      <div className="max-w-5xl mx-auto px-6 text-center">
-        <FadeIn
-          as="p"
-          className="text-[13px] font-medium tracking-[0.18em] uppercase text-white/50 mb-6"
-        >
-          La nuit
-        </FadeIn>
-        <FadeIn
-          as="h2"
-          delay={0.1}
-          className="text-white font-semibold text-[40px] sm:text-[56px] lg:text-[72px] leading-[1.05] tracking-[-0.03em] max-w-3xl mx-auto"
-        >
-          Ouvert jusqu&apos;à 4h.
-          <br />
-          <span className="text-white/55">Livré en 30 minutes.</span>
-        </FadeIn>
-        <FadeIn
-          as="p"
-          delay={0.2}
-          className="mt-8 text-white/60 text-[17px] sm:text-[19px] leading-relaxed max-w-xl mx-auto"
-        >
-          Que ce soit pour un dîner tardif ou une sortie qui s&apos;éternise,
-          on est là. Sur Bayonne, Anglet, Biarritz et alentours.
-        </FadeIn>
-        <FadeIn delay={0.3} className="mt-12">
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-1.5 bg-white text-foreground font-medium text-[15px] px-6 py-3 rounded-full hover:bg-white/90 transition-all"
-          >
-            Voir la carte
-          </Link>
-        </FadeIn>
+    <Reveal className="py-24 sm:py-32 bg-muted">
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div variants={fadeUp} custom={0} className="text-center mb-12">
+          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
+            Le restaurant
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+            Sur place ou a emporter
+          </h2>
+        </motion.div>
+
+        <motion.div variants={fadeUp} custom={1}>
+          <div className="relative aspect-[21/9] rounded-3xl bg-gradient-to-br from-accent/5 to-muted border border-border overflow-hidden img-premium">
+            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MapPin className="h-12 w-12 mx-auto mb-3 opacity-20" />
+                <p className="text-sm">Photo interieur restaurant</p>
+              </div>
+            </div>
+            {/* Bottom gradient overlay */}
+            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-6 left-8">
+              <h3 className="text-white text-xl font-bold">
+                South Street Food
+              </h3>
+              <p className="text-white/60 text-sm">Bayonne, France</p>
+            </div>
+          </div>
+        </motion.div>
       </div>
-    </section>
+    </Reveal>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CTA — final
+   CTA Final
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function CTA() {
   return (
-    <section className="py-32 sm:py-48 bg-background">
+    <Reveal className="py-24 sm:py-32">
       <div className="max-w-4xl mx-auto px-6 text-center">
-        <FadeIn
-          as="h2"
-          className="text-foreground font-semibold text-[44px] sm:text-[64px] lg:text-[80px] leading-[1.02] tracking-[-0.035em]"
+        <motion.h2
+          variants={fadeUp}
+          custom={0}
+          className="text-4xl sm:text-5xl font-black tracking-tight mb-6"
         >
-          Prêt à commander ?
-        </FadeIn>
-        <FadeIn
-          as="p"
-          delay={0.1}
-          className="mt-6 text-muted-foreground text-[17px] sm:text-[19px] max-w-md mx-auto"
+          Une faim de loup ?
+        </motion.h2>
+        <motion.p
+          variants={fadeUp}
+          custom={1}
+          className="text-muted-foreground text-lg mb-10 max-w-md mx-auto"
         >
-          30 minutes pour vous régaler. Chez vous, ou au restaurant.
-        </FadeIn>
-        <FadeIn delay={0.2} className="mt-10">
-          <Link
-            href="/menu"
-            className="inline-flex items-center gap-1.5 bg-foreground text-background font-medium text-[15px] px-7 py-3.5 rounded-full hover:opacity-90 transition-opacity"
-          >
-            Commander
+          Commandez maintenant et recevez votre commande en 30 minutes,
+          ou recuperez-la au restaurant.
+        </motion.p>
+        <motion.div variants={fadeUp} custom={2}>
+          <Link href="/menu" className="btn-primary text-base !py-4 !px-10">
+            Commander maintenant
+            <ArrowRight className="h-4 w-4" />
           </Link>
-        </FadeIn>
+        </motion.div>
       </div>
-    </section>
+    </Reveal>
   );
 }
 
@@ -562,69 +563,55 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border py-16 bg-background">
+    <footer className="border-t border-border py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid sm:grid-cols-3 gap-12 mb-12">
           <div>
-            <h4 className="font-semibold text-[15px] text-foreground mb-2">
-              South Street Food
-            </h4>
-            <p className="text-muted-foreground text-[13px] leading-relaxed max-w-xs">
+            <h4 className="font-bold text-base mb-1">South Street Food</h4>
+            <p className="text-muted-foreground text-sm leading-relaxed">
               Le concept street food exclusif de Bayonne.
+              Ouvert jusqu&apos;a 4h du matin.
             </p>
           </div>
           <div>
-            <h4 className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.15em] mb-4">
+            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
               Navigation
             </h4>
-            <ul className="space-y-3">
-              {[
-                { label: "La carte", href: "/menu" },
-                { label: "Commander", href: "/menu" },
-                { label: "Mon compte", href: "/account" },
-              ].map((l) => (
-                <li key={l.label}>
+            <ul className="space-y-2.5">
+              {["La carte", "Commander", "Mon compte"].map((l) => (
+                <li key={l}>
                   <Link
-                    href={l.href}
-                    className="text-foreground text-[13px] hover:opacity-60 transition-opacity"
+                    href="/menu"
+                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
                   >
-                    {l.label}
+                    {l}
                   </Link>
                 </li>
               ))}
             </ul>
           </div>
           <div>
-            <h4 className="text-muted-foreground text-[11px] font-medium uppercase tracking-[0.15em] mb-4">
+            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
               Infos
             </h4>
-            <ul className="space-y-3 text-[13px]">
-              <li className="text-foreground">Bayonne, France</li>
-              <li className="text-muted-foreground">
-                Bayonne &middot; Anglet &middot; Biarritz
-              </li>
-              <li className="text-foreground flex items-center gap-1.5">
-                <Clock className="h-3 w-3" />
-                Jusqu&apos;à 4h
+            <ul className="space-y-2.5 text-sm text-muted-foreground">
+              <li>Bayonne, France</li>
+              <li>Livraison Bayonne &middot; Anglet &middot; Biarritz</li>
+              <li className="text-neon-green font-medium">
+                Ouvert jusqu&apos;a 4h
               </li>
             </ul>
           </div>
         </div>
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-muted-foreground text-[12px]">
+          <p className="text-muted-foreground/50 text-xs">
             &copy; {new Date().getFullYear()} South Street Food
           </p>
-          <div className="flex gap-6">
-            <Link
-              href="#"
-              className="text-muted-foreground hover:text-foreground text-[12px] transition-colors"
-            >
-              Mentions légales
+          <div className="flex gap-5">
+            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
+              Mentions legales
             </Link>
-            <Link
-              href="#"
-              className="text-muted-foreground hover:text-foreground text-[12px] transition-colors"
-            >
+            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
               CGV
             </Link>
           </div>
@@ -644,10 +631,11 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
       <Navbar />
       <main>
         <Hero />
-        <Story />
-        <Showcase items={bestSellers} />
+        <BestSellers items={bestSellers} />
+        <Concept />
+        <Delivery />
         <Features />
-        <Night />
+        <Restaurant />
         <CTA />
       </main>
       <Footer />
