@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Search, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
 
 interface MenuItemData {
   id: string;
@@ -63,26 +62,9 @@ function MenuItemRow({
   item: MenuItemData;
   categorySlug: string;
 }) {
-  const addItem = useCartStore((s) => s.addItem);
-
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addItem({
-      menuItemId: item.id,
-      menuItemName: item.name,
-      menuItemImage: item.image_url,
-      variantId: null,
-      variantName: null,
-      extras: [],
-      quantity: 1,
-      unitPrice: item.base_price,
-      extrasPrice: 0,
-      specialInstructions: null,
-    });
-    toast.success(`${item.name} ajoute au panier`);
-  };
-
+  // NOTE: le "+" est purement visuel — toute la carte est un Link qui
+  // amene sur la fiche produit pour que le client puisse composer
+  // (variants, extras, etc.) exactement comme sur Uber Eats.
   return (
     <Link href={`/item/${item.slug}`}>
       <div
@@ -124,12 +106,12 @@ function MenuItemRow({
             </div>
           )}
           {item.is_available && (
-            <button
-              onClick={handleQuickAdd}
-              className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 active:scale-95 transition-transform cursor-pointer border border-border"
+            <div
+              aria-hidden="true"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
             >
               <Plus className="h-4 w-4 text-foreground" />
-            </button>
+            </div>
           )}
         </div>
       </div>
