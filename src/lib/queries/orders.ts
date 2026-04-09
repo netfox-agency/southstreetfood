@@ -2,7 +2,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import type { OrderStatus } from "@/types/database";
 
 export async function createOrder(data: {
-  orderType: "collect" | "delivery";
+  orderType: "collect" | "delivery" | "dine_in";
   customerName: string;
   customerPhone: string;
   customerEmail?: string;

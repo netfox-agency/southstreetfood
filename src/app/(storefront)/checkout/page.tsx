@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, User, Phone, Mail, MessageSquare, ShoppingBag, MapPin, Truck, Check } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { toast } from "sonner";
 
@@ -171,15 +171,22 @@ export default function CheckoutPage() {
 
             {/* Order type */}
             <div className="flex items-center gap-2 text-sm text-[#86868b] mb-4 pb-4 border-b border-[#f0f0f2]">
-              {orderType === "delivery" ? (
+              {orderType === "delivery" && (
                 <>
                   <Truck className="h-4 w-4" />
                   <span>Livraison</span>
                 </>
-              ) : (
+              )}
+              {orderType === "collect" && (
                 <>
                   <MapPin className="h-4 w-4" />
-                  <span>{orderType === "collect" ? "A emporter" : "Sur place"}</span>
+                  <span>A emporter</span>
+                </>
+              )}
+              {orderType === "dine_in" && (
+                <>
+                  <Store className="h-4 w-4" />
+                  <span>Sur place</span>
                 </>
               )}
             </div>
@@ -226,9 +233,9 @@ export default function CheckoutPage() {
             <div>
               <p className="text-sm font-medium text-[#1d1d1f]">Paiement sur place</p>
               <p className="text-[13px] text-[#86868b]">
-                {orderType === "delivery"
-                  ? "Vous payez a la reception de votre commande"
-                  : "Vous payez au comptoir lors du retrait"}
+                {orderType === "delivery" && "Vous payez à la réception de votre commande"}
+                {orderType === "collect" && "Vous payez au comptoir lors du retrait"}
+                {orderType === "dine_in" && "Vous payez à table ou au comptoir"}
               </p>
             </div>
           </div>

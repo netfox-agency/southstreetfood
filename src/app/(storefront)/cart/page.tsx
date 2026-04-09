@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 
 export default function CartPage() {
@@ -40,8 +40,9 @@ export default function CartPage() {
   }
 
   const orderTypes = [
-    { key: "collect" as const, label: "A emporter", sub: "Au restaurant", icon: MapPin },
-    { key: "delivery" as const, label: "Livraison", sub: `Zone BAB · ${formatPrice(350)}`, icon: Truck },
+    { key: "dine_in" as const, label: "Sur place", sub: "Au restaurant", icon: Store },
+    { key: "collect" as const, label: "A emporter", sub: "Click & Collect", icon: MapPin },
+    { key: "delivery" as const, label: "Livraison", sub: `BAB · ${formatPrice(350)}`, icon: Truck },
   ];
 
   return (
@@ -62,21 +63,21 @@ export default function CartPage() {
         {/* Order type */}
         <div className="mb-5">
           <h2 className="text-sm font-semibold text-[#1d1d1f] mb-3">Mode de commande</h2>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {orderTypes.map((type) => (
               <button
                 key={type.key}
                 onClick={() => setOrderType(type.key)}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
                   orderType === type.key
                     ? "border-[#1d1d1f] bg-[#1d1d1f]/[0.03]"
                     : "border-[#e5e5ea] hover:border-[#c7c7cc]"
                 }`}
               >
                 <type.icon className={`h-5 w-5 shrink-0 ${orderType === type.key ? "text-[#1d1d1f]" : "text-[#86868b]"}`} />
-                <div className="text-left">
-                  <div className="font-medium text-sm text-[#1d1d1f]">{type.label}</div>
-                  <div className="text-xs text-[#86868b]">{type.sub}</div>
+                <div>
+                  <div className="font-medium text-sm text-[#1d1d1f] leading-tight">{type.label}</div>
+                  <div className="text-[11px] text-[#86868b] mt-0.5">{type.sub}</div>
                 </div>
               </button>
             ))}

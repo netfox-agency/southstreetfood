@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { CheckCircle, Clock, MapPin, ArrowRight, Truck } from "lucide-react";
+import { CheckCircle, Clock, MapPin, ArrowRight, Truck, Store } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import type { OrderWithItems } from "@/types/order";
 
@@ -59,18 +59,27 @@ export function ConfirmationClient({ order }: { order: OrderWithItems }) {
             </div>
 
             <div className="flex items-center gap-3 text-sm">
-              {order.order_type === "delivery" ? (
+              {order.order_type === "delivery" && (
                 <>
                   <Truck className="h-4 w-4 text-brand" />
                   <span className="text-muted-foreground">
-                    Livraison a votre adresse
+                    Livraison à votre adresse
                   </span>
                 </>
-              ) : (
+              )}
+              {order.order_type === "collect" && (
                 <>
                   <MapPin className="h-4 w-4 text-emerald-500" />
                   <span className="text-muted-foreground">
-                    A recuperer au restaurant
+                    À récupérer au restaurant
+                  </span>
+                </>
+              )}
+              {order.order_type === "dine_in" && (
+                <>
+                  <Store className="h-4 w-4 text-emerald-500" />
+                  <span className="text-muted-foreground">
+                    Servi sur place
                   </span>
                 </>
               )}

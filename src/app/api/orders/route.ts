@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const total = subtotal + deliveryFee;
 
     const result = await createOrder({
-      orderType: data.orderType as "collect" | "delivery",
+      orderType: data.orderType as "collect" | "delivery" | "dine_in",
       customerName: data.customerName,
       customerPhone: data.customerPhone,
       customerEmail: data.customerEmail || undefined,

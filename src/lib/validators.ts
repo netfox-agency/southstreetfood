@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const createOrderSchema = z.object({
-  orderType: z.enum(["collect", "delivery"]),
+  orderType: z.enum(["collect", "delivery", "dine_in"]),
   customerName: z.string().min(2, "Nom requis"),
   customerPhone: z
     .string()

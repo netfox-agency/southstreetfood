@@ -10,6 +10,9 @@ import {
   MapPin,
   Undo2,
   WifiOff,
+  Truck,
+  ShoppingBag,
+  Store,
 } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { useSound } from "@/hooks/use-sound";
@@ -32,17 +35,47 @@ const COLUMNS: { key: string; label: string; status: OrderStatus }[] = [
   { key: "ready", label: "Prêtes", status: "ready" },
 ];
 
-type FilterType = "all" | "collect" | "delivery";
+type FilterType = "all" | "dine_in" | "collect" | "delivery";
 
 function getMinutes(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
+}
+
+type OrderTypeInfo = {
+  label: string;
+  icon: typeof Truck;
+  className: string;
+};
+
+function orderTypeInfo(type: OrderWithItems["order_type"]): OrderTypeInfo {
+  if (type === "delivery") {
+    return {
+      label: "Livraison",
+      icon: Truck,
+      className: "bg-[#e8416f]/10 text-[#e8416f]",
+    };
+  }
+  if (type === "dine_in") {
+    return {
+      label: "Sur place",
+      icon: Store,
+      className: "bg-emerald-500/10 text-emerald-700",
+    };
+  }
+  return {
+    label: "À emporter",
+    icon: ShoppingBag,
+    className: "bg-[#1d1d1f]/5 text-[#1d1d1f]",
+  };
 }
 
 function buttonLabel(order: OrderWithItems): string {
   if (order.status === "paid") return "Commencer";
   if (order.status === "preparing") return "Valider";
   if (order.status === "ready") {
-    return order.order_type === "delivery" ? "Livrée" : "Servie";
+    if (order.order_type === "delivery") return "Livrée";
+    if (order.order_type === "dine_in") return "Servie";
+    return "Récupérée";
   }
   return "";
 }
@@ -73,7 +106,7 @@ function OrderCard({
 }) {
   const minutes = getMinutes(order.created_at);
   const isLate = minutes >= LATE_THRESHOLD_MIN;
-  const isDelivery = order.order_type === "delivery";
+  const typeInfo = orderTypeInfo(order.order_type);
 
   return (
     <motion.div
@@ -104,13 +137,12 @@ function OrderCard({
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span
             className={cn(
-              "text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
-              isDelivery
-                ? "bg-[#e8416f]/10 text-[#e8416f]"
-                : "bg-[#1d1d1f]/5 text-[#1d1d1f]"
+              "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full",
+              typeInfo.className
             )}
           >
-            {isDelivery ? "Livraison" : "Sur place"}
+            <typeInfo.icon className="h-3 w-3" />
+            {typeInfo.label}
           </span>
           <span
             className={cn(
@@ -192,6 +224,7 @@ function OrderDetail({
 }) {
   const minutes = getMinutes(order.created_at);
   const isDelivery = order.order_type === "delivery";
+  const typeInfo = orderTypeInfo(order.order_type);
 
   return (
     <motion.div
@@ -218,13 +251,12 @@ function OrderDetail({
             </span>
             <span
               className={cn(
-                "text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
-                isDelivery
-                  ? "bg-[#e8416f]/10 text-[#e8416f]"
-                  : "bg-[#1d1d1f]/5 text-[#1d1d1f]"
+                "inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0",
+                typeInfo.className
               )}
             >
-              {isDelivery ? "Livraison" : "Sur place"}
+              <typeInfo.icon className="h-3 w-3" />
+              {typeInfo.label}
             </span>
             <span className="text-xs text-[#86868b] tabular-nums">
               · {minutes} min
@@ -500,8 +532,7 @@ export default function KitchenPage() {
     () =>
       orders.filter((o) => {
         if (filter === "all") return true;
-        if (filter === "collect") return o.order_type === "collect";
-        return o.order_type === "delivery";
+        return o.order_type === filter;
       }),
     [orders, filter]
   );
@@ -554,7 +585,8 @@ export default function KitchenPage() {
           {(
             [
               { key: "all", label: "Toutes" },
-              { key: "collect", label: "Sur place" },
+              { key: "dine_in", label: "Sur place" },
+              { key: "collect", label: "À emporter" },
               { key: "delivery", label: "Livraison" },
             ] as { key: FilterType; label: string }[]
           ).map((f) => (

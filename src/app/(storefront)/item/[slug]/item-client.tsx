@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   X,
   Minus,
@@ -70,6 +71,7 @@ function groupSubtitle(g: ExtraGroup): string {
 }
 
 export function ItemClient({ item }: { item: ItemData }) {
+  const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
     item.variants.find((v) => v.is_default) || item.variants[0] || null
   );
@@ -144,7 +146,10 @@ export function ItemClient({ item }: { item: ItemData }) {
       extrasPrice: extrasTotal,
       specialInstructions: null,
     });
-    toast.success(`${item.name} ajoute au panier`);
+    toast.success(`${item.name} ajouté au panier`);
+    // Uber Eats behaviour: once added, bounce back to the menu so the
+    // customer can keep browsing and composing their order.
+    router.push("/menu");
   };
 
   return (

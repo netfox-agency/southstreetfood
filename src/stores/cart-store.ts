@@ -63,7 +63,8 @@ export const useCartStore = create<CartState>()(
 
       setOrderType: (orderType) => {
         set({ orderType });
-        if (orderType === "collect") {
+        // Only "delivery" needs an address. Clear it for collect/dine_in.
+        if (orderType !== "delivery") {
           set({ deliveryAddress: null });
         }
       },

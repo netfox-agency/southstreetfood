@@ -2,7 +2,7 @@
 // For now, manual types matching our schema
 
 export type UserRole = "customer" | "kitchen" | "admin";
-export type OrderType = "collect" | "delivery";
+export type OrderType = "collect" | "delivery" | "dine_in";
 export type OrderStatus =
   | "pending_payment"
   | "paid"
