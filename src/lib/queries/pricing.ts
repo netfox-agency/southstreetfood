@@ -57,7 +57,7 @@ type InputItem = {
   specialInstructions?: string | null;
 };
 
-const DELIVERY_FEE_CENTS = 350;
+const DELIVERY_FEE_FALLBACK_CENTS = 350;
 
 export async function priceCartServerSide(
   input: {
@@ -84,8 +84,10 @@ export async function priceCartServerSide(
     new Set(input.items.flatMap((i) => i.extras.map((e) => e.id)))
   );
 
-  // Parallel fetch — one round-trip per table instead of N+1
-  const [menuItemsRes, variantsRes, extrasRes] = await Promise.all([
+  // Parallel fetch — one round-trip per table instead of N+1.
+  // We also pull restaurant_settings so the delivery fee is
+  // DB-authoritative (admin can tweak it without a redeploy).
+  const [menuItemsRes, variantsRes, extrasRes, settingsRes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("menu_items")
@@ -105,6 +107,12 @@ export async function priceCartServerSide(
           .select("id, extra_group_id, name, price, is_available")
           .in("id", extraIds)
       : Promise.resolve({ data: [], error: null }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (supabase as any)
+      .from("restaurant_settings")
+      .select("base_delivery_fee, min_order_delivery, delivery_enabled")
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (menuItemsRes.error) throw new Error(menuItemsRes.error.message);
@@ -210,7 +218,34 @@ export async function priceCartServerSide(
     (sum, it) => sum + (it.unitPrice + it.extrasPrice) * it.quantity,
     0
   );
-  const deliveryFee = input.orderType === "delivery" ? DELIVERY_FEE_CENTS : 0;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const settings = (settingsRes.data ?? null) as any;
+  const dbFee =
+    settings && typeof settings.base_delivery_fee === "number"
+      ? settings.base_delivery_fee
+      : DELIVERY_FEE_FALLBACK_CENTS;
+  const minOrderDelivery =
+    settings && typeof settings.min_order_delivery === "number"
+      ? settings.min_order_delivery
+      : 0;
+  const deliveryEnabled =
+    settings && typeof settings.delivery_enabled === "boolean"
+      ? settings.delivery_enabled
+      : true;
+
+  if (input.orderType === "delivery" && !deliveryEnabled) {
+    throw new PricingError("La livraison est indisponible", "ITEM_UNAVAILABLE");
+  }
+  if (input.orderType === "delivery" && subtotal < minOrderDelivery) {
+    const euros = (minOrderDelivery / 100).toFixed(2).replace(".", ",");
+    throw new PricingError(
+      `Minimum de commande pour la livraison : ${euros} €`,
+      "ITEM_UNAVAILABLE"
+    );
+  }
+
+  const deliveryFee = input.orderType === "delivery" ? dbFee : 0;
   const total = subtotal + deliveryFee;
 
   return { items: priced, subtotal, deliveryFee, total };

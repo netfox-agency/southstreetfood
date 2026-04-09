@@ -20,6 +20,7 @@ import { createClient } from "@/lib/supabase/client";
 import { cn, formatPrice } from "@/lib/utils";
 import type { OrderWithItems } from "@/types/order";
 import type { OrderStatus } from "@/types/database";
+import { KitchenNav } from "@/components/kitchen/kitchen-nav";
 
 /* ─────────────────────────────────────────────
    Flow ultra simple — Uber Eats style
@@ -584,8 +585,13 @@ export default function KitchenPage() {
           </div>
         </div>
 
+        {/* Kitchen subnav */}
+        <div className="hidden md:block">
+          <KitchenNav />
+        </div>
+
         {/* Filter pills */}
-        <div className="hidden md:flex items-center gap-1 bg-[#f5f5f7] rounded-full p-1">
+        <div className="hidden lg:flex items-center gap-1 bg-[#f5f5f7] rounded-full p-1">
           {(
             [
               { key: "all", label: "Toutes" },

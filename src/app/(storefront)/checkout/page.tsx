@@ -5,17 +5,19 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, orderType, deliveryAddress, customerNotes, subtotal, clear } = useCartStore();
+  const { settings } = useRestaurantSettings();
   const [loading, setLoading] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
 
-  const deliveryFee = orderType === "delivery" ? 350 : 0;
+  const deliveryFee = orderType === "delivery" ? settings.baseDeliveryFee : 0;
   const total = subtotal() + deliveryFee;
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
+import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 
 export default function CartPage() {
   const {
@@ -18,10 +19,18 @@ export default function CartPage() {
     subtotal,
   } = useCartStore();
 
-  const deliveryFee = orderType === "delivery" ? 350 : 0;
-  const total = subtotal() + deliveryFee;
+  const { settings } = useRestaurantSettings();
+
+  const deliveryFee = orderType === "delivery" ? settings.baseDeliveryFee : 0;
+  const currentSubtotal = subtotal();
+  const total = currentSubtotal + deliveryFee;
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
+  const belowMin =
+    orderType === "delivery" &&
+    settings.minOrderDelivery > 0 &&
+    currentSubtotal < settings.minOrderDelivery;
+  const missing = belowMin ? settings.minOrderDelivery - currentSubtotal : 0;
 
   if (items.length === 0) {
     return (
@@ -40,9 +49,9 @@ export default function CartPage() {
   }
 
   const orderTypes = [
-    { key: "dine_in" as const, label: "Sur place", sub: "Au restaurant", icon: Store },
-    { key: "collect" as const, label: "A emporter", sub: "Click & Collect", icon: MapPin },
-    { key: "delivery" as const, label: "Livraison", sub: `BAB · ${formatPrice(350)}`, icon: Truck },
+    { key: "dine_in" as const, label: "Sur place", sub: "Au restaurant", icon: Store, enabled: true },
+    { key: "collect" as const, label: "A emporter", sub: "Click & Collect", icon: MapPin, enabled: settings.collectEnabled },
+    { key: "delivery" as const, label: "Livraison", sub: `BAB · ${formatPrice(settings.baseDeliveryFee)}`, icon: Truck, enabled: settings.deliveryEnabled },
   ];
 
   return (
@@ -67,16 +76,22 @@ export default function CartPage() {
             {orderTypes.map((type) => (
               <button
                 key={type.key}
-                onClick={() => setOrderType(type.key)}
-                className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all cursor-pointer text-left ${
-                  orderType === type.key
-                    ? "border-[#1d1d1f] bg-[#1d1d1f]/[0.03]"
-                    : "border-[#e5e5ea] hover:border-[#c7c7cc]"
+                onClick={() => type.enabled && setOrderType(type.key)}
+                disabled={!type.enabled}
+                className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all text-left ${
+                  !type.enabled
+                    ? "border-[#e5e5ea] opacity-40 cursor-not-allowed"
+                    : orderType === type.key
+                    ? "border-[#1d1d1f] bg-[#1d1d1f]/[0.03] cursor-pointer"
+                    : "border-[#e5e5ea] hover:border-[#c7c7cc] cursor-pointer"
                 }`}
               >
                 <type.icon className={`h-5 w-5 shrink-0 ${orderType === type.key ? "text-[#1d1d1f]" : "text-[#86868b]"}`} />
                 <div>
-                  <div className="font-medium text-sm text-[#1d1d1f] leading-tight">{type.label}</div>
+                  <div className="font-medium text-sm text-[#1d1d1f] leading-tight">
+                    {type.label}
+                    {!type.enabled && <span className="text-[10px] text-[#aeaeb2] block">Indisponible</span>}
+                  </div>
                   <div className="text-[11px] text-[#86868b] mt-0.5">{type.sub}</div>
                 </div>
               </button>
@@ -218,7 +233,7 @@ export default function CartPage() {
         <div className="mb-5 p-5 bg-white rounded-2xl border border-[#e5e5ea] space-y-2.5">
           <div className="flex justify-between text-sm">
             <span className="text-[#86868b]">Sous-total</span>
-            <span className="text-[#1d1d1f] tabular-nums">{formatPrice(subtotal())}</span>
+            <span className="text-[#1d1d1f] tabular-nums">{formatPrice(currentSubtotal)}</span>
           </div>
           {orderType === "delivery" && (
             <div className="flex justify-between text-sm">
@@ -230,15 +245,39 @@ export default function CartPage() {
             <span className="font-bold text-[#1d1d1f]">Total</span>
             <span className="font-bold text-lg text-[#1d1d1f] tabular-nums">{formatPrice(total)}</span>
           </div>
+          <div className="pt-1 flex items-center gap-1.5 text-[11px] text-[#86868b]">
+            <Clock className="h-3 w-3" />
+            <span>
+              Prêt en ~{settings.estimatedPrepMinutes} min
+              {orderType === "delivery" && " + livraison"}
+            </span>
+          </div>
         </div>
 
+        {/* Min order warning */}
+        {belowMin && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
+            <strong className="font-semibold">Minimum {formatPrice(settings.minOrderDelivery)}</strong> pour la livraison.
+            {" "}Ajoutez encore <strong className="font-semibold tabular-nums">{formatPrice(missing)}</strong>.
+          </div>
+        )}
+
         {/* Checkout button */}
-        <Link
-          href="/checkout"
-          className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] hover:bg-[#1d1d1f]/90 transition-colors text-center leading-[3.25rem]"
-        >
-          Passer la commande &middot; {formatPrice(total)}
-        </Link>
+        {belowMin ? (
+          <button
+            disabled
+            className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] text-center leading-[3.25rem] opacity-30 cursor-not-allowed"
+          >
+            Passer la commande &middot; {formatPrice(total)}
+          </button>
+        ) : (
+          <Link
+            href="/checkout"
+            className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] hover:bg-[#1d1d1f]/90 transition-colors text-center leading-[3.25rem]"
+          >
+            Passer la commande &middot; {formatPrice(total)}
+          </Link>
+        )}
       </div>
     </div>
   );
