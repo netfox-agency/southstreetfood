@@ -32,6 +32,6 @@ export default async function KitchenLayout({
   }
 
   return (
-    <div className="min-h-dvh bg-[#0a0a12] text-white">{children}</div>
+    <div className="min-h-dvh bg-[#f5f5f7] text-[#1d1d1f]">{children}</div>
   );
 }
