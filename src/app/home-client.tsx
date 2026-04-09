@@ -2,8 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { ArrowRight, Clock, MapPin, Truck, Star } from "lucide-react";
+import {
+  motion,
+  useInView,
+  useScroll,
+  useTransform,
+  useSpring,
+  type MotionValue,
+} from "framer-motion";
+import {
+  ArrowRight,
+  Clock,
+  MapPin,
+  Truck,
+  Star,
+  ArrowDown,
+  Flame,
+} from "lucide-react";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -42,7 +57,7 @@ function Reveal({
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NAVBAR
+   NAVBAR — glass, scroll-aware
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Navbar() {
@@ -61,13 +76,22 @@ function Navbar() {
       }`}
     >
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link href="/" className="font-extrabold text-lg tracking-tight">
+        <Link
+          href="/"
+          className={`font-extrabold text-lg tracking-tight transition-colors ${
+            scrolled ? "text-foreground" : "text-white"
+          }`}
+        >
           South Street Food
         </Link>
         <div className="flex items-center gap-6">
           <Link
             href="/menu"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
+            className={`text-sm font-medium transition-colors hidden sm:block ${
+              scrolled
+                ? "text-muted-foreground hover:text-foreground"
+                : "text-white/70 hover:text-white"
+            }`}
           >
             La carte
           </Link>
@@ -82,133 +106,225 @@ function Navbar() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HERO — Clean, bold, Burger King / G La Dalle level
+   HERO — Fullscreen video + massive staggered title
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Hero() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  // Parallax: video drifts slightly, text drifts faster for depth
+  const videoY = useTransform(scrollYProgress, [0, 1], ["0%", "15%"]);
+  const textY = useTransform(scrollYProgress, [0, 1], ["0%", "-25%"]);
+  const overlayOpacity = useTransform(scrollYProgress, [0, 0.6], [0.65, 1]);
+
   return (
-    <section className="dark-section relative min-h-screen flex items-center overflow-hidden">
-      {/* Subtle warm gradient — not neon overload */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#1a0a14] via-[#0f0f1a] to-[#0a1a1a]" />
+    <section
+      ref={ref}
+      className="relative h-[100svh] w-full overflow-hidden bg-black"
+    >
+      {/* ── Video background ── */}
+      <motion.div
+        style={{ y: videoY }}
+        className="absolute inset-0 w-full h-[115%]"
+      >
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/video/hero-poster.jpg"
+          className="w-full h-full object-cover"
+        >
+          <source src="/video/hero-burger.mp4" type="video/mp4" />
+        </video>
+      </motion.div>
 
-      {/* One soft ambient glow — restrained */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand/5 rounded-full blur-[200px]" />
+      {/* ── Dark gradient overlay for text legibility ── */}
+      <motion.div
+        style={{ opacity: overlayOpacity }}
+        className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/50 to-black/85"
+      />
+      {/* Side vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_0%,_rgba(0,0,0,0.5)_100%)] pointer-events-none" />
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-32 w-full">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left — Text */}
-          <div>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease, delay: 0.2 }}
-              className="text-brand font-semibold text-sm tracking-wide uppercase mb-4"
-            >
-              Bayonne &middot; Anglet &middot; Biarritz
-            </motion.p>
+      {/* ── Content ── */}
+      <motion.div
+        style={{ y: textY }}
+        className="relative z-10 h-full flex flex-col justify-center items-center text-center px-6"
+      >
+        {/* Top eyebrow */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease, delay: 0.2 }}
+          className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-md"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-brand animate-pulse" />
+          <span className="text-white/80 text-xs font-medium tracking-widest uppercase">
+            Bayonne &middot; Anglet &middot; Biarritz
+          </span>
+        </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 40, filter: "blur(12px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ duration: 1.2, ease, delay: 0.3 }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-black text-white leading-[0.95] tracking-tight"
-            >
-              Burgers, tacos
-              <br />
-              &amp; wraps
-              <br />
-              <span className="text-brand">artisanaux.</span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease, delay: 0.6 }}
-              className="mt-6 text-white/45 text-lg leading-relaxed max-w-sm"
-            >
-              Le concept street food exclusif de Bayonne.
-              Livraison jusqu&apos;a 4h du matin sur tout le BAB.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease, delay: 0.8 }}
-              className="mt-10 flex flex-wrap gap-4"
-            >
-              <Link href="/menu" className="btn-primary text-base !py-4 !px-8">
-                Je commande
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="#concept" className="btn-outline text-base !py-4 !px-8 text-white border-white/15 hover:border-white/40">
-                Decouvrir
-              </Link>
-            </motion.div>
-
-            {/* Minimal info chips */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.2, duration: 0.8 }}
-              className="mt-12 flex flex-wrap gap-3"
-            >
-              {[
-                { icon: Clock, text: "Jusqu'a 4h" },
-                { icon: Truck, text: "Livraison 30 min" },
-                { icon: MapPin, text: "Click & Collect" },
-              ].map((f) => (
-                <span
-                  key={f.text}
-                  className="flex items-center gap-2 text-white/30 text-sm"
-                >
-                  <f.icon className="h-3.5 w-3.5" />
-                  {f.text}
-                </span>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Right — Hero image */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease, delay: 0.5 }}
-            className="hidden lg:block"
+        {/* Hero title — each word reveals with blur */}
+        <h1 className="font-black text-white leading-[0.85] tracking-tighter">
+          <motion.span
+            initial={{ opacity: 0, y: 60, filter: "blur(24px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.2, ease, delay: 0.4 }}
+            className="block text-[16vw] sm:text-[13vw] lg:text-[11vw]"
           >
-            <div className="relative">
-              <div className="aspect-square rounded-[32px] bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/[0.06] overflow-hidden flex items-center justify-center">
-                {/* Replace with real hero burger photo */}
-                <div className="text-center">
-                  <div className="text-[120px] leading-none">🍔</div>
-                  <p className="text-white/15 text-sm mt-4">Photo hero burger</p>
-                </div>
-              </div>
+            BAYONNE
+          </motion.span>
+          <motion.span
+            initial={{ opacity: 0, y: 60, filter: "blur(24px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 1.2, ease, delay: 0.6 }}
+            className="block text-[16vw] sm:text-[13vw] lg:text-[11vw] text-brand"
+          >
+            STREET FOOD
+          </motion.span>
+        </h1>
 
-              {/* Floating card — reviews */}
-              <div className="absolute -bottom-6 -left-6 glass rounded-2xl px-5 py-4 flex items-center gap-3">
-                <div className="flex -space-x-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className="h-4 w-4 text-neon-yellow fill-neon-yellow"
-                    />
-                  ))}
-                </div>
-                <div>
-                  <div className="text-white text-sm font-semibold">4.8/5</div>
-                  <div className="text-white/40 text-xs">+500 avis</div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </div>
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease, delay: 1 }}
+          className="mt-8 text-white/70 text-base sm:text-lg max-w-md tracking-wide"
+        >
+          Burgers smash, tacos généreux & wraps croustillants.
+          <br className="hidden sm:block" />
+          Livraison jusqu&apos;à 4h du matin.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, ease, delay: 1.2 }}
+          className="mt-10 flex flex-wrap gap-4 justify-center"
+        >
+          <Link
+            href="/menu"
+            className="btn-primary text-base !py-4 !px-10 shadow-[0_0_60px_rgba(232,65,111,0.5)]"
+          >
+            Je commande
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="#manifesto"
+            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-semibold text-base hover:bg-white/15 transition-all"
+          >
+            Découvrir
+          </Link>
+        </motion.div>
+      </motion.div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.8, duration: 1 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2 text-white/50"
+      >
+        <span className="text-[10px] tracking-widest uppercase">Scroll</span>
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ArrowDown className="h-4 w-4" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BEST SELLERS — Real items from Supabase
+   MANIFESTO — Marquee + big statement
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function Manifesto() {
+  const words = [
+    "TACOS",
+    "BURGERS",
+    "WRAPS",
+    "BOWLS",
+    "FRESH",
+    "NIGHT",
+    "SMASH",
+    "ARTISANAL",
+  ];
+  // Repeat enough times for seamless loop
+  const strip = [...words, ...words, ...words, ...words];
+
+  return (
+    <section
+      id="manifesto"
+      className="relative py-32 sm:py-48 bg-black overflow-hidden"
+    >
+      {/* Marquee background */}
+      <div className="absolute inset-0 flex items-center opacity-[0.06] pointer-events-none select-none">
+        <motion.div
+          className="flex gap-16 whitespace-nowrap"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{
+            duration: 40,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          {strip.map((w, i) => (
+            <span
+              key={i}
+              className="text-white text-[18vw] font-black tracking-tighter leading-none"
+            >
+              {w} &middot;
+            </span>
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Foreground statement */}
+      <Reveal className="relative z-10 max-w-5xl mx-auto px-6 text-center">
+        <motion.p
+          variants={fadeUp}
+          custom={0}
+          className="text-brand font-semibold text-xs sm:text-sm uppercase tracking-[0.3em] mb-8"
+        >
+          Le manifesto
+        </motion.p>
+        <motion.h2
+          variants={fadeUp}
+          custom={1}
+          className="text-white font-black text-4xl sm:text-6xl lg:text-7xl leading-[0.95] tracking-tight"
+        >
+          Pas de compromis.
+          <br />
+          Pas de surgelé.
+          <br />
+          <span className="text-brand">Juste de la vraie</span>
+          <br />
+          street food.
+        </motion.h2>
+        <motion.p
+          variants={fadeUp}
+          custom={2}
+          className="mt-10 text-white/50 text-base sm:text-lg max-w-xl mx-auto"
+        >
+          Des ingrédients frais, des recettes maison, et l&apos;envie
+          d&apos;envoyer du lourd à chaque commande.
+        </motion.p>
+      </Reveal>
+    </section>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   PIN SHOWCASE — Scroll-pinned product reveal
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 export interface BestSellerItem {
@@ -224,94 +340,220 @@ function formatPrice(cents: number) {
   return (cents / 100).toFixed(2).replace(".", ",");
 }
 
-function BestSellers({ items }: { items: BestSellerItem[] }) {
+/** Single slide inside the pinned showcase */
+function ShowcaseSlide({
+  item,
+  progress,
+  index,
+  total,
+}: {
+  item: BestSellerItem;
+  progress: MotionValue<number>;
+  index: number;
+  total: number;
+}) {
+  // Each slide occupies 1/total of the scroll and crossfades across ~60% of its window
+  const step = 1 / total;
+  const start = index * step;
+  const end = start + step;
+  const fadeIn = start + step * 0.15;
+  const fadeOut = end - step * 0.15;
+
+  const opacity = useTransform(
+    progress,
+    [start, fadeIn, fadeOut, end],
+    [0, 1, 1, 0]
+  );
+  const scale = useTransform(
+    progress,
+    [start, fadeIn, fadeOut, end],
+    [0.9, 1, 1, 1.05]
+  );
+  const y = useTransform(
+    progress,
+    [start, fadeIn, fadeOut, end],
+    [40, 0, 0, -40]
+  );
+
   return (
-    <Reveal className="py-24 sm:py-32">
-      <div className="max-w-6xl mx-auto px-6">
-        <motion.div variants={fadeUp} custom={0} className="mb-12">
-          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
-            Les best sellers
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            Nos incontournables
-          </h2>
+    <motion.div
+      style={{ opacity }}
+      className="absolute inset-0 flex items-center"
+    >
+      <div className="w-full grid lg:grid-cols-2 gap-8 lg:gap-16 items-center px-6 lg:px-16">
+        {/* Image */}
+        <motion.div
+          style={{ scale, y }}
+          className="relative aspect-square lg:aspect-auto lg:h-[70vh] w-full max-w-xl mx-auto"
+        >
+          <div className="absolute inset-0 rounded-[40px] bg-gradient-to-br from-brand/10 via-transparent to-white/5 blur-2xl" />
+          {item.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.image_url}
+              alt={item.name}
+              className="relative w-full h-full object-contain drop-shadow-[0_30px_60px_rgba(232,65,111,0.25)]"
+            />
+          ) : (
+            <div className="relative flex items-center justify-center w-full h-full text-[200px]">
+              🍔
+            </div>
+          )}
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {items.map((item, i) => (
-            <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
-              <Link href={`/item/${item.slug}`} className="block">
-                <div className="card-premium hover-lift p-0 overflow-hidden cursor-pointer">
-                  {/* Image area */}
-                  <div className="aspect-square bg-gradient-to-br from-muted to-white flex items-center justify-center overflow-hidden">
-                    {item.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-7xl">🍔</span>
-                    )}
-                  </div>
-                  {/* Content */}
-                  <div className="p-5">
-                    <h3 className="font-bold text-base line-clamp-1">
-                      {item.name}
-                    </h3>
-                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2 min-h-[2.5rem]">
-                      {item.description || ""}
-                    </p>
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="font-bold text-brand text-lg">
-                        {formatPrice(item.base_price)} &euro;
-                      </span>
-                      <span className="h-9 w-9 rounded-xl bg-brand text-white flex items-center justify-center text-lg font-bold">
-                        +
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
+        {/* Text */}
+        <motion.div style={{ y }} className="text-white lg:pl-8">
+          <div className="text-brand font-bold text-sm tracking-[0.25em] uppercase mb-4">
+            &mdash; N°{index + 1} / {total}
+          </div>
+          <h3 className="font-black text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight mb-6">
+            {item.name}
+          </h3>
+          {item.description && (
+            <p className="text-white/60 text-base sm:text-lg leading-relaxed max-w-md mb-8">
+              {item.description}
+            </p>
+          )}
+          <div className="flex items-center gap-6">
+            <span className="text-4xl font-black text-brand">
+              {formatPrice(item.base_price)} &euro;
+            </span>
+            <Link
+              href={`/item/${item.slug}`}
+              className="btn-primary !py-3.5 !px-7 text-sm"
+            >
+              Composer
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+function ProgressDot({
+  progress,
+  index,
+  total,
+}: {
+  progress: MotionValue<number>;
+  index: number;
+  total: number;
+}) {
+  const step = 1 / total;
+  const opacity = useTransform(
+    progress,
+    [index * step, index * step + step * 0.15, (index + 1) * step - step * 0.15, (index + 1) * step],
+    [0.3, 1, 1, 0.3]
+  );
+  const scaleX = useTransform(
+    progress,
+    [index * step, index * step + step * 0.15, (index + 1) * step - step * 0.15, (index + 1) * step],
+    [1, 1.4, 1.4, 1]
+  );
+  return (
+    <motion.div
+      style={{ opacity, scaleX }}
+      className="h-1.5 w-6 rounded-full bg-white origin-left"
+    />
+  );
+}
+
+function Showcase({ items }: { items: BestSellerItem[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end end"],
+  });
+  const smoothProgress = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    mass: 0.3,
+  });
+
+  if (items.length === 0) return null;
+  const total = items.length;
+
+  return (
+    <section
+      ref={ref}
+      className="relative bg-black text-white"
+      // Scroll zone: N * 100vh so each slide gets a full viewport of scroll
+      style={{ height: `${total * 100}vh` }}
+    >
+      {/* Top glow */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-brand/50 to-transparent" />
+
+      <div className="sticky top-0 h-screen overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-brand/10 rounded-full blur-[200px]" />
+
+        {/* Section label (fixed top-left) */}
+        <div className="absolute top-8 left-8 lg:top-12 lg:left-16 z-10 flex items-center gap-3">
+          <Flame className="h-4 w-4 text-brand" />
+          <span className="text-xs font-semibold tracking-[0.3em] uppercase text-white/60">
+            Nos incontournables
+          </span>
+        </div>
+
+        {/* Progress dots (fixed top-right) */}
+        <div className="absolute top-8 right-8 lg:top-12 lg:right-16 z-10 hidden sm:flex items-center gap-2">
+          {items.map((_, i) => (
+            <ProgressDot
+              key={i}
+              progress={smoothProgress}
+              index={i}
+              total={total}
+            />
           ))}
         </div>
 
-        <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
-          <Link href="/menu" className="btn-outline">
-            Voir toute la carte
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </motion.div>
+        {/* Slides */}
+        {items.map((item, i) => (
+          <ShowcaseSlide
+            key={item.id}
+            item={item}
+            progress={smoothProgress}
+            index={i}
+            total={total}
+          />
+        ))}
       </div>
-    </Reveal>
+    </section>
   );
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CONCEPT — Le concept
+   CONCEPT — Tilt image grid
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Concept() {
   return (
-    <Reveal id="concept" className="dark-section py-24 sm:py-32">
+    <Reveal id="concept" className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Images */}
-          <motion.div variants={fadeUp} custom={0}>
+          {/* Images — layered */}
+          <motion.div variants={fadeUp} custom={0} className="relative">
             <div className="grid grid-cols-2 gap-4">
-              <div className="aspect-[3/4] rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-6xl">
+              <div className="aspect-[3/4] rounded-3xl bg-gradient-to-br from-brand/10 to-muted flex items-center justify-center text-6xl shadow-lg">
                 🍔
               </div>
               <div className="space-y-4">
-                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                <div className="aspect-square rounded-3xl bg-gradient-to-br from-amber-100 to-muted flex items-center justify-center text-5xl shadow-lg">
                   🍟
                 </div>
-                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
+                <div className="aspect-square rounded-3xl bg-gradient-to-br from-orange-100 to-muted flex items-center justify-center text-5xl shadow-lg">
                   🌮
                 </div>
               </div>
+            </div>
+            {/* Floating accent card */}
+            <div className="absolute -bottom-4 -left-4 bg-foreground text-background rounded-2xl px-5 py-3 shadow-2xl">
+              <div className="text-xs text-white/60 uppercase tracking-wider">
+                Depuis
+              </div>
+              <div className="text-xl font-black">2023</div>
             </div>
           </motion.div>
 
@@ -327,20 +569,19 @@ function Concept() {
             <motion.h2
               variants={fadeUp}
               custom={1}
-              className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[0.95] mb-6"
+              className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.95] mb-6"
             >
               Concept exclusif
-              <br />
-              a Bayonne
+              <br />à Bayonne
             </motion.h2>
             <motion.p
               variants={fadeUp}
               custom={2}
-              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md"
+              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md"
             >
-              Notre menu varie vous regale a petit prix, sans contrainte,
-              a tout moment de la soiree. Seul, en famille ou entre amis.
-              Des ingredients frais, des recettes qui envoient.
+              Notre menu varié vous régale à petit prix, sans contrainte, à
+              tout moment de la soirée. Seul, en famille ou entre amis. Des
+              ingrédients frais, des recettes qui envoient.
             </motion.p>
             <motion.div variants={fadeUp} custom={3}>
               <Link href="/menu" className="btn-primary">
@@ -356,75 +597,71 @@ function Concept() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DELIVERY — Livraison section
+   DELIVERY — Dark, night mood, animated stats
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Delivery() {
   return (
-    <Reveal className="py-24 sm:py-32 bg-muted">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Text */}
-          <div>
-            <motion.p
-              variants={fadeUp}
-              custom={0}
-              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
-            >
-              Livraison
-            </motion.p>
-            <motion.h2
-              variants={fadeUp}
-              custom={1}
-              className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.95] mb-6"
-            >
-              Livraison toute
-              <br />
-              la nuit
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              custom={2}
-              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md"
-            >
-              Ouvert jusqu&apos;a 4h du matin avec livraison rapide
-              sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
-              chez vous.
-            </motion.p>
+    <Reveal className="relative py-24 sm:py-32 bg-black overflow-hidden">
+      {/* Animated radial glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1200px] h-[1200px] bg-brand/[0.08] rounded-full blur-[200px]" />
 
-            {/* Stats */}
+      <div className="relative z-10 max-w-6xl mx-auto px-6">
+        <div className="max-w-3xl">
+          <motion.p
+            variants={fadeUp}
+            custom={0}
+            className="text-brand font-semibold text-sm uppercase tracking-[0.25em] mb-6"
+          >
+            &mdash; Livraison
+          </motion.p>
+          <motion.h2
+            variants={fadeUp}
+            custom={1}
+            className="text-white font-black text-5xl sm:text-6xl lg:text-7xl leading-[0.9] tracking-tight mb-8"
+          >
+            Quand tout le monde
+            <br />
+            ferme,
+            <br />
+            <span className="text-brand">on livre.</span>
+          </motion.h2>
+          <motion.p
+            variants={fadeUp}
+            custom={2}
+            className="text-white/60 text-lg leading-relaxed mb-16 max-w-lg"
+          >
+            Ouvert jusqu&apos;à 4h du matin avec livraison rapide sur Bayonne,
+            Anglet et Biarritz. En moyenne 30 minutes chez vous.
+          </motion.p>
+        </div>
+
+        {/* Big stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-px bg-white/10 rounded-3xl overflow-hidden border border-white/10">
+          {[
+            { value: "30", unit: "MIN", label: "Temps moyen" },
+            { value: "4H", unit: "", label: "Ouvert jusqu'à" },
+            { value: "BAB", unit: "", label: "Zone couverte" },
+          ].map((s, i) => (
             <motion.div
+              key={s.label}
               variants={fadeUp}
-              custom={3}
-              className="grid grid-cols-3 gap-6"
+              custom={3 + i}
+              className="bg-black p-8 sm:p-12 flex flex-col justify-between min-h-[200px]"
             >
-              {[
-                { value: "30", unit: "min", label: "Temps moyen" },
-                { value: "4h", unit: "", label: "Ouvert jusqu'a" },
-                { value: "BAB", unit: "", label: "Zone couverte" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="text-3xl font-black text-brand">
-                    {s.value}
-                    <span className="text-lg">{s.unit}</span>
-                  </div>
-                  <div className="text-muted-foreground text-sm mt-1">
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Image */}
-          <motion.div variants={fadeUp} custom={2}>
-            <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-accent/10 to-muted border border-border overflow-hidden flex items-center justify-center img-premium">
-              <div className="text-center text-muted-foreground">
-                <Truck className="h-16 w-16 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Photo livreur scooter</p>
+              <div className="text-white/40 text-xs font-semibold tracking-[0.2em] uppercase">
+                {s.label}
               </div>
-            </div>
-          </motion.div>
+              <div className="text-white font-black text-6xl sm:text-7xl leading-none tracking-tighter">
+                {s.value}
+                {s.unit && (
+                  <span className="text-brand text-3xl sm:text-4xl ml-1">
+                    {s.unit}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </Reveal>
@@ -432,30 +669,30 @@ function Delivery() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   FEATURES — 3 features propres
+   FEATURES — Clean 3-column
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Features() {
   const items = [
     {
       icon: Star,
-      title: "Qualite artisanale",
-      desc: "Ingredients frais selectionnes chaque jour. Des recettes maison qui font la difference.",
+      title: "Qualité artisanale",
+      desc: "Ingrédients frais sélectionnés chaque jour. Des recettes maison qui font la différence.",
     },
     {
       icon: Truck,
-      title: "Livre en 30 min",
+      title: "Livré en 30 min",
       desc: "Commandez en ligne, on livre chaud chez vous. Bayonne, Anglet, Biarritz et alentours.",
     },
     {
       icon: MapPin,
       title: "Click & Collect",
-      desc: "Commandez, choisissez votre creneau, et recuperez au restaurant. Zero attente.",
+      desc: "Commandez, choisissez votre créneau, et récupérez au restaurant. Zéro attente.",
     },
   ];
 
   return (
-    <Reveal className="py-24 sm:py-32">
+    <Reveal className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid sm:grid-cols-3 gap-6">
           {items.map((f, i) => (
@@ -478,76 +715,82 @@ function Features() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESTAURANT — Photo lieu
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Restaurant() {
-  return (
-    <Reveal className="py-24 sm:py-32 bg-muted">
-      <div className="max-w-6xl mx-auto px-6">
-        <motion.div variants={fadeUp} custom={0} className="text-center mb-12">
-          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
-            Le restaurant
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            Sur place ou a emporter
-          </h2>
-        </motion.div>
-
-        <motion.div variants={fadeUp} custom={1}>
-          <div className="relative aspect-[21/9] rounded-3xl bg-gradient-to-br from-accent/5 to-muted border border-border overflow-hidden img-premium">
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Photo interieur restaurant</p>
-              </div>
-            </div>
-            {/* Bottom gradient overlay */}
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-6 left-8">
-              <h3 className="text-white text-xl font-bold">
-                South Street Food
-              </h3>
-              <p className="text-white/60 text-sm">Bayonne, France</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </Reveal>
-  );
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CTA Final
+   CTA — Dramatic full-bleed final section
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function CTA() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-100px" });
+
   return (
-    <Reveal className="py-24 sm:py-32">
-      <div className="max-w-4xl mx-auto px-6 text-center">
+    <section
+      ref={ref}
+      className="relative py-32 sm:py-48 bg-black overflow-hidden"
+    >
+      {/* Animated glow background */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(232,65,111,0.15)_0%,_transparent_70%)]" />
+
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
         <motion.h2
-          variants={fadeUp}
-          custom={0}
-          className="text-4xl sm:text-5xl font-black tracking-tight mb-6"
+          initial={{ opacity: 0, y: 60, filter: "blur(20px)" }}
+          animate={
+            inView
+              ? { opacity: 1, y: 0, filter: "blur(0px)" }
+              : { opacity: 0, y: 60, filter: "blur(20px)" }
+          }
+          transition={{ duration: 1.2, ease, delay: 0.1 }}
+          className="text-white font-black text-[20vw] sm:text-[15vw] lg:text-[13vw] leading-[0.85] tracking-tighter"
         >
-          Une faim de loup ?
+          AFFAMÉ ?
         </motion.h2>
+
         <motion.p
-          variants={fadeUp}
-          custom={1}
-          className="text-muted-foreground text-lg mb-10 max-w-md mx-auto"
+          initial={{ opacity: 0, y: 20 }}
+          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 1, ease, delay: 0.5 }}
+          className="text-white/60 text-lg sm:text-xl mt-8 mb-12 max-w-md mx-auto"
         >
-          Commandez maintenant et recevez votre commande en 30 minutes,
-          ou recuperez-la au restaurant.
+          Commandez maintenant et recevez votre commande en 30 minutes, ou
+          récupérez-la au restaurant.
         </motion.p>
-        <motion.div variants={fadeUp} custom={2}>
-          <Link href="/menu" className="btn-primary text-base !py-4 !px-10">
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={
+            inView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.9 }
+          }
+          transition={{ duration: 0.8, ease, delay: 0.7 }}
+        >
+          <Link
+            href="/menu"
+            className="btn-primary text-lg !py-5 !px-14 shadow-[0_0_80px_rgba(232,65,111,0.5)]"
+          >
             Commander maintenant
-            <ArrowRight className="h-4 w-4" />
+            <ArrowRight className="h-5 w-5" />
           </Link>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ duration: 1, delay: 1 }}
+          className="mt-16 flex flex-wrap justify-center gap-x-8 gap-y-3 text-white/40 text-xs tracking-widest uppercase"
+        >
+          <span className="flex items-center gap-2">
+            <Clock className="h-3 w-3" />
+            Jusqu&apos;à 4h
+          </span>
+          <span className="flex items-center gap-2">
+            <Truck className="h-3 w-3" />
+            Livraison 30 min
+          </span>
+          <span className="flex items-center gap-2">
+            <MapPin className="h-3 w-3" />
+            Click & Collect
+          </span>
+        </motion.div>
       </div>
-    </Reveal>
+    </section>
   );
 }
 
@@ -557,18 +800,20 @@ function CTA() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border py-16">
+    <footer className="bg-black text-white/60 border-t border-white/10 py-16">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid sm:grid-cols-3 gap-12 mb-12">
           <div>
-            <h4 className="font-bold text-base mb-1">South Street Food</h4>
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Le concept street food exclusif de Bayonne.
-              Ouvert jusqu&apos;a 4h du matin.
+            <h4 className="font-bold text-white text-base mb-2">
+              South Street Food
+            </h4>
+            <p className="text-sm leading-relaxed">
+              Le concept street food exclusif de Bayonne. Ouvert jusqu&apos;à
+              4h du matin.
             </p>
           </div>
           <div>
-            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
+            <h4 className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-4">
               Navigation
             </h4>
             <ul className="space-y-2.5">
@@ -576,7 +821,7 @@ function Footer() {
                 <li key={l}>
                   <Link
                     href="/menu"
-                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                    className="hover:text-white text-sm transition-colors"
                   >
                     {l}
                   </Link>
@@ -585,27 +830,31 @@ function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
+            <h4 className="text-white/40 text-xs font-semibold uppercase tracking-wider mb-4">
               Infos
             </h4>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
+            <ul className="space-y-2.5 text-sm">
               <li>Bayonne, France</li>
               <li>Livraison Bayonne &middot; Anglet &middot; Biarritz</li>
-              <li className="text-neon-green font-medium">
-                Ouvert jusqu&apos;a 4h
-              </li>
+              <li className="text-brand font-medium">Ouvert jusqu&apos;à 4h</li>
             </ul>
           </div>
         </div>
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-muted-foreground/50 text-xs">
+        <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className="text-white/30 text-xs">
             &copy; {new Date().getFullYear()} South Street Food
           </p>
           <div className="flex gap-5">
-            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
-              Mentions legales
+            <Link
+              href="#"
+              className="text-white/30 hover:text-white/60 text-xs transition-colors"
+            >
+              Mentions légales
             </Link>
-            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
+            <Link
+              href="#"
+              className="text-white/30 hover:text-white/60 text-xs transition-colors"
+            >
               CGV
             </Link>
           </div>
@@ -625,11 +874,11 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
       <Navbar />
       <main>
         <Hero />
-        <BestSellers items={bestSellers} />
+        <Manifesto />
+        <Showcase items={bestSellers} />
         <Concept />
         <Delivery />
         <Features />
-        <Restaurant />
         <CTA />
       </main>
       <Footer />
