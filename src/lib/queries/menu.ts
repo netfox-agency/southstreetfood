@@ -26,14 +26,56 @@ export async function getMenuItems() {
 }
 
 export async function getCategoriesWithItems() {
-  const [categories, items] = await Promise.all([
-    getCategories(),
-    getMenuItems(),
-  ]);
+  const supabase = await createClient();
 
-  return categories.map((cat: Record<string, unknown>) => ({
+  // Run everything in parallel: categories, items, variants (to count
+  // per item), and extra-group junctions (to know which items have
+  // required/optional selections). This lets the UI decide whether the
+  // "+" button should quick-add or open the composer page.
+  const [categoriesRes, itemsRes, variantsRes, junctionsRes] =
+    await Promise.all([
+      supabase
+        .from("categories")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order"),
+      supabase.from("menu_items").select("*").order("display_order"),
+      supabase.from("menu_item_variants").select("menu_item_id"),
+      supabase.from("menu_item_extra_groups").select("menu_item_id"),
+    ]);
+
+  if (categoriesRes.error) throw categoriesRes.error;
+  if (itemsRes.error) throw itemsRes.error;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const categories = (categoriesRes.data || []) as any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawItems = (itemsRes.data || []) as any[];
+  const variantRows = (variantsRes.data || []) as { menu_item_id: string }[];
+  const junctionRows = (junctionsRes.data || []) as { menu_item_id: string }[];
+
+  const variantCounts = new Map<string, number>();
+  for (const v of variantRows) {
+    variantCounts.set(
+      v.menu_item_id,
+      (variantCounts.get(v.menu_item_id) || 0) + 1
+    );
+  }
+  const itemsWithExtras = new Set<string>();
+  for (const j of junctionRows) itemsWithExtras.add(j.menu_item_id);
+
+  const items = rawItems.map((item) => ({
+    ...item,
+    // "has_options" = the item actually requires a choice screen:
+    //  - more than 1 variant to pick from, OR
+    //  - at least 1 extra group linked.
+    has_options:
+      (variantCounts.get(item.id) || 0) > 1 || itemsWithExtras.has(item.id),
+  }));
+
+  return categories.map((cat) => ({
     ...cat,
-    items: items.filter((item: Record<string, unknown>) => item.category_id === cat.id),
+    items: items.filter((item) => item.category_id === cat.id),
   }));
 }
 

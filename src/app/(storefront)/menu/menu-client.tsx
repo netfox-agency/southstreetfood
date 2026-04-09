@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface MenuItemData {
   id: string;
@@ -16,6 +17,8 @@ interface MenuItemData {
   is_available: boolean;
   is_featured: boolean;
   category_id: string;
+  /** True when the item has variants or extras that require a choice screen. */
+  has_options: boolean;
 }
 
 interface CategoryData {
@@ -62,9 +65,30 @@ function MenuItemRow({
   item: MenuItemData;
   categorySlug: string;
 }) {
-  // NOTE: le "+" est purement visuel — toute la carte est un Link qui
-  // amene sur la fiche produit pour que le client puisse composer
-  // (variants, extras, etc.) exactement comme sur Uber Eats.
+  const addItem = useCartStore((s) => s.addItem);
+
+  // Uber Eats-style logic:
+  //  - Item WITH options (variants/extras)  → "+" opens the composer page
+  //  - Item WITHOUT options (drinks, fries) → "+" quick-adds to the cart
+  // Clicking anywhere else on the card ALWAYS opens the item detail page.
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({
+      menuItemId: item.id,
+      menuItemName: item.name,
+      menuItemImage: item.image_url,
+      variantId: null,
+      variantName: null,
+      extras: [],
+      quantity: 1,
+      unitPrice: item.base_price,
+      extrasPrice: 0,
+      specialInstructions: null,
+    });
+    toast.success(`${item.name} ajoute au panier`);
+  };
+
   return (
     <Link href={`/item/${item.slug}`}>
       <div
@@ -105,14 +129,28 @@ function MenuItemRow({
               {ITEM_EMOJIS[categorySlug] || "🍽️"}
             </div>
           )}
-          {item.is_available && (
-            <div
-              aria-hidden="true"
-              className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
-            >
-              <Plus className="h-4 w-4 text-foreground" />
-            </div>
-          )}
+          {item.is_available &&
+            (item.has_options ? (
+              // Item with options: "+" is purely visual, card click
+              // already brings user to the detail page where they
+              // compose the order.
+              <div
+                aria-hidden="true"
+                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
+              >
+                <Plus className="h-4 w-4 text-foreground" />
+              </div>
+            ) : (
+              // Simple item (boisson, frites…): "+" quick-adds directly.
+              <button
+                type="button"
+                onClick={handleQuickAdd}
+                aria-label={`Ajouter ${item.name} au panier`}
+                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 active:scale-95 transition-transform cursor-pointer border border-border"
+              >
+                <Plus className="h-4 w-4 text-foreground" />
+              </button>
+            ))}
         </div>
       </div>
     </Link>
