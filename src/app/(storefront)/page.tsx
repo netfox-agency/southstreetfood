@@ -1,5 +1,5 @@
 import { getBestSellers } from "@/lib/queries/menu";
-import { HomeClient, type BestSellerItem } from "./home-client";
+import { HomeClient, type BestSellerItem } from "../home-client";
 
 export const dynamic = "force-dynamic";
 

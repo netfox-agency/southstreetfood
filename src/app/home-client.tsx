@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
@@ -43,58 +43,7 @@ function Reveal({
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   NAVBAR
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Navbar() {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", h, { passive: true });
-    return () => window.removeEventListener("scroll", h);
-  }, []);
-
-  return (
-    <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled ? "glass-nav" : ""
-      }`}
-    >
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          aria-label="South Street Food"
-          className="flex items-center"
-        >
-          <Image
-            src="/brand/logo.avif"
-            alt="South Street Food"
-            width={68}
-            height={41}
-            priority
-            className="h-9 w-auto object-contain"
-          />
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link
-            href="/menu"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:block"
-          >
-            La carte
-          </Link>
-          <Link href="/menu" className="btn-primary !py-2.5 !px-5 text-sm">
-            Commander
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   HERO — Clean, bold, Burger King / G La Dalle level
+   HERO
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Hero() {
@@ -123,10 +72,10 @@ function Hero() {
           sizes="100vw"
         />
       </div>
-      {/* Gradient — stronger at bottom for text readability */}
+      {/* Gradient */}
       <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-      {/* Mobile: centered — Desktop: bottom-left like EXODE */}
+      {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
@@ -173,7 +122,7 @@ function Hero() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   BEST SELLERS — Real items from Supabase
+   BEST SELLERS
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 export interface BestSellerItem {
@@ -191,13 +140,10 @@ function formatPrice(cents: number) {
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <Reveal className="py-24 sm:py-32">
+    <Reveal className="py-24 sm:py-32 bg-[#0a0a0a]">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
-          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
-            Les best sellers
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
+          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
             Nos incontournables
           </h2>
         </motion.div>
@@ -205,34 +151,36 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {items.map((item, i) => (
             <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
-              <Link href={`/item/${item.slug}`} className="block">
-                <div className="card-premium hover-lift p-0 overflow-hidden cursor-pointer">
+              <Link href={`/item/${item.slug}`} className="block group">
+                <div className="rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
                   {/* Image area */}
-                  <div className="aspect-square bg-gradient-to-br from-muted to-white flex items-center justify-center overflow-hidden">
+                  <div className="aspect-square overflow-hidden">
                     {item.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={item.image_url}
                         alt={item.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <span className="text-7xl">🍔</span>
+                      <div className="w-full h-full bg-white/[0.03] flex items-center justify-center">
+                        <span className="text-7xl">&#127828;</span>
+                      </div>
                     )}
                   </div>
                   {/* Content */}
                   <div className="p-5">
-                    <h3 className="font-bold text-base line-clamp-1">
+                    <h3 className="font-medium text-white text-base line-clamp-1">
                       {item.name}
                     </h3>
-                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2 min-h-[2.5rem]">
+                    <p className="text-white/40 text-sm mt-1 line-clamp-2 min-h-[2.5rem] font-light">
                       {item.description || ""}
                     </p>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="font-bold text-brand text-lg">
+                      <span className="font-medium text-white text-lg">
                         {formatPrice(item.base_price)} &euro;
                       </span>
-                      <span className="h-9 w-9 rounded-xl bg-brand text-white flex items-center justify-center text-lg font-bold">
+                      <span className="h-9 w-9 rounded-full bg-white/[0.08] text-white/60 flex items-center justify-center text-lg group-hover:bg-white/[0.15] transition-colors">
                         +
                       </span>
                     </div>
@@ -244,7 +192,10 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         </div>
 
         <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
-          <Link href="/menu" className="btn-outline">
+          <Link
+            href="/menu"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white/60 hover:text-white rounded-full border border-white/[0.12] hover:border-white/[0.25] transition-all duration-300"
+          >
             Voir toute la carte
             <ArrowRight className="h-4 w-4" />
           </Link>
@@ -254,29 +205,21 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
   );
 }
 
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   DELIVERY — Livraison section
+   DELIVERY
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Delivery() {
   return (
-    <Reveal className="py-24 sm:py-32 bg-muted">
+    <Reveal className="py-24 sm:py-32 bg-[#111]">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Text */}
           <div>
-            <motion.p
-              variants={fadeUp}
-              custom={0}
-              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
-            >
-              Livraison
-            </motion.p>
             <motion.h2
               variants={fadeUp}
-              custom={1}
-              className="text-4xl sm:text-5xl font-black tracking-tight leading-[0.95] mb-6"
+              custom={0}
+              className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[0.95] mb-6 text-white"
             >
               Livraison toute
               <br />
@@ -284,10 +227,10 @@ function Delivery() {
             </motion.h2>
             <motion.p
               variants={fadeUp}
-              custom={2}
-              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md"
+              custom={1}
+              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md font-light"
             >
-              Ouvert jusqu&apos;a 4h du matin avec livraison rapide
+              Ouvert jusqu&apos;&agrave; 4h du matin avec livraison rapide
               sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
               chez vous.
             </motion.p>
@@ -295,20 +238,20 @@ function Delivery() {
             {/* Stats */}
             <motion.div
               variants={fadeUp}
-              custom={3}
+              custom={2}
               className="grid grid-cols-3 gap-6"
             >
               {[
                 { value: "30", unit: "min", label: "Temps moyen" },
-                { value: "4h", unit: "", label: "Ouvert jusqu'a" },
+                { value: "4h", unit: "", label: "Ouvert jusqu\u2019\u00e0" },
                 { value: "BAB", unit: "", label: "Zone couverte" },
               ].map((s) => (
                 <div key={s.label}>
-                  <div className="text-3xl font-black text-brand">
+                  <div className="text-3xl font-semibold text-white">
                     {s.value}
-                    <span className="text-lg">{s.unit}</span>
+                    <span className="text-lg font-light">{s.unit}</span>
                   </div>
-                  <div className="text-muted-foreground text-sm mt-1">
+                  <div className="text-white/35 text-sm mt-1 font-light">
                     {s.label}
                   </div>
                 </div>
@@ -318,10 +261,10 @@ function Delivery() {
 
           {/* Image */}
           <motion.div variants={fadeUp} custom={2}>
-            <div className="aspect-[16/9] rounded-3xl overflow-hidden relative img-premium">
+            <div className="aspect-[16/9] rounded-2xl overflow-hidden relative border border-white/[0.06]">
               <Image
                 src="/delivery-van.png"
-                alt="Camionette de livraison South Speed Food sur la côte basque"
+                alt="Camionette de livraison South Speed Food sur la c&ocirc;te basque"
                 fill
                 className="object-cover object-center"
                 sizes="(max-width: 1024px) 100vw, 50vw"
@@ -335,33 +278,33 @@ function Delivery() {
   );
 }
 
-
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    CTA Final
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function CTA() {
   return (
-    <Reveal className="py-24 sm:py-32">
+    <Reveal className="py-24 sm:py-32 bg-[#0a0a0a]">
       <div className="max-w-4xl mx-auto px-6 text-center">
         <motion.h2
           variants={fadeUp}
           custom={0}
-          className="text-4xl sm:text-5xl font-black tracking-tight mb-6"
+          className="text-4xl sm:text-5xl font-semibold tracking-tight mb-6 text-white"
         >
-          Une faim de loup ?
+          Votre commande vous attend.
         </motion.h2>
         <motion.p
           variants={fadeUp}
           custom={1}
-          className="text-muted-foreground text-lg mb-10 max-w-md mx-auto"
+          className="text-white/40 text-lg mb-10 max-w-md mx-auto font-light"
         >
-          Commandez maintenant et recevez votre commande en 30 minutes,
-          ou recuperez-la au restaurant.
+          Livraison en 30 minutes ou retrait au restaurant.
         </motion.p>
         <motion.div variants={fadeUp} custom={2}>
-          <Link href="/menu" className="btn-primary text-base !py-4 !px-10">
+          <Link
+            href="/menu"
+            className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-medium text-white bg-white/[0.1] hover:bg-white/[0.18] rounded-full border border-white/[0.2] backdrop-blur-md transition-all duration-300"
+          >
             Commander maintenant
             <ArrowRight className="h-4 w-4" />
           </Link>
@@ -372,90 +315,16 @@ function CTA() {
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   FOOTER
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Footer() {
-  return (
-    <footer className="border-t border-border py-16">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid sm:grid-cols-3 gap-12 mb-12">
-          <div>
-            <Image
-              src="/brand/logo.avif"
-              alt="South Street Food"
-              width={100}
-              height={60}
-              className="h-12 w-auto object-contain mb-3"
-            />
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Le concept street food exclusif de Bayonne.
-              Ouvert jusqu&apos;a 4h du matin.
-            </p>
-          </div>
-          <div>
-            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
-              Navigation
-            </h4>
-            <ul className="space-y-2.5">
-              {["La carte", "Commander", "Mon compte"].map((l) => (
-                <li key={l}>
-                  <Link
-                    href="/menu"
-                    className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                  >
-                    {l}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-muted-foreground text-xs font-semibold uppercase tracking-wider mb-4">
-              Infos
-            </h4>
-            <ul className="space-y-2.5 text-sm text-muted-foreground">
-              <li>Bayonne, France</li>
-              <li>Livraison Bayonne &middot; Anglet &middot; Biarritz</li>
-              <li className="text-neon-green font-medium">
-                Ouvert jusqu&apos;a 4h
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-muted-foreground/50 text-xs">
-            &copy; {new Date().getFullYear()} South Street Food
-          </p>
-          <div className="flex gap-5">
-            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
-              Mentions legales
-            </Link>
-            <Link href="#" className="text-muted-foreground/50 hover:text-muted-foreground text-xs transition-colors">
-              CGV
-            </Link>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    PAGE
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
   return (
     <>
-      <Navbar />
-      <main>
-        <Hero />
-        <BestSellers items={bestSellers} />
-        <Delivery />
-        <CTA />
-      </main>
-      <Footer />
+      <Hero />
+      <BestSellers items={bestSellers} />
+      <Delivery />
+      <CTA />
     </>
   );
 }
