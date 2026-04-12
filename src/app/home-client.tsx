@@ -106,7 +106,7 @@ function Hero() {
           src="/hero-food-mobile.png"
           alt="South Street Food — burgers, tacos, wraps et boissons"
           fill
-          className="object-cover object-[center_30%]"
+          className="object-cover object-[center_20%]"
           priority
           unoptimized
           sizes="100vw"
@@ -123,16 +123,16 @@ function Hero() {
           sizes="100vw"
         />
       </div>
-      {/* Very subtle gradient — just enough for text, image stays vibrant */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-transparent to-black/10" />
+      {/* Gradient — stronger at bottom for text readability */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-      {/* Centered content */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-center px-6 pt-16 text-white">
+      {/* Bottom-left content — like EXODE reference */}
+      <div className="relative z-10 h-full flex flex-col justify-end px-8 sm:px-12 lg:px-16 pb-16 sm:pb-16 pt-16 text-white">
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="text-center text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em]"
+          className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em] max-w-2xl"
         >
           Le go&ucirc;t du{" "}
           <span className="italic font-light">sud.</span>
@@ -142,10 +142,9 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 0.7 }}
-          className="mt-4 text-center text-white/70 text-base sm:text-lg font-light max-w-md leading-relaxed"
+          className="mt-4 text-white/60 text-base sm:text-lg font-light max-w-md leading-relaxed"
         >
           Burgers, tacos &amp; wraps artisanaux.
-          <br />
           Livr&eacute;s chez vous jusqu&apos;&agrave; 4h du matin.
         </motion.p>
 
@@ -153,7 +152,7 @@ function Hero() {
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 1 }}
-          className="mt-8"
+          className="mt-8 flex items-center gap-5"
         >
           <Link
             href="/menu"
@@ -161,6 +160,12 @@ function Hero() {
           >
             Commander
             <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="#concept"
+            className="text-sm text-white/40 hover:text-white/60 font-light transition-colors"
+          >
+            En savoir plus
           </Link>
         </motion.div>
       </div>
