@@ -99,7 +99,7 @@ function Navbar() {
 
 function Hero() {
   return (
-    <section className="dark-section relative h-screen flex flex-col items-center justify-center overflow-hidden">
+    <section className="dark-section relative h-screen overflow-hidden">
       {/* Full-bleed hero image */}
       <div className="absolute inset-0">
         <Image
@@ -110,70 +110,65 @@ function Hero() {
           priority
           sizes="100vw"
         />
-        {/* Bottom-heavy gradient so text pops */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/20" />
+        {/* Gradient — strong at bottom for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/5" />
       </div>
 
-      {/* Centered content — Apple style */}
-      <div className="relative z-10 flex flex-col items-center text-center px-6 mt-auto mb-20 sm:mb-28">
-        <motion.h1
-          initial={{ opacity: 0, y: 50, filter: "blur(16px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{ duration: 1.4, ease, delay: 0.2 }}
-          className="text-5xl sm:text-7xl lg:text-8xl xl:text-9xl font-black text-white leading-[0.9] tracking-tight"
-        >
-          South Street
-          <br />
-          <span className="text-brand">Food.</span>
-        </motion.h1>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease, delay: 0.7 }}
-          className="mt-6 text-white/60 text-lg sm:text-xl max-w-md leading-relaxed"
-        >
-          Burgers, tacos &amp; wraps artisanaux.
-          <br className="hidden sm:block" />
-          Livr&eacute; chez vous jusqu&apos;&agrave; 4h du matin.
-        </motion.p>
-
+      {/* Bottom content — split layout like references */}
+      <div className="relative z-10 h-full flex flex-col justify-end px-8 sm:px-12 lg:px-16 pb-12 sm:pb-16">
+        {/* Thin separator line */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease, delay: 1 }}
-          className="mt-8 flex flex-wrap justify-center gap-4"
-        >
-          <Link
-            href="/menu"
-            className="btn-primary text-base !py-4 !px-10 !text-lg"
-          >
-            Commander
-            <ArrowRight className="h-5 w-5" />
-          </Link>
-        </motion.div>
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: 1.2, ease, delay: 0.6 }}
+          className="w-full h-px bg-white/20 origin-left mb-8"
+        />
 
-        {/* Info chips */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.4, duration: 0.8 }}
-          className="mt-8 flex flex-wrap justify-center gap-5"
-        >
-          {[
-            { icon: Clock, text: "Ouvert jusqu'a 4h" },
-            { icon: Truck, text: "Livraison 30 min" },
-            { icon: MapPin, text: "Bayonne \u00b7 Anglet \u00b7 Biarritz" },
-          ].map((f) => (
-            <span
-              key={f.text}
-              className="flex items-center gap-2 text-white/40 text-sm"
+        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+          {/* Left — headline */}
+          <div>
+            <motion.h1
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, ease, delay: 0.2 }}
+              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light text-white leading-[1.05] tracking-[-0.02em]"
             >
-              <f.icon className="h-3.5 w-3.5" />
-              {f.text}
-            </span>
-          ))}
-        </motion.div>
+              South Street Food.
+              <br />
+              <span className="text-white/50 italic">L&apos;exp&eacute;rience street food.</span>
+            </motion.h1>
+          </div>
+
+          {/* Right — description + CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease, delay: 0.8 }}
+            className="lg:max-w-sm flex flex-col gap-6"
+          >
+            <p className="text-white/50 text-sm sm:text-base leading-relaxed font-light">
+              Burgers, tacos &amp; wraps artisanaux.
+              Livraison rapide sur Bayonne, Anglet et Biarritz.
+              Ouvert tous les soirs jusqu&apos;&agrave; 4h du matin.
+            </p>
+
+            <div className="flex items-center gap-4">
+              <Link
+                href="/menu"
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-white/[0.12] hover:bg-white/[0.2] rounded-full border border-white/[0.15] backdrop-blur-sm transition-all"
+              >
+                Commander
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="#concept"
+                className="text-sm text-white/40 hover:text-white/70 transition-colors font-light"
+              >
+                En savoir plus
+              </Link>
+            </div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
