@@ -109,15 +109,22 @@ function Hero() {
             Commander
             <ArrowRight className="h-4 w-4" />
           </Link>
-          <Link
-            href="/menu"
+          <a
+            href="#best-sellers"
             className="text-sm text-white/40 hover:text-white/60 font-light transition-colors hidden sm:inline"
           >
-            En savoir plus
-          </Link>
+            Nos incontournables
+          </a>
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/* dark → white bridge */
+function HeroBridge() {
+  return (
+    <div className="h-24 sm:h-32 bg-gradient-to-b from-black to-white" />
   );
 }
 
@@ -140,7 +147,7 @@ function formatPrice(cents: number) {
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <Reveal className="py-24 sm:py-32 bg-white">
+    <Reveal id="best-sellers" className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
           <h2 className="font-display text-4xl sm:text-5xl text-foreground leading-[1] tracking-wide uppercase">
@@ -152,7 +159,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
           {items.map((item, i) => (
             <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
               <Link href={`/item/${item.slug}`} className="block group">
-                <div className="rounded-2xl overflow-hidden bg-white border border-border hover:border-foreground/15 hover:shadow-lg transition-all duration-300 cursor-pointer">
+                <div className="rounded-2xl overflow-hidden bg-white border border-border shadow-sm hover:border-foreground/15 hover:shadow-lg transition-all duration-300 cursor-pointer">
                   {/* Image area */}
                   <div className="aspect-square overflow-hidden bg-muted">
                     {item.image_url ? (
@@ -194,7 +201,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full border border-border hover:border-foreground/25 transition-all duration-300"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-foreground hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:shadow-sm transition-all duration-300"
           >
             Voir toute la carte
             <ArrowRight className="h-4 w-4" />
@@ -322,7 +329,9 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
   return (
     <>
       <Hero />
+      <HeroBridge />
       <BestSellers items={bestSellers} />
+      <div className="h-24 sm:h-32 bg-gradient-to-b from-white to-[#111]" />
       <Delivery />
       <CTA />
     </>
