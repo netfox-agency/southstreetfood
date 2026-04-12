@@ -81,9 +81,10 @@ function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="font-display text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-white leading-[1] tracking-wide max-w-2xl uppercase"
+          className="text-center sm:text-left text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em] max-w-2xl"
         >
-          Le go&ucirc;t du sud
+          Le go&ucirc;t du{" "}
+          <span className="italic font-light">sud.</span>
         </motion.h1>
 
         <motion.p
@@ -288,7 +289,7 @@ function CTA() {
         <motion.h2
           variants={fadeUp}
           custom={0}
-          className="font-display text-4xl sm:text-5xl leading-[1] tracking-wide mb-6 text-white uppercase"
+          className="text-4xl sm:text-5xl font-semibold tracking-tight mb-6 text-white"
         >
           Votre commande vous attend.
         </motion.h2>
