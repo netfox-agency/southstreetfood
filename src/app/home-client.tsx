@@ -121,10 +121,10 @@ function Hero() {
   );
 }
 
-/* dark → white bridge */
+/* dark → warm bridge */
 function HeroBridge() {
   return (
-    <div className="h-24 sm:h-32 bg-gradient-to-b from-black to-white" />
+    <div className="h-24 sm:h-32 bg-gradient-to-b from-black to-[#faf8f6]" />
   );
 }
 
@@ -147,7 +147,7 @@ function formatPrice(cents: number) {
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <Reveal id="best-sellers" className="py-24 sm:py-32 bg-white">
+    <Reveal id="best-sellers" className="py-24 sm:py-32 bg-[#faf8f6]">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
           <h2 className="font-display text-4xl sm:text-5xl text-foreground leading-[1] tracking-wide uppercase">
@@ -187,7 +187,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
                       <span className="font-medium text-foreground text-lg">
                         {formatPrice(item.base_price)} &euro;
                       </span>
-                      <span className="h-9 w-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-lg group-hover:bg-foreground/10 transition-colors">
+                      <span className="h-9 w-9 rounded-full bg-brand/10 text-brand flex items-center justify-center text-lg group-hover:bg-brand/20 transition-colors">
                         +
                       </span>
                     </div>
@@ -201,7 +201,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-foreground hover:text-foreground rounded-full border border-foreground/20 hover:border-foreground/40 hover:shadow-sm transition-all duration-300"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-brand hover:text-brand-dark rounded-full border border-brand/30 hover:border-brand/60 hover:shadow-sm transition-all duration-300"
           >
             Voir toute la carte
             <ArrowRight className="h-4 w-4" />
@@ -291,7 +291,7 @@ function Delivery() {
 
 function CTA() {
   return (
-    <Reveal className="py-24 sm:py-32 bg-[#0a0a0a]">
+    <Reveal className="py-24 sm:py-32 bg-brand">
       <div className="max-w-4xl mx-auto px-6 text-center">
         <motion.h2
           variants={fadeUp}
@@ -303,14 +303,14 @@ function CTA() {
         <motion.p
           variants={fadeUp}
           custom={1}
-          className="text-white/40 text-lg mb-10 max-w-md mx-auto font-light"
+          className="text-white/70 text-lg mb-10 max-w-md mx-auto font-light"
         >
           Livraison en 30 minutes ou retrait au restaurant.
         </motion.p>
         <motion.div variants={fadeUp} custom={2}>
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-medium text-white bg-white/[0.1] hover:bg-white/[0.18] rounded-full border border-white/[0.2] backdrop-blur-md transition-all duration-300"
+            className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-semibold text-brand bg-white hover:bg-white/90 rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
           >
             Commander maintenant
             <ArrowRight className="h-4 w-4" />
@@ -331,8 +331,9 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
       <Hero />
       <HeroBridge />
       <BestSellers items={bestSellers} />
-      <div className="h-24 sm:h-32 bg-gradient-to-b from-white to-[#111]" />
+      <div className="h-24 sm:h-32 bg-gradient-to-b from-[#faf8f6] to-[#111]" />
       <Delivery />
+      <div className="h-16 sm:h-24 bg-gradient-to-b from-[#111] to-brand" />
       <CTA />
     </>
   );
