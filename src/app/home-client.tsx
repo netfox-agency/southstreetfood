@@ -100,13 +100,24 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative h-screen overflow-hidden bg-black -mt-16">
-      {/* Full-bleed hero image — the star */}
-      <div className="absolute inset-0 z-0">
+      {/* Full-bleed hero image — mobile portrait + desktop landscape */}
+      <div className="absolute inset-0 z-0 sm:hidden">
+        <Image
+          src="/hero-food-mobile.png"
+          alt="South Street Food — burgers, tacos, wraps et boissons"
+          fill
+          className="object-cover object-[center_30%]"
+          priority
+          unoptimized
+          sizes="100vw"
+        />
+      </div>
+      <div className="absolute inset-0 z-0 hidden sm:block">
         <Image
           src="/hero-food.png"
           alt="South Street Food — burgers, tacos, wraps et boissons"
           fill
-          className="object-cover object-[center_30%] sm:object-center"
+          className="object-cover object-center"
           priority
           unoptimized
           sizes="100vw"
