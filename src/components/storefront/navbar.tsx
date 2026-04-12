@@ -44,9 +44,9 @@ export function Navbar() {
       )}
     >
       <nav className="mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="flex h-14 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Logo size="sm" />
+          <Logo size="md" />
 
           {/* Desktop Nav — centered */}
           <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">

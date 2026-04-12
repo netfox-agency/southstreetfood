@@ -16,8 +16,8 @@ const NATIVE_W = 768;
 const NATIVE_H = 463;
 
 const heights = {
-  sm: 28,
-  md: 36,
+  sm: 36,
+  md: 48,
   lg: 56,
 };
 

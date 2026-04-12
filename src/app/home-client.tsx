@@ -121,12 +121,6 @@ function Hero() {
   );
 }
 
-/* dark → warm bridge */
-function HeroBridge() {
-  return (
-    <div className="h-24 sm:h-32 bg-gradient-to-b from-black to-[#faf8f6]" />
-  );
-}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    BEST SELLERS
@@ -147,7 +141,7 @@ function formatPrice(cents: number) {
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <Reveal id="best-sellers" className="py-24 sm:py-32 bg-[#faf8f6]">
+    <Reveal id="best-sellers" className="py-24 sm:py-32 bg-[#f9f9f9]">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
           <h2 className="font-display text-4xl sm:text-5xl text-foreground leading-[1] tracking-wide uppercase">
@@ -218,7 +212,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
 
 function Delivery() {
   return (
-    <Reveal className="py-24 sm:py-32 bg-[#111]">
+    <Reveal className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           {/* Text */}
@@ -226,7 +220,7 @@ function Delivery() {
             <motion.h2
               variants={fadeUp}
               custom={0}
-              className="font-display text-4xl sm:text-5xl leading-[1] tracking-wide mb-6 text-white uppercase"
+              className="font-display text-4xl sm:text-5xl leading-[1] tracking-wide mb-6 text-foreground uppercase"
             >
               Livraison toute
               <br />
@@ -235,7 +229,7 @@ function Delivery() {
             <motion.p
               variants={fadeUp}
               custom={1}
-              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md font-light"
+              className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md font-light"
             >
               Ouvert jusqu&apos;&agrave; 4h du matin avec livraison rapide
               sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
@@ -254,11 +248,11 @@ function Delivery() {
                 { value: "BAB", unit: "", label: "Zone couverte" },
               ].map((s) => (
                 <div key={s.label}>
-                  <div className="text-3xl font-semibold text-white">
+                  <div className="text-3xl font-semibold text-foreground">
                     {s.value}
                     <span className="text-lg font-light">{s.unit}</span>
                   </div>
-                  <div className="text-white/35 text-sm mt-1 font-light">
+                  <div className="text-muted-foreground text-sm mt-1 font-light">
                     {s.label}
                   </div>
                 </div>
@@ -268,7 +262,7 @@ function Delivery() {
 
           {/* Image */}
           <motion.div variants={fadeUp} custom={2}>
-            <div className="aspect-[16/9] rounded-2xl overflow-hidden relative border border-white/[0.06]">
+            <div className="aspect-[16/9] rounded-2xl overflow-hidden relative border border-border">
               <Image
                 src="/delivery-van.png"
                 alt="Camionette de livraison South Speed Food sur la c&ocirc;te basque"
@@ -329,11 +323,8 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
   return (
     <>
       <Hero />
-      <HeroBridge />
       <BestSellers items={bestSellers} />
-      <div className="h-24 sm:h-32 bg-gradient-to-b from-[#faf8f6] to-[#111]" />
       <Delivery />
-      <div className="h-16 sm:h-24 bg-gradient-to-b from-[#111] to-brand" />
       <CTA />
     </>
   );
