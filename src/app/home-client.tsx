@@ -140,10 +140,10 @@ function formatPrice(cents: number) {
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
   return (
-    <Reveal className="py-24 sm:py-32 bg-[#0a0a0a]">
+    <Reveal className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
-          <h2 className="font-display text-4xl sm:text-5xl text-white leading-[1] tracking-wide uppercase">
+          <h2 className="font-display text-4xl sm:text-5xl text-foreground leading-[1] tracking-wide uppercase">
             Nos incontournables
           </h2>
         </motion.div>
@@ -152,9 +152,9 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
           {items.map((item, i) => (
             <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
               <Link href={`/item/${item.slug}`} className="block group">
-                <div className="rounded-2xl overflow-hidden bg-white/[0.04] border border-white/[0.06] hover:border-white/[0.12] transition-all duration-300 cursor-pointer">
+                <div className="rounded-2xl overflow-hidden bg-white border border-border hover:border-foreground/15 hover:shadow-lg transition-all duration-300 cursor-pointer">
                   {/* Image area */}
-                  <div className="aspect-square overflow-hidden">
+                  <div className="aspect-square overflow-hidden bg-muted">
                     {item.image_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -163,24 +163,24 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full bg-white/[0.03] flex items-center justify-center">
+                      <div className="w-full h-full flex items-center justify-center">
                         <span className="text-7xl">&#127828;</span>
                       </div>
                     )}
                   </div>
                   {/* Content */}
                   <div className="p-5">
-                    <h3 className="font-medium text-white text-base line-clamp-1">
+                    <h3 className="font-medium text-foreground text-base line-clamp-1">
                       {item.name}
                     </h3>
-                    <p className="text-white/40 text-sm mt-1 line-clamp-2 min-h-[2.5rem] font-light">
+                    <p className="text-muted-foreground text-sm mt-1 line-clamp-2 min-h-[2.5rem] font-light">
                       {item.description || ""}
                     </p>
                     <div className="mt-3 flex items-center justify-between">
-                      <span className="font-medium text-white text-lg">
+                      <span className="font-medium text-foreground text-lg">
                         {formatPrice(item.base_price)} &euro;
                       </span>
-                      <span className="h-9 w-9 rounded-full bg-white/[0.08] text-white/60 flex items-center justify-center text-lg group-hover:bg-white/[0.15] transition-colors">
+                      <span className="h-9 w-9 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-lg group-hover:bg-foreground/10 transition-colors">
                         +
                       </span>
                     </div>
@@ -194,7 +194,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         <motion.div variants={fadeUp} custom={5} className="mt-10 text-center">
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-white/60 hover:text-white rounded-full border border-white/[0.12] hover:border-white/[0.25] transition-all duration-300"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground rounded-full border border-border hover:border-foreground/25 transition-all duration-300"
           >
             Voir toute la carte
             <ArrowRight className="h-4 w-4" />
