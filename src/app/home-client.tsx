@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useInView } from "framer-motion";
-import { ArrowRight, Clock, MapPin, Truck, Star } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -144,9 +144,7 @@ function Hero() {
           transition={{ duration: 0.8, ease, delay: 0.7 }}
           className="mt-4 text-center sm:text-left text-white/60 text-base sm:text-lg font-light max-w-md leading-relaxed"
         >
-          Burgers, tacos &amp; wraps artisanaux.
-          <br className="sm:hidden" />
-          Livr&eacute;s chez vous jusqu&apos;&agrave; 4h du matin.
+          Livr&eacute; chez vous jusqu&apos;&agrave; 4h.
         </motion.p>
 
         <motion.div
@@ -163,7 +161,7 @@ function Hero() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            href="#concept"
+            href="/menu"
             className="text-sm text-white/40 hover:text-white/60 font-light transition-colors hidden sm:inline"
           >
             En savoir plus
@@ -256,71 +254,6 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
   );
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   CONCEPT — Le concept
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Concept() {
-  return (
-    <Reveal id="concept" className="dark-section py-24 sm:py-32">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Images */}
-          <motion.div variants={fadeUp} custom={0}>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="aspect-[3/4] rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-6xl">
-                🍔
-              </div>
-              <div className="space-y-4">
-                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
-                  🍟
-                </div>
-                <div className="aspect-square rounded-3xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-5xl">
-                  🌮
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Text */}
-          <div>
-            <motion.p
-              variants={fadeUp}
-              custom={0}
-              className="text-brand font-semibold text-sm uppercase tracking-wide mb-4"
-            >
-              Le concept
-            </motion.p>
-            <motion.h2
-              variants={fadeUp}
-              custom={1}
-              className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-[0.95] mb-6"
-            >
-              Concept exclusif
-              <br />
-              a Bayonne
-            </motion.h2>
-            <motion.p
-              variants={fadeUp}
-              custom={2}
-              className="text-white/45 text-lg leading-relaxed mb-8 max-w-md"
-            >
-              Notre menu varie vous regale a petit prix, sans contrainte,
-              a tout moment de la soiree. Seul, en famille ou entre amis.
-              Des ingredients frais, des recettes qui envoient.
-            </motion.p>
-            <motion.div variants={fadeUp} custom={3}>
-              <Link href="/menu" className="btn-primary">
-                Voir la carte
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </motion.div>
-          </div>
-        </div>
-      </div>
-    </Reveal>
-  );
-}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    DELIVERY — Livraison section
@@ -402,91 +335,7 @@ function Delivery() {
   );
 }
 
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   FEATURES — 3 features propres
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
-function Features() {
-  const items = [
-    {
-      icon: Star,
-      title: "Qualite artisanale",
-      desc: "Ingredients frais selectionnes chaque jour. Des recettes maison qui font la difference.",
-    },
-    {
-      icon: Truck,
-      title: "Livre en 30 min",
-      desc: "Commandez en ligne, on livre chaud chez vous. Bayonne, Anglet, Biarritz et alentours.",
-    },
-    {
-      icon: MapPin,
-      title: "Click & Collect",
-      desc: "Commandez, choisissez votre creneau, et recuperez au restaurant. Zero attente.",
-    },
-  ];
-
-  return (
-    <Reveal className="py-24 sm:py-32">
-      <div className="max-w-6xl mx-auto px-6">
-        <div className="grid sm:grid-cols-3 gap-6">
-          {items.map((f, i) => (
-            <motion.div key={f.title} variants={fadeUp} custom={i}>
-              <div className="card-premium p-8 h-full">
-                <div className="h-12 w-12 rounded-2xl bg-brand/8 flex items-center justify-center mb-5">
-                  <f.icon className="h-6 w-6 text-brand" />
-                </div>
-                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {f.desc}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </Reveal>
-  );
-}
-
-/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESTAURANT — Photo lieu
-   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-
-function Restaurant() {
-  return (
-    <Reveal className="py-24 sm:py-32 bg-muted">
-      <div className="max-w-6xl mx-auto px-6">
-        <motion.div variants={fadeUp} custom={0} className="text-center mb-12">
-          <p className="text-brand font-semibold text-sm uppercase tracking-wide mb-2">
-            Le restaurant
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight">
-            Sur place ou a emporter
-          </h2>
-        </motion.div>
-
-        <motion.div variants={fadeUp} custom={1}>
-          <div className="relative aspect-[21/9] rounded-3xl bg-gradient-to-br from-accent/5 to-muted border border-border overflow-hidden img-premium">
-            <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <MapPin className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Photo interieur restaurant</p>
-              </div>
-            </div>
-            {/* Bottom gradient overlay */}
-            <div className="absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-6 left-8">
-              <h3 className="text-white text-xl font-bold">
-                South Street Food
-              </h3>
-              <p className="text-white/60 text-sm">Bayonne, France</p>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-    </Reveal>
-  );
-}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    CTA Final
@@ -603,10 +452,7 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
       <main>
         <Hero />
         <BestSellers items={bestSellers} />
-        <Concept />
         <Delivery />
-        <Features />
-        <Restaurant />
         <CTA />
       </main>
       <Footer />
