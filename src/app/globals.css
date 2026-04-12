@@ -6,6 +6,18 @@
    Clean, bold, real — not AI-looking
    ============================================ */
 
+@font-face {
+  font-family: "Pricedown";
+  src: url("/fonts/Pricedown Bl.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-display {
+  font-family: "Pricedown", ui-sans-serif, sans-serif;
+}
+
 @theme inline {
   --color-brand: #e8416f;
   --color-brand-dark: #d13a63;

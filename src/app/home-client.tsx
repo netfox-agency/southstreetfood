@@ -81,10 +81,9 @@ function Hero() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="text-center sm:text-left text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em] max-w-2xl"
+          className="font-display text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-8xl text-white leading-[1] tracking-wide max-w-2xl uppercase"
         >
-          Le go&ucirc;t du{" "}
-          <span className="italic font-light">sud.</span>
+          Le go&ucirc;t du sud
         </motion.h1>
 
         <motion.p
@@ -143,7 +142,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
     <Reveal className="py-24 sm:py-32 bg-[#0a0a0a]">
       <div className="max-w-6xl mx-auto px-6">
         <motion.div variants={fadeUp} custom={0} className="mb-12">
-          <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-white">
+          <h2 className="font-display text-4xl sm:text-5xl text-white leading-[1] tracking-wide uppercase">
             Nos incontournables
           </h2>
         </motion.div>
@@ -219,7 +218,7 @@ function Delivery() {
             <motion.h2
               variants={fadeUp}
               custom={0}
-              className="text-4xl sm:text-5xl font-semibold tracking-tight leading-[0.95] mb-6 text-white"
+              className="font-display text-4xl sm:text-5xl leading-[1] tracking-wide mb-6 text-white uppercase"
             >
               Livraison toute
               <br />
@@ -289,7 +288,7 @@ function CTA() {
         <motion.h2
           variants={fadeUp}
           custom={0}
-          className="text-4xl sm:text-5xl font-semibold tracking-tight mb-6 text-white"
+          className="font-display text-4xl sm:text-5xl leading-[1] tracking-wide mb-6 text-white uppercase"
         >
           Votre commande vous attend.
         </motion.h2>
