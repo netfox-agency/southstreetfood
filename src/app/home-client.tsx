@@ -99,76 +99,59 @@ function Navbar() {
 
 function Hero() {
   return (
-    <section className="dark-section relative h-screen overflow-hidden">
-      {/* Full-bleed hero image */}
-      <div className="absolute inset-0">
+    <section className="relative h-screen overflow-hidden bg-black -mt-16">
+      {/* Full-bleed hero image — the star */}
+      <div className="absolute inset-0 z-0">
         <Image
           src="/hero-food.png"
           alt="South Street Food — burgers, tacos, wraps et boissons"
           fill
-          className="object-cover object-[center_35%]"
+          className="object-cover object-[center_30%] sm:object-center"
           priority
+          unoptimized
           sizes="100vw"
         />
-        {/* Gradient — strong at bottom for text readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/5" />
       </div>
+      {/* Very subtle gradient — just enough for text, image stays vibrant */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-transparent to-black/10" />
 
-      {/* Bottom content — split layout like references */}
-      <div className="relative z-10 h-full flex flex-col justify-end px-8 sm:px-12 lg:px-16 pb-12 sm:pb-16">
-        {/* Thin separator line */}
+      {/* Centered content */}
+      <div className="relative z-10 h-full flex flex-col items-center justify-center px-6 pt-16 text-white">
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, ease, delay: 0.3 }}
+          className="text-center text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em]"
+        >
+          Le go&ucirc;t du{" "}
+          <span className="italic font-light">sud.</span>
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease, delay: 0.7 }}
+          className="mt-4 text-center text-white/70 text-base sm:text-lg font-light max-w-md leading-relaxed"
+        >
+          Burgers, tacos &amp; wraps artisanaux.
+          <br />
+          Livr&eacute;s chez vous jusqu&apos;&agrave; 4h du matin.
+        </motion.p>
+
         <motion.div
-          initial={{ scaleX: 0 }}
-          animate={{ scaleX: 1 }}
-          transition={{ duration: 1.2, ease, delay: 0.6 }}
-          className="w-full h-px bg-white/20 origin-left mb-8"
-        />
-
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-          {/* Left — headline */}
-          <div>
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1.2, ease, delay: 0.2 }}
-              className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-light text-white leading-[1.05] tracking-[-0.02em]"
-            >
-              South Street Food.
-              <br />
-              <span className="text-white/50 italic">L&apos;exp&eacute;rience street food.</span>
-            </motion.h1>
-          </div>
-
-          {/* Right — description + CTA */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease, delay: 0.8 }}
-            className="lg:max-w-sm flex flex-col gap-6"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease, delay: 1 }}
+          className="mt-8"
+        >
+          <Link
+            href="/menu"
+            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.18] rounded-full border border-white/[0.2] backdrop-blur-md transition-all duration-300"
           >
-            <p className="text-white/50 text-sm sm:text-base leading-relaxed font-light">
-              Burgers, tacos &amp; wraps artisanaux.
-              Livraison rapide sur Bayonne, Anglet et Biarritz.
-              Ouvert tous les soirs jusqu&apos;&agrave; 4h du matin.
-            </p>
-
-            <div className="flex items-center gap-4">
-              <Link
-                href="/menu"
-                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-white bg-white/[0.12] hover:bg-white/[0.2] rounded-full border border-white/[0.15] backdrop-blur-sm transition-all"
-              >
-                Commander
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#concept"
-                className="text-sm text-white/40 hover:text-white/70 transition-colors font-light"
-              >
-                En savoir plus
-              </Link>
-            </div>
-          </motion.div>
-        </div>
+            Commander
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

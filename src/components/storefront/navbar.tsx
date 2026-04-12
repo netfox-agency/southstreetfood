@@ -7,12 +7,9 @@ import {
   ShoppingBag,
   Menu as MenuIcon,
   X,
-  User,
   Gift,
 } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 
@@ -38,100 +35,95 @@ export function Navbar() {
   }, [pathname]);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4">
-      <nav
-        className={cn(
-          "flex items-center gap-1 rounded-full px-2 transition-all duration-500",
-          scrolled
-            ? "bg-white/10 backdrop-blur-xl border border-white/[0.08] shadow-lg shadow-black/10"
-            : "bg-white/[0.06] backdrop-blur-md border border-white/[0.05]"
-        )}
-      >
-        {/* Logo */}
-        <Link href="/" className="flex items-center px-3 py-2">
-          <Logo size="sm" />
-        </Link>
-
-        {/* Desktop Nav */}
-        <div className="hidden md:flex items-center">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "px-4 py-2 text-sm font-light rounded-full transition-colors",
-                pathname === link.href
-                  ? "text-white"
-                  : "text-white/60 hover:text-white"
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Right Actions */}
-        <div className="flex items-center">
-          <Link href="/account">
-            <button className="p-2.5 text-white/60 hover:text-white transition-colors" aria-label="Mon compte">
-              <User className="h-4 w-4" />
-            </button>
+    <header
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
+        scrolled
+          ? "bg-black/40 backdrop-blur-xl border-b border-white/[0.06]"
+          : "bg-transparent"
+      )}
+    >
+      <nav className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between">
+          {/* Logo */}
+          <Link href="/">
+            <Logo size="sm" />
           </Link>
 
-          <Link href="/cart" className="relative">
-            <button className="p-2.5 text-white/60 hover:text-white transition-colors" aria-label="Panier">
-              <ShoppingBag className="h-4 w-4" />
+          {/* Desktop Nav — centered */}
+          <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "text-sm transition-colors",
+                  pathname === link.href
+                    ? "text-white font-medium"
+                    : "text-white/60 hover:text-white font-light"
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Right — cart + CTA */}
+          <div className="flex items-center gap-3">
+            <Link href="/cart" className="relative p-2 text-white/60 hover:text-white transition-colors">
+              <ShoppingBag className="h-[18px] w-[18px]" />
               {itemCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-brand text-[9px] font-medium text-white flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-white text-[9px] font-semibold text-black flex items-center justify-center">
                   {itemCount}
                 </span>
               )}
+            </Link>
+
+            <Link
+              href="/menu"
+              className="hidden md:inline-flex items-center px-5 py-1.5 text-sm font-medium text-white rounded-full border border-white/[0.25] hover:bg-white/[0.1] transition-all duration-300"
+            >
+              Commander
+            </Link>
+
+            {/* Mobile menu toggle */}
+            <button
+              className="md:hidden p-2 text-white/60 hover:text-white transition-colors"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Menu"
+            >
+              {mobileOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <MenuIcon className="h-5 w-5" />
+              )}
             </button>
-          </Link>
-
-          {/* CTA */}
-          <Link
-            href="/menu"
-            className="hidden md:flex items-center gap-1.5 ml-1 px-5 py-2 text-sm font-medium text-white bg-white/[0.12] hover:bg-white/[0.18] rounded-full border border-white/[0.1] transition-all"
-          >
-            Commander
-          </Link>
-
-          {/* Mobile menu toggle */}
-          <button
-            className="md:hidden p-2.5 text-white/60 hover:text-white transition-colors"
-            onClick={() => setMobileOpen(!mobileOpen)}
-            aria-label="Menu"
-          >
-            {mobileOpen ? (
-              <X className="h-4 w-4" />
-            ) : (
-              <MenuIcon className="h-4 w-4" />
-            )}
-          </button>
+          </div>
         </div>
       </nav>
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div className="absolute top-full left-4 right-4 mt-2 rounded-2xl bg-black/80 backdrop-blur-xl border border-white/[0.08] p-3 animate-fade-in md:hidden">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-light transition-colors",
-                pathname === link.href
-                  ? "text-white bg-white/10"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
-              )}
-            >
-              {link.href === "/account/loyalty" && (
-                <Gift className="h-4 w-4" />
-              )}
-              {link.label}
-            </Link>
-          ))}
+        <div className="md:hidden bg-black/80 backdrop-blur-xl border-t border-white/[0.06] animate-fade-in">
+          <div className="px-6 py-4 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors",
+                  pathname === link.href
+                    ? "text-white bg-white/10 font-medium"
+                    : "text-white/60 hover:text-white font-light"
+                )}
+              >
+                {link.href === "/account/loyalty" && (
+                  <Gift className="h-4 w-4" />
+                )}
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </header>
