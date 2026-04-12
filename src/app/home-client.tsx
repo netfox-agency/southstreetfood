@@ -436,11 +436,15 @@ function Delivery() {
 
           {/* Image */}
           <motion.div variants={fadeUp} custom={2}>
-            <div className="aspect-[4/3] rounded-3xl bg-gradient-to-br from-accent/10 to-muted border border-border overflow-hidden flex items-center justify-center img-premium">
-              <div className="text-center text-muted-foreground">
-                <Truck className="h-16 w-16 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Photo livreur scooter</p>
-              </div>
+            <div className="aspect-[16/9] rounded-3xl overflow-hidden relative img-premium">
+              <Image
+                src="/delivery-van.png"
+                alt="Camionette de livraison South Speed Food sur la côte basque"
+                fill
+                className="object-cover object-center"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+              />
             </div>
           </motion.div>
         </div>
