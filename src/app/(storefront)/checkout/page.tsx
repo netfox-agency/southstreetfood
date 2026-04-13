@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store } from "lucide-react";
@@ -10,17 +10,29 @@ import { toast } from "sonner";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, orderType, deliveryAddress, customerNotes, subtotal, clear } = useCartStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const {
+    items, orderType, deliveryAddress, customerNotes, subtotal, clear,
+    customerName, customerPhone, customerEmail,
+    setCustomerName, setCustomerPhone, setCustomerEmail,
+  } = useCartStore();
   const { settings } = useRestaurantSettings();
   const [loading, setLoading] = useState(false);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
 
   const deliveryFee = orderType === "delivery" ? settings.baseDeliveryFee : 0;
   const total = subtotal() + deliveryFee;
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
+
+  if (!mounted) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-6 w-6 border-2 border-[#1d1d1f]/20 border-t-[#1d1d1f] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (

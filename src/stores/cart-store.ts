@@ -9,6 +9,9 @@ interface CartState {
   deliveryAddress: DeliveryAddress | null;
   loyaltyRewardId: string | null;
   customerNotes: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail: string;
 
   // Actions
   addItem: (item: Omit<CartItem, "id">) => void;
@@ -19,6 +22,9 @@ interface CartState {
   setDeliveryAddress: (address: DeliveryAddress | null) => void;
   setLoyaltyRewardId: (id: string | null) => void;
   setCustomerNotes: (notes: string) => void;
+  setCustomerName: (name: string) => void;
+  setCustomerPhone: (phone: string) => void;
+  setCustomerEmail: (email: string) => void;
   clear: () => void;
 
   // Computed
@@ -35,6 +41,9 @@ export const useCartStore = create<CartState>()(
       deliveryAddress: null,
       loyaltyRewardId: null,
       customerNotes: "",
+      customerName: "",
+      customerPhone: "",
+      customerEmail: "",
 
       addItem: (item) => {
         const id = crypto.randomUUID();
@@ -54,9 +63,10 @@ export const useCartStore = create<CartState>()(
           get().removeItem(id);
           return;
         }
+        const capped = Math.min(quantity, 50);
         set((state) => ({
           items: state.items.map((item) =>
-            item.id === id ? { ...item, quantity } : item
+            item.id === id ? { ...item, quantity: capped } : item
           ),
         }));
       },
@@ -73,6 +83,9 @@ export const useCartStore = create<CartState>()(
       setDeliveryAddress: (deliveryAddress) => set({ deliveryAddress }),
       setLoyaltyRewardId: (loyaltyRewardId) => set({ loyaltyRewardId }),
       setCustomerNotes: (customerNotes) => set({ customerNotes }),
+      setCustomerName: (customerName) => set({ customerName }),
+      setCustomerPhone: (customerPhone) => set({ customerPhone }),
+      setCustomerEmail: (customerEmail) => set({ customerEmail }),
 
       clear: () =>
         set({
@@ -82,6 +95,9 @@ export const useCartStore = create<CartState>()(
           deliveryAddress: null,
           loyaltyRewardId: null,
           customerNotes: "",
+          customerName: "",
+          customerPhone: "",
+          customerEmail: "",
         }),
 
       itemCount: () =>

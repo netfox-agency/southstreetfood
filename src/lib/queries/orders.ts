@@ -77,6 +77,8 @@ export async function createOrder(data: {
     .insert(orderItems as never);
 
   if (itemsError) {
+    // Rollback: delete orphaned order row
+    await supabase.from("orders").delete().eq("id", order.id);
     return { error: itemsError.message, order: null };
   }
 
@@ -95,6 +97,9 @@ export async function createOrder(data: {
       } as never);
 
     if (addrError) {
+      // Rollback: delete order items and orphaned order
+      await supabase.from("order_items").delete().eq("order_id", order.id);
+      await supabase.from("orders").delete().eq("id", order.id);
       return { error: addrError.message, order: null };
     }
   }

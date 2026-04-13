@@ -73,7 +73,9 @@ function groupSubtitle(g: ExtraGroup): string {
 export function ItemClient({ item }: { item: ItemData }) {
   const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
-    item.variants.find((v) => v.is_default) || item.variants[0] || null
+    item.variants.find((v) => v.is_default && v.is_available) ||
+    item.variants.find((v) => v.is_available) ||
+    null
   );
   const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
   const [quantity, setQuantity] = useState(1);
@@ -194,13 +196,21 @@ export function ItemClient({ item }: { item: ItemData }) {
         {/* ═══ CONTENT (right on desktop, below on mobile) ═══ */}
         <div className="relative">
           <div className="max-w-xl mx-auto px-5 sm:px-8 py-8 pb-32 lg:pb-40">
+            {/* Unavailability banner */}
+            {!item.is_available && (
+              <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm font-medium flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                Cet article est actuellement indisponible
+              </div>
+            )}
+
             {/* Title block */}
             <div className="mb-8">
               <h1 className="text-[28px] sm:text-[32px] font-bold tracking-tight text-foreground leading-tight">
                 {item.name}
               </h1>
               <div className="mt-2 text-[22px] font-bold text-foreground">
-                {formatPrice(item.base_price)}
+                {formatPrice(unitPrice)}
               </div>
               {item.description && (
                 <p className="mt-4 text-[15px] leading-[1.55] text-muted-foreground whitespace-pre-line">
@@ -248,9 +258,9 @@ export function ItemClient({ item }: { item: ItemData }) {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        {v.price_modifier > 0 && (
+                        {v.price_modifier !== 0 && (
                           <span className="text-[13px] text-muted-foreground">
-                            +{formatPrice(v.price_modifier)}
+                            {v.price_modifier > 0 ? "+" : "-"}{formatPrice(Math.abs(v.price_modifier))}
                           </span>
                         )}
                         <div
@@ -383,7 +393,7 @@ export function ItemClient({ item }: { item: ItemData }) {
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity(quantity + 1)}
+                  onClick={() => setQuantity(Math.min(50, quantity + 1))}
                   aria-label="Augmenter"
                   className="h-10 w-10 rounded-full flex items-center justify-center hover:bg-background transition-colors cursor-pointer"
                 >

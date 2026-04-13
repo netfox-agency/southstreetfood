@@ -1,11 +1,15 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 
 export default function CartPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const {
     items,
     orderType,
@@ -31,6 +35,15 @@ export default function CartPage() {
     settings.minOrderDelivery > 0 &&
     currentSubtotal < settings.minOrderDelivery;
   const missing = belowMin ? settings.minOrderDelivery - currentSubtotal : 0;
+
+  // Hydration guard: show loading state until client-side store is hydrated
+  if (!mounted) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="h-6 w-6 border-2 border-[#1d1d1f]/20 border-t-[#1d1d1f] rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -163,9 +176,14 @@ export default function CartPage() {
               key={item.id}
               className="flex gap-3 p-4 bg-white rounded-2xl border border-[#e5e5ea]"
             >
-              {/* Image placeholder */}
-              <div className="h-14 w-14 shrink-0 rounded-xl bg-[#f5f5f7] flex items-center justify-center">
-                <UtensilsCrossed className="h-5 w-5 text-[#c7c7cc]" />
+              {/* Item image */}
+              <div className="h-14 w-14 shrink-0 rounded-xl bg-[#f5f5f7] flex items-center justify-center overflow-hidden">
+                {item.menuItemImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.menuItemImage} alt={item.menuItemName} className="h-full w-full object-cover" />
+                ) : (
+                  <UtensilsCrossed className="h-5 w-5 text-[#c7c7cc]" />
+                )}
               </div>
 
               <div className="flex-1 min-w-0">

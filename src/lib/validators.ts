@@ -61,7 +61,10 @@ export const createOrderSchema = z.object({
     })
     .optional()
     .nullable(),
-});
+}).refine(
+  (data) => data.orderType !== "delivery" || (data.deliveryAddress && data.deliveryAddress.street && data.deliveryAddress.city),
+  { message: "Adresse de livraison requise", path: ["deliveryAddress"] }
+);
 
 // Reservation creation — public form, 30 days ahead max.
 export const createReservationSchema = z.object({
