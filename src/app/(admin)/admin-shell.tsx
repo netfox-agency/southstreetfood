@@ -7,7 +7,8 @@ import {
   LayoutDashboard,
   UtensilsCrossed,
   ShoppingBag,
-  CalendarCheck,
+  ClipboardList,
+  Users,
   Settings,
   ChevronLeft,
   Menu,
@@ -19,7 +20,8 @@ import { cn } from "@/lib/utils";
 const sidebarItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/orders", icon: ShoppingBag, label: "Commandes" },
-  { href: "/admin/reservations", icon: CalendarCheck, label: "Reservations" },
+  { href: "/admin/reports", icon: ClipboardList, label: "Historique" },
+  { href: "/admin/customers", icon: Users, label: "Clients" },
   { href: "/admin/menu", icon: UtensilsCrossed, label: "Menu" },
   { href: "/admin/settings", icon: Settings, label: "Parametres" },
 ];
