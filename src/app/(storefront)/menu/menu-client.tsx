@@ -7,6 +7,7 @@ import { Search, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ItemSheet } from "@/components/storefront/item-sheet";
 
 interface MenuItemData {
   id: string;
@@ -59,19 +60,25 @@ function formatPrice(cents: number) {
   return (cents / 100).toFixed(2).replace(".", ",") + " \u20ac";
 }
 
+interface SheetPreview {
+  slug: string;
+  name: string;
+  base_price: number;
+  image_url: string | null;
+  description: string | null;
+}
+
 function MenuItemRow({
   item,
   categorySlug,
+  onOpenSheet,
 }: {
   item: MenuItemData;
   categorySlug: string;
+  onOpenSheet: (preview: SheetPreview) => void;
 }) {
   const addItem = useCartStore((s) => s.addItem);
 
-  // Uber Eats-style logic:
-  //  - Item WITH options (variants/extras)  → "+" opens the composer page
-  //  - Item WITHOUT options (drinks, fries) → "+" quick-adds to the cart
-  // Clicking anywhere else on the card ALWAYS opens the item detail page.
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,11 +94,25 @@ function MenuItemRow({
       extrasPrice: 0,
       specialInstructions: null,
     });
-    toast.success(`${item.name} ajoute au panier`);
+    toast.success(`${item.name} ajouté au panier`);
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    if (item.has_options) {
+      e.preventDefault();
+      onOpenSheet({
+        slug: item.slug,
+        name: item.name,
+        base_price: item.base_price,
+        image_url: item.image_url,
+        description: item.description,
+      });
+    }
+    // For simple items, the Link navigates normally to /item/[slug]
   };
 
   return (
-    <Link href={`/item/${item.slug}`}>
+    <Link href={`/item/${item.slug}`} onClick={handleCardClick}>
       <div
         className={cn(
           "flex items-stretch border border-border rounded-2xl overflow-hidden transition-all duration-300 group cursor-pointer",
@@ -135,17 +156,25 @@ function MenuItemRow({
           )}
           {item.is_available &&
             (item.has_options ? (
-              // Item with options: "+" is purely visual, card click
-              // already brings user to the detail page where they
-              // compose the order.
-              <div
-                aria-hidden="true"
-                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onOpenSheet({
+                    slug: item.slug,
+                    name: item.name,
+                    base_price: item.base_price,
+                    image_url: item.image_url,
+                    description: item.description,
+                  });
+                }}
+                aria-label={`Composer ${item.name}`}
+                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 active:scale-95 transition-transform cursor-pointer"
               >
                 <Plus className="h-4 w-4 text-foreground" />
-              </div>
+              </button>
             ) : (
-              // Simple item (boisson, frites…): "+" quick-adds directly.
               <button
                 type="button"
                 onClick={handleQuickAdd}
@@ -164,6 +193,7 @@ function MenuItemRow({
 export function MenuClient({ categories }: { categories: CategoryData[] }) {
   const [search, setSearch] = useState("");
   const [activeSlug, setActiveSlug] = useState(categories[0]?.slug || "");
+  const [sheetData, setSheetData] = useState<SheetPreview | null>(null);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const tabsRef = useRef<HTMLDivElement>(null);
   const isScrollingFromClick = useRef(false);
@@ -320,6 +350,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
                   key={item.id}
                   item={item}
                   categorySlug={cat.slug}
+                  onOpenSheet={setSheetData}
                 />
               ))}
             </div>
@@ -348,6 +379,19 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
             </button>
           </Link>
         </div>
+      )}
+
+      {sheetData && (
+        <ItemSheet
+          slug={sheetData.slug}
+          previewData={{
+            name: sheetData.name,
+            base_price: sheetData.base_price,
+            image_url: sheetData.image_url,
+            description: sheetData.description,
+          }}
+          onClose={() => setSheetData(null)}
+        />
       )}
     </div>
   );
