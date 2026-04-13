@@ -2,7 +2,7 @@ import { getMenuItemBySlug } from "@/lib/queries/menu";
 import { notFound } from "next/navigation";
 import { ItemClient } from "./item-client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30; // ISR: refresh data every 30s
 
 export default async function ItemPage({
   params,

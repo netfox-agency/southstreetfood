@@ -1,7 +1,7 @@
 import { getCategoriesWithItems } from "@/lib/queries/menu";
 import { MenuClient } from "./menu-client";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30; // ISR: refresh data every 30s
 
 export default async function MenuPage() {
   const categories = await getCategoriesWithItems();
