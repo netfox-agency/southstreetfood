@@ -3,6 +3,60 @@ import { createOrder } from "@/lib/queries/orders";
 import { priceCartServerSide, PricingError } from "@/lib/queries/pricing";
 import { createOrderSchema } from "@/lib/validators";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+
+/**
+ * GET /api/orders — staff-only. Returns today's orders for the admin dashboard.
+ * Query params: ?date=YYYY-MM-DD (defaults to today)
+ */
+export async function GET(request: NextRequest) {
+  // Auth check: must be admin or kitchen staff
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Non autorise" }, { status: 401 });
+  }
+
+  const admin = createAdminClient();
+  const { data: profile } = await admin
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || !["admin", "kitchen"].includes((profile as { role: string }).role)) {
+    return NextResponse.json({ error: "Acces refuse" }, { status: 403 });
+  }
+
+  // Parse date filter
+  const { searchParams } = new URL(request.url);
+  const dateParam = searchParams.get("date");
+  const today = new Date();
+  const targetDate =
+    dateParam === "today" || !dateParam
+      ? today.toISOString().split("T")[0]
+      : dateParam;
+
+  const startOfDay = `${targetDate}T00:00:00.000Z`;
+  const endOfDay = `${targetDate}T23:59:59.999Z`;
+
+  const { data: orders, error } = await admin
+    .from("orders")
+    .select("id, order_number, customer_name, total, status, order_type, created_at")
+    .gte("created_at", startOfDay)
+    .lte("created_at", endOfDay)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ orders: orders || [] });
+}
 
 export async function POST(request: NextRequest) {
   // Rate limit: 10 orders / minute / IP. Legit customers never need more.

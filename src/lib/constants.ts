@@ -3,8 +3,8 @@ export const BRAND = {
   tagline: "Le street food de Bayonne",
   description:
     "Burgers, tacos et wraps artisanaux. Livraison sur Bayonne-Anglet-Biarritz jusqu'a 4h du matin.",
-  phone: "",
-  email: "",
+  phone: "05 59 00 00 00",
+  email: "contact@southstreetfood.fr",
   address: "Bayonne, France",
   instagram: "https://instagram.com/southstreetfood",
   snapchat: "https://snapchat.com/add/southstreetfood",

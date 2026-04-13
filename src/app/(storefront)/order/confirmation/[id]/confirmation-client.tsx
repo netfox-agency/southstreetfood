@@ -4,9 +4,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, MapPin, ArrowRight, Truck, Store } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import type { OrderWithItems } from "@/types/order";
 
 export function ConfirmationClient({ order }: { order: OrderWithItems }) {
+  const { settings } = useRestaurantSettings();
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-5">
       <div className="max-w-md w-full text-center">
@@ -54,7 +56,7 @@ export function ConfirmationClient({ order }: { order: OrderWithItems }) {
               <Clock className="h-4 w-4 text-amber-500" />
               <span className="text-muted-foreground">
                 Temps estime :{" "}
-                <strong className="text-foreground">~20 min</strong>
+                <strong className="text-foreground">~{settings.estimatedPrepMinutes} min</strong>
               </span>
             </div>
 

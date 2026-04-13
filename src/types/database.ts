@@ -422,6 +422,47 @@ export interface Database {
           is_active?: boolean;
         };
       };
+      reservations: {
+        Row: {
+          id: string;
+          reservation_number: number;
+          customer_name: string;
+          customer_phone: string;
+          customer_email: string | null;
+          party_size: number;
+          reservation_date: string;
+          reservation_time: string;
+          notes: string | null;
+          status: "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
+          created_at: string;
+          updated_at: string;
+          treated_at: string | null;
+          treated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          customer_name: string;
+          customer_phone: string;
+          customer_email?: string | null;
+          party_size?: number;
+          reservation_date: string;
+          reservation_time: string;
+          notes?: string | null;
+          status?: "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
+        };
+        Update: {
+          customer_name?: string;
+          customer_phone?: string;
+          customer_email?: string | null;
+          party_size?: number;
+          reservation_date?: string;
+          reservation_time?: string;
+          notes?: string | null;
+          status?: "pending" | "confirmed" | "seated" | "completed" | "cancelled" | "no_show";
+          treated_at?: string | null;
+          treated_by?: string | null;
+        };
+      };
       restaurant_settings: {
         Row: {
           id: number;
