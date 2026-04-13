@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
           specialInstructions: it.specialInstructions ?? null,
         })),
         orderType: data.orderType,
+        deliveryCity: data.deliveryAddress?.city ?? null,
       });
     } catch (err) {
       if (err instanceof PricingError) {

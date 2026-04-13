@@ -36,11 +36,32 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
   refunded: "bg-muted text-muted-foreground",
 };
 
-export const DELIVERY_ZONES = {
-  center: { lat: 43.4929, lng: -1.4748 }, // Bayonne center
-  maxRadiusKm: 15,
-  cities: ["Bayonne", "Anglet", "Biarritz"],
-} as const;
+/**
+ * Delivery zones — each zone has a fee (in cents) and a list of cities.
+ * Ordered from cheapest to most expensive for display.
+ */
+export const DELIVERY_ZONES = [
+  { fee: 300, cities: ["Bayonne"] },
+  { fee: 400, cities: ["Anglet", "Tarnos", "Boucau"] },
+  { fee: 500, cities: ["Biarritz", "Ondres", "Saint-Martin-de-Seignanx"] },
+  { fee: 600, cities: ["Bassussarry", "Bidart", "Saint-André-de-Seignanx", "Labenne", "Saint-Pierre-d'Irube"] },
+] as const;
+
+/** All deliverable cities as a flat sorted list */
+export const DELIVERY_CITIES = DELIVERY_ZONES.flatMap((z) =>
+  z.cities.map((city) => ({ city, fee: z.fee }))
+).sort((a, b) => a.city.localeCompare(b.city, "fr"));
+
+/** Get delivery fee for a city (case-insensitive). Returns null if not deliverable. */
+export function getDeliveryFeeForCity(city: string): number | null {
+  const normalized = city.trim().toLowerCase();
+  for (const zone of DELIVERY_ZONES) {
+    if (zone.cities.some((c) => c.toLowerCase() === normalized)) {
+      return zone.fee;
+    }
+  }
+  return null;
+}
 
 export const LOYALTY = {
   pointsPerEuro: 10,

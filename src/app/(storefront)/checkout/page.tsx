@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
+import { getDeliveryFeeForCity } from "@/lib/constants";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
@@ -21,7 +22,8 @@ export default function CheckoutPage() {
   const { settings } = useRestaurantSettings();
   const [loading, setLoading] = useState(false);
 
-  const deliveryFee = orderType === "delivery" ? settings.baseDeliveryFee : 0;
+  const cityFee = deliveryAddress?.city ? getDeliveryFeeForCity(deliveryAddress.city) : null;
+  const deliveryFee = orderType === "delivery" && cityFee !== null ? cityFee : 0;
   const total = subtotal() + deliveryFee;
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;

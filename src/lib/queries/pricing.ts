@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getDeliveryFeeForCity } from "@/lib/constants";
 
 /**
  * Server-authoritative pricing for an incoming cart.
@@ -24,6 +25,7 @@ export class PricingError extends Error {
       | "EXTRA_NOT_FOUND"
       | "EXTRA_UNAVAILABLE"
       | "EMPTY_CART"
+      | "DELIVERY_ZONE_INVALID"
   ) {
     super(message);
     this.name = "PricingError";
@@ -63,6 +65,7 @@ export async function priceCartServerSide(
   input: {
     items: InputItem[];
     orderType: "collect" | "delivery" | "dine_in";
+    deliveryCity?: string | null;
   }
 ): Promise<PricedCart> {
   if (!input.items.length) {
@@ -221,10 +224,6 @@ export async function priceCartServerSide(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const settings = (settingsRes.data ?? null) as any;
-  const dbFee =
-    settings && typeof settings.base_delivery_fee === "number"
-      ? settings.base_delivery_fee
-      : DELIVERY_FEE_FALLBACK_CENTS;
   const minOrderDelivery =
     settings && typeof settings.min_order_delivery === "number"
       ? settings.min_order_delivery
@@ -237,6 +236,26 @@ export async function priceCartServerSide(
   if (input.orderType === "delivery" && !deliveryEnabled) {
     throw new PricingError("La livraison est indisponible", "ITEM_UNAVAILABLE");
   }
+
+  // Zone-based delivery fee — look up city in DELIVERY_ZONES
+  let deliveryFee = 0;
+  if (input.orderType === "delivery") {
+    if (!input.deliveryCity) {
+      throw new PricingError(
+        "Ville de livraison requise",
+        "DELIVERY_ZONE_INVALID"
+      );
+    }
+    const zoneFee = getDeliveryFeeForCity(input.deliveryCity);
+    if (zoneFee === null) {
+      throw new PricingError(
+        `Nous ne livrons pas à ${input.deliveryCity}`,
+        "DELIVERY_ZONE_INVALID"
+      );
+    }
+    deliveryFee = zoneFee;
+  }
+
   if (input.orderType === "delivery" && subtotal < minOrderDelivery) {
     const euros = (minOrderDelivery / 100).toFixed(2).replace(".", ",");
     throw new PricingError(
@@ -245,7 +264,6 @@ export async function priceCartServerSide(
     );
   }
 
-  const deliveryFee = input.orderType === "delivery" ? dbFee : 0;
   const total = subtotal + deliveryFee;
 
   return { items: priced, subtotal, deliveryFee, total };

@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock, ChevronDown, Info } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
+import { DELIVERY_ZONES, DELIVERY_CITIES, getDeliveryFeeForCity } from "@/lib/constants";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -25,7 +26,10 @@ export default function CartPage() {
 
   const { settings } = useRestaurantSettings();
 
-  const deliveryFee = orderType === "delivery" ? settings.baseDeliveryFee : 0;
+  const selectedCity = deliveryAddress?.city || "";
+  const cityFee = selectedCity ? getDeliveryFeeForCity(selectedCity) : null;
+  const deliveryFee = orderType === "delivery" && cityFee !== null ? cityFee : 0;
+  const cityValid = orderType !== "delivery" || (selectedCity !== "" && cityFee !== null);
   const currentSubtotal = subtotal();
   const total = currentSubtotal + deliveryFee;
 
@@ -61,10 +65,14 @@ export default function CartPage() {
     );
   }
 
+  const deliverySub = selectedCity && cityFee !== null
+    ? `${selectedCity} · ${formatPrice(cityFee)}`
+    : `Dès ${formatPrice(DELIVERY_ZONES[0].fee)}`;
+
   const orderTypes = [
     { key: "dine_in" as const, label: "Sur place", sub: "Au restaurant", icon: Store, enabled: true },
     { key: "collect" as const, label: "A emporter", sub: "Click & Collect", icon: MapPin, enabled: settings.collectEnabled },
-    { key: "delivery" as const, label: "Livraison", sub: `BAB · ${formatPrice(settings.baseDeliveryFee)}`, icon: Truck, enabled: settings.deliveryEnabled },
+    { key: "delivery" as const, label: "Livraison", sub: deliverySub, icon: Truck, enabled: settings.deliveryEnabled },
   ];
 
   return (
@@ -114,58 +122,114 @@ export default function CartPage() {
 
         {/* Delivery address */}
         {orderType === "delivery" && (
-          <div className="mb-5 bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-3">
-            <h2 className="text-sm font-semibold text-[#1d1d1f]">Adresse de livraison</h2>
-            <input
-              type="text"
-              placeholder="12 rue de la Republique"
-              value={deliveryAddress?.street || ""}
-              onChange={(e) => setDeliveryAddress({
-                street: e.target.value,
-                city: deliveryAddress?.city || "",
-                postalCode: deliveryAddress?.postalCode || "",
-                instructions: deliveryAddress?.instructions,
-              })}
-              className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-            />
-            <div className="grid grid-cols-2 gap-3">
+          <div className="mb-5 bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2">
+              <Truck className="h-4 w-4 text-[#86868b]" />
+              Adresse de livraison
+            </h2>
+
+            {/* City selector */}
+            <div>
+              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Ville</label>
+              <div className="relative">
+                <select
+                  value={selectedCity}
+                  onChange={(e) => setDeliveryAddress({
+                    street: deliveryAddress?.street || "",
+                    city: e.target.value,
+                    postalCode: deliveryAddress?.postalCode || "",
+                    instructions: deliveryAddress?.instructions,
+                  })}
+                  className="w-full h-12 pl-4 pr-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] appearance-none focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all cursor-pointer"
+                >
+                  <option value="">Choisir votre ville</option>
+                  {DELIVERY_ZONES.map((zone) => (
+                    <optgroup key={zone.fee} label={`${formatPrice(zone.fee)} de livraison`}>
+                      {zone.cities.map((city) => (
+                        <option key={city} value={city}>{city}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b] pointer-events-none" />
+              </div>
+              {/* Fee badge */}
+              {selectedCity && cityFee !== null && (
+                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                  <Truck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-xs font-semibold text-emerald-700">
+                    Livraison {formatPrice(cityFee)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Street */}
+            <div>
+              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Adresse</label>
               <input
                 type="text"
-                placeholder="Bayonne"
-                value={deliveryAddress?.city || ""}
+                placeholder="12 rue de la République"
+                value={deliveryAddress?.street || ""}
                 onChange={(e) => setDeliveryAddress({
-                  street: deliveryAddress?.street || "",
-                  city: e.target.value,
+                  street: e.target.value,
+                  city: selectedCity,
                   postalCode: deliveryAddress?.postalCode || "",
                   instructions: deliveryAddress?.instructions,
                 })}
-                className="h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
               />
+            </div>
+
+            {/* Postal code */}
+            <div>
+              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Code postal</label>
               <input
                 type="text"
                 placeholder="64100"
                 value={deliveryAddress?.postalCode || ""}
                 onChange={(e) => setDeliveryAddress({
                   street: deliveryAddress?.street || "",
-                  city: deliveryAddress?.city || "",
+                  city: selectedCity,
                   postalCode: e.target.value,
                   instructions: deliveryAddress?.instructions,
                 })}
-                className="h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
               />
             </div>
-            <input
-              type="text"
-              placeholder="Instructions (code, etage...)"
-              value={deliveryAddress?.instructions || ""}
-              onChange={(e) => setDeliveryAddress({
-                street: deliveryAddress?.street || "",
-                city: deliveryAddress?.city || "",
-                postalCode: deliveryAddress?.postalCode || "",
-                instructions: e.target.value,
-              })}
-              className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-            />
+
+            {/* Instructions */}
+            <div>
+              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Instructions (optionnel)</label>
+              <input
+                type="text"
+                placeholder="Code d'entrée, étage, bâtiment..."
+                value={deliveryAddress?.instructions || ""}
+                onChange={(e) => setDeliveryAddress({
+                  street: deliveryAddress?.street || "",
+                  city: selectedCity,
+                  postalCode: deliveryAddress?.postalCode || "",
+                  instructions: e.target.value,
+                })}
+                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
+              />
+            </div>
+
+            {/* Delivery zones info */}
+            <details className="group">
+              <summary className="flex items-center gap-1.5 text-xs text-[#86868b] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+                <Info className="h-3.5 w-3.5" />
+                Voir les zones de livraison
+              </summary>
+              <div className="mt-3 space-y-2">
+                {DELIVERY_ZONES.map((zone) => (
+                  <div key={zone.fee} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]">
+                    <span className="text-[#1d1d1f]">{zone.cities.join(", ")}</span>
+                    <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">{formatPrice(zone.fee)}</span>
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
         )}
 
@@ -281,13 +345,21 @@ export default function CartPage() {
         )}
 
         {/* Checkout button */}
-        {belowMin ? (
-          <button
-            disabled
-            className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] text-center leading-[3.25rem] opacity-30 cursor-not-allowed"
-          >
-            Passer la commande &middot; {formatPrice(total)}
-          </button>
+        {belowMin || !cityValid ? (
+          <>
+            {!cityValid && orderType === "delivery" && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
+                <MapPin className="h-4 w-4 shrink-0" />
+                Selectionnez votre ville de livraison
+              </div>
+            )}
+            <button
+              disabled
+              className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] text-center leading-[3.25rem] opacity-30 cursor-not-allowed"
+            >
+              Passer la commande &middot; {formatPrice(total)}
+            </button>
+          </>
         ) : (
           <Link
             href="/checkout"
