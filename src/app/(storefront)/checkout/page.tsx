@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store, Star } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { getDeliveryFeeForCity } from "@/lib/constants";
@@ -21,6 +21,32 @@ export default function CheckoutPage() {
   } = useCartStore();
   const { settings } = useRestaurantSettings();
   const [loading, setLoading] = useState(false);
+  const [loyaltyPoints, setLoyaltyPoints] = useState<number | null>(null);
+  const [loyaltyOrders, setLoyaltyOrders] = useState(0);
+
+  // Fetch loyalty balance when phone is valid
+  useEffect(() => {
+    const phone = customerPhone.replace(/\s/g, "");
+    if (phone.length < 10) {
+      setLoyaltyPoints(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `/api/loyalty/balance?phone=${encodeURIComponent(customerPhone.trim())}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setLoyaltyPoints(data.totalPoints || 0);
+          setLoyaltyOrders(data.totalOrders || 0);
+        }
+      } catch {
+        // silent
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [customerPhone]);
 
   const cityFee = deliveryAddress?.city ? getDeliveryFeeForCity(deliveryAddress.city) : null;
   const deliveryFee = orderType === "delivery" && cityFee !== null ? cityFee : 0;
@@ -166,6 +192,26 @@ export default function CheckoutPage() {
                 required
                 className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
               />
+              {/* Loyalty badge */}
+              {loyaltyPoints !== null && loyaltyPoints > 0 && (
+                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
+                  <Star className="h-4 w-4 text-amber-500 shrink-0" />
+                  <div className="text-sm">
+                    <span className="font-semibold text-amber-800">
+                      {loyaltyPoints} points
+                    </span>
+                    <span className="text-amber-600">
+                      {" "}· {loyaltyOrders} commande{loyaltyOrders > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+              )}
+              {loyaltyPoints === 0 && loyaltyOrders === 0 && customerPhone.replace(/\s/g, "").length >= 10 && (
+                <p className="mt-1.5 text-xs text-[#86868b] flex items-center gap-1">
+                  <Star className="h-3 w-3" />
+                  Premiere commande ? Gagnez des points fidelite !
+                </p>
+              )}
             </div>
 
             <div>
@@ -257,6 +303,23 @@ export default function CheckoutPage() {
               </p>
             </div>
           </div>
+
+          {/* Loyalty points preview */}
+          {Math.floor(total / 100) > 0 && (
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 flex items-start gap-3">
+              <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                <Star className="h-4 w-4 text-amber-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#1d1d1f]">
+                  +{Math.floor(total / 100) * 10} points fidelite
+                </p>
+                <p className="text-[13px] text-[#86868b]">
+                  Credites apres validation de votre commande
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Submit */}
           <button

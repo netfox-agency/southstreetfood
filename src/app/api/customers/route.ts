@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   let query = admin
     .from("orders")
     .select(
-      "customer_name, customer_phone, customer_email, total, created_at, status"
+      "customer_name, customer_phone, customer_email, total, created_at, status, loyalty_points_earned"
     )
     .neq("status", "cancelled")
     .order("created_at", { ascending: false });
@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
     total: number;
     created_at: string;
     status: string;
+    loyalty_points_earned: number | null;
   };
 
   const { data, error } = await query;
@@ -72,12 +73,13 @@ export async function GET(request: NextRequest) {
       email: string | null;
       orderCount: number;
       totalSpent: number;
+      loyaltyPoints: number;
       lastOrderDate: string;
       firstOrderDate: string;
     }
   >();
 
-  for (const order of orders || []) {
+  for (const order of orders) {
     // Use phone as primary dedup key, fallback to email, fallback to name
     const key = (
       order.customer_phone ||
@@ -92,6 +94,7 @@ export async function GET(request: NextRequest) {
     if (existing) {
       existing.orderCount += 1;
       existing.totalSpent += order.total || 0;
+      existing.loyaltyPoints += order.loyalty_points_earned || 0;
       // Keep the most recent name/email (they may update between orders)
       if (order.customer_name) existing.name = order.customer_name;
       if (order.customer_email) existing.email = order.customer_email;
@@ -107,6 +110,7 @@ export async function GET(request: NextRequest) {
         email: order.customer_email || null,
         orderCount: 1,
         totalSpent: order.total || 0,
+        loyaltyPoints: order.loyalty_points_earned || 0,
         lastOrderDate: order.created_at,
         firstOrderDate: order.created_at,
       });

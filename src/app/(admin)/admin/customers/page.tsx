@@ -10,6 +10,7 @@ import {
   Crown,
   Clock,
   TrendingUp,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ type Customer = {
   email: string | null;
   orderCount: number;
   totalSpent: number;
+  loyaltyPoints: number;
   lastOrderDate: string;
   firstOrderDate: string;
 };
@@ -248,7 +250,7 @@ export default function CustomersPage() {
                   </div>
                 </div>
 
-                {/* Order stats */}
+                {/* Order stats + loyalty */}
                 <div className="text-right shrink-0">
                   <div className="flex items-center gap-1 justify-end">
                     <ShoppingBag className="h-3 w-3 text-[#aeaeb2]" />
@@ -259,6 +261,14 @@ export default function CustomersPage() {
                   <p className="text-xs font-medium text-emerald-600 tabular-nums mt-0.5">
                     {formatPrice(customer.totalSpent)}
                   </p>
+                  {customer.loyaltyPoints > 0 && (
+                    <div className="flex items-center gap-1 justify-end mt-0.5">
+                      <Star className="h-3 w-3 text-amber-500" />
+                      <span className="text-xs font-medium text-amber-600 tabular-nums">
+                        {customer.loyaltyPoints} pts
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Last order */}

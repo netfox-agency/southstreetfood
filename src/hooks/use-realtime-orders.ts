@@ -8,6 +8,13 @@ import type { OrderStatus } from "@/types/database";
 const ACTIVE_STATUSES: OrderStatus[] = ["paid", "preparing", "ready"];
 const ACTIVE_SET = new Set<OrderStatus>(ACTIVE_STATUSES);
 
+// Terminal statuses that trigger loyalty points award
+const LOYALTY_TERMINAL: OrderStatus[] = [
+  "picked_up",
+  "delivered",
+  "out_for_delivery",
+];
+
 /**
  * Live board of active kitchen orders.
  *
@@ -141,6 +148,17 @@ export function useRealtimeOrders() {
             )
             .filter((o) => ACTIVE_SET.has(o.status))
         );
+
+        // Auto-award loyalty points when order reaches terminal status
+        if (LOYALTY_TERMINAL.includes(newStatus)) {
+          fetch("/api/loyalty/award", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId }),
+          }).catch(() => {
+            // Silent — points will be retried on next status change
+          });
+        }
       }
       return { error };
     },
