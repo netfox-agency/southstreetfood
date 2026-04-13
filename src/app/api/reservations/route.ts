@@ -20,14 +20,15 @@ async function requireStaff(): Promise<NextResponse | null> {
     return NextResponse.json({ error: "Non autorise" }, { status: 401 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: profile } = await (supabase as any)
+  // Use admin client for role lookup to avoid RLS dependency on auth path
+  const admin = createAdminClient();
+  const { data: profile } = await admin
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role as string | undefined;
+  const role = (profile as { role: string } | null)?.role;
   if (role !== "admin" && role !== "kitchen") {
     return NextResponse.json({ error: "Acces refuse" }, { status: 403 });
   }

@@ -24,10 +24,21 @@ function sweep(now: number) {
 }
 
 export function getClientIp(request: NextRequest): string {
+  // Prefer trusted proxy headers set by the hosting platform (not spoofable
+  // by the client). Falls back to x-forwarded-for which can be spoofed when
+  // there is no reverse proxy, but is still useful for single-origin setups.
+  const vercel = request.headers.get("x-vercel-forwarded-for");
+  if (vercel) return vercel.split(",")[0]!.trim();
+
+  const cf = request.headers.get("cf-connecting-ip");
+  if (cf) return cf.trim();
+
   const forwarded = request.headers.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]!.trim();
+
   const real = request.headers.get("x-real-ip");
   if (real) return real;
+
   return "unknown";
 }
 
