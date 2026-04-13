@@ -52,11 +52,19 @@ export const DELIVERY_CITIES = DELIVERY_ZONES.flatMap((z) =>
   z.cities.map((city) => ({ city, fee: z.fee }))
 ).sort((a, b) => a.city.localeCompare(b.city, "fr"));
 
-/** Get delivery fee for a city (case-insensitive). Returns null if not deliverable. */
+/** Restaurant coordinates for map centering */
+export const RESTAURANT_LOCATION = { lat: 43.4929, lng: -1.4748 } as const;
+
+/** Strip accents for city name comparison (Google may return different formats) */
+function stripAccents(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/['']/g, "'");
+}
+
+/** Get delivery fee for a city (case-insensitive, accent-insensitive). Returns null if not deliverable. */
 export function getDeliveryFeeForCity(city: string): number | null {
-  const normalized = city.trim().toLowerCase();
+  const normalized = stripAccents(city.trim()).toLowerCase();
   for (const zone of DELIVERY_ZONES) {
-    if (zone.cities.some((c) => c.toLowerCase() === normalized)) {
+    if (zone.cities.some((c) => stripAccents(c).toLowerCase() === normalized)) {
       return zone.fee;
     }
   }

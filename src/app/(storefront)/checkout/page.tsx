@@ -90,6 +90,8 @@ export default function CheckoutPage() {
           street: deliveryAddress.street,
           city: deliveryAddress.city,
           postalCode: deliveryAddress.postalCode,
+          lat: deliveryAddress.lat,
+          lng: deliveryAddress.lng,
           instructions: deliveryAddress.instructions,
         } : null,
       };

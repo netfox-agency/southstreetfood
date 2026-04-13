@@ -13,6 +13,7 @@ import {
   Truck,
   ShoppingBag,
   Store,
+  Navigation,
 } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { useSound } from "@/hooks/use-sound";
@@ -286,15 +287,32 @@ function OrderDetail({
             </a>
           </div>
 
-          {/* Delivery address */}
+          {/* Delivery address + Navigate button */}
           {isDelivery && order.delivery_address && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-[#f5f5f7] text-sm">
-              <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-[#86868b]" />
-              <span className="text-[#1d1d1f]">
-                {order.delivery_address.street},{" "}
-                {order.delivery_address.postal_code}{" "}
-                {order.delivery_address.city}
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-[#f5f5f7] text-sm">
+                <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-[#86868b]" />
+                <span className="text-[#1d1d1f]">
+                  {order.delivery_address.street},{" "}
+                  {order.delivery_address.postal_code}{" "}
+                  {order.delivery_address.city}
+                </span>
+              </div>
+              {(order.status === "ready" || order.status === "out_for_delivery") && (
+                <a
+                  href={
+                    order.delivery_address.lat && order.delivery_address.lng
+                      ? `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_address.lat},${order.delivery_address.lng}`
+                      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.delivery_address.street}, ${order.delivery_address.postal_code} ${order.delivery_address.city}`)}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all"
+                >
+                  <Navigation className="h-4 w-4" />
+                  Naviguer vers le client
+                </a>
+              )}
             </div>
           )}
 

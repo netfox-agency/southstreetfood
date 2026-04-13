@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock, ChevronDown, Info } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock, Info } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
-import { DELIVERY_ZONES, DELIVERY_CITIES, getDeliveryFeeForCity } from "@/lib/constants";
+import { DELIVERY_ZONES, getDeliveryFeeForCity } from "@/lib/constants";
+import { AddressAutocomplete, type ParsedAddress } from "@/components/storefront/address-autocomplete";
+import type { DeliveryAddress } from "@/types/cart";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -122,115 +124,12 @@ export default function CartPage() {
 
         {/* Delivery address */}
         {orderType === "delivery" && (
-          <div className="mb-5 bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2">
-              <Truck className="h-4 w-4 text-[#86868b]" />
-              Adresse de livraison
-            </h2>
-
-            {/* City selector */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Ville</label>
-              <div className="relative">
-                <select
-                  value={selectedCity}
-                  onChange={(e) => setDeliveryAddress({
-                    street: deliveryAddress?.street || "",
-                    city: e.target.value,
-                    postalCode: deliveryAddress?.postalCode || "",
-                    instructions: deliveryAddress?.instructions,
-                  })}
-                  className="w-full h-12 pl-4 pr-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] appearance-none focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all cursor-pointer"
-                >
-                  <option value="">Choisir votre ville</option>
-                  {DELIVERY_ZONES.map((zone) => (
-                    <optgroup key={zone.fee} label={`${formatPrice(zone.fee)} de livraison`}>
-                      {zone.cities.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b] pointer-events-none" />
-              </div>
-              {/* Fee badge */}
-              {selectedCity && cityFee !== null && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
-                  <Truck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-xs font-semibold text-emerald-700">
-                    Livraison {formatPrice(cityFee)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Street */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Adresse</label>
-              <input
-                type="text"
-                placeholder="12 rue de la République"
-                value={deliveryAddress?.street || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: e.target.value,
-                  city: selectedCity,
-                  postalCode: deliveryAddress?.postalCode || "",
-                  instructions: deliveryAddress?.instructions,
-                })}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-              />
-            </div>
-
-            {/* Postal code */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Code postal</label>
-              <input
-                type="text"
-                placeholder="64100"
-                value={deliveryAddress?.postalCode || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: deliveryAddress?.street || "",
-                  city: selectedCity,
-                  postalCode: e.target.value,
-                  instructions: deliveryAddress?.instructions,
-                })}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-              />
-            </div>
-
-            {/* Instructions */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Instructions (optionnel)</label>
-              <input
-                type="text"
-                placeholder="Code d'entrée, étage, bâtiment..."
-                value={deliveryAddress?.instructions || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: deliveryAddress?.street || "",
-                  city: selectedCity,
-                  postalCode: deliveryAddress?.postalCode || "",
-                  instructions: e.target.value,
-                })}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-              />
-            </div>
-
-            {/* Delivery zones info */}
-            <details className="group">
-              <summary className="flex items-center gap-1.5 text-xs text-[#86868b] cursor-pointer hover:text-[#1d1d1f] transition-colors">
-                <Info className="h-3.5 w-3.5" />
-                Voir les zones de livraison
-              </summary>
-              <div className="mt-3 space-y-2">
-                {DELIVERY_ZONES.map((zone) => (
-                  <div key={zone.fee} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]">
-                    <span className="text-[#1d1d1f]">{zone.cities.join(", ")}</span>
-                    <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">{formatPrice(zone.fee)}</span>
-                  </div>
-                ))}
-              </div>
-            </details>
-          </div>
+          <DeliverySection
+            deliveryAddress={deliveryAddress}
+            setDeliveryAddress={setDeliveryAddress}
+            cityFee={cityFee}
+            formatPrice={formatPrice}
+          />
         )}
 
         {/* Cart items */}
@@ -369,6 +268,116 @@ export default function CartPage() {
           </Link>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ─── Delivery Section (extracted for clean hooks usage) ─── */
+
+function DeliverySection({
+  deliveryAddress,
+  setDeliveryAddress,
+  cityFee,
+  formatPrice,
+}: {
+  deliveryAddress: DeliveryAddress | null;
+  setDeliveryAddress: (address: DeliveryAddress | null) => void;
+  cityFee: number | null;
+  formatPrice: (cents: number) => string;
+}) {
+  const handleAddressSelect = useCallback(
+    (parsed: ParsedAddress) => {
+      setDeliveryAddress({
+        street: parsed.street,
+        city: parsed.city,
+        postalCode: parsed.postalCode,
+        lat: parsed.lat,
+        lng: parsed.lng,
+        instructions: deliveryAddress?.instructions,
+      });
+    },
+    [setDeliveryAddress, deliveryAddress?.instructions]
+  );
+
+  const handleClear = useCallback(() => {
+    setDeliveryAddress({
+      street: "",
+      city: "",
+      postalCode: "",
+      instructions: deliveryAddress?.instructions,
+    });
+  }, [setDeliveryAddress, deliveryAddress?.instructions]);
+
+  const hasCoords = deliveryAddress?.lat && deliveryAddress?.lng;
+
+  return (
+    <div className="mb-5 bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
+      {/* Address autocomplete */}
+      <AddressAutocomplete
+        value={deliveryAddress?.street ? `${deliveryAddress.street}, ${deliveryAddress.postalCode} ${deliveryAddress.city}` : ""}
+        onAddressSelect={handleAddressSelect}
+        onClear={handleClear}
+        deliveryFee={cityFee}
+      />
+
+      {/* Map preview */}
+      {hasCoords && (
+        <div className="rounded-xl overflow-hidden border border-[#e5e5ea]">
+          <iframe
+            title="Adresse de livraison"
+            width="100%"
+            height="180"
+            style={{ border: 0 }}
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${deliveryAddress!.lat},${deliveryAddress!.lng}&zoom=15&maptype=roadmap`}
+          />
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div>
+        <label className="text-xs font-medium text-[#86868b] mb-1.5 block">
+          Instructions (optionnel)
+        </label>
+        <input
+          type="text"
+          placeholder="Code d'entree, etage, batiment..."
+          value={deliveryAddress?.instructions || ""}
+          onChange={(e) =>
+            setDeliveryAddress({
+              street: deliveryAddress?.street || "",
+              city: deliveryAddress?.city || "",
+              postalCode: deliveryAddress?.postalCode || "",
+              lat: deliveryAddress?.lat,
+              lng: deliveryAddress?.lng,
+              instructions: e.target.value,
+            })
+          }
+          className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
+        />
+      </div>
+
+      {/* Delivery zones info */}
+      <details className="group">
+        <summary className="flex items-center gap-1.5 text-xs text-[#86868b] cursor-pointer hover:text-[#1d1d1f] transition-colors">
+          <Info className="h-3.5 w-3.5" />
+          Voir les zones de livraison
+        </summary>
+        <div className="mt-3 space-y-2">
+          {DELIVERY_ZONES.map((zone) => (
+            <div
+              key={zone.fee}
+              className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]"
+            >
+              <span className="text-[#1d1d1f]">{zone.cities.join(", ")}</span>
+              <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">
+                {formatPrice(zone.fee)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
