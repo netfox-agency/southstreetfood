@@ -7,19 +7,42 @@ import { CheckCircle, Circle, ArrowLeft, Phone } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { OrderStatus } from "@/types/database";
 
-const STEPS: { status: OrderStatus; label: string; desc: string }[] = [
-  {
-    status: "paid",
-    label: "Commande recue",
-    desc: "Le restaurant a recu votre commande",
-  },
-  {
-    status: "preparing",
-    label: "En preparation",
-    desc: "Votre commande est en cuisine",
-  },
-  { status: "ready", label: "Prete !", desc: "Vous pouvez la recuperer" },
-];
+function getSteps(orderType: string) {
+  const base = [
+    {
+      status: "paid" as OrderStatus,
+      label: "Commande recue",
+      desc: "Le restaurant a recu votre commande",
+    },
+    {
+      status: "preparing" as OrderStatus,
+      label: "En preparation",
+      desc: "Votre commande est en cuisine",
+    },
+  ];
+
+  if (orderType === "delivery") {
+    base.push({
+      status: "ready" as OrderStatus,
+      label: "Prete !",
+      desc: "Votre commande va bientot partir",
+    });
+  } else if (orderType === "dine_in") {
+    base.push({
+      status: "ready" as OrderStatus,
+      label: "Prete !",
+      desc: "Votre commande arrive a votre table",
+    });
+  } else {
+    base.push({
+      status: "ready" as OrderStatus,
+      label: "Prete !",
+      desc: "Vous pouvez la recuperer au restaurant",
+    });
+  }
+
+  return base;
+}
 
 const TERMINAL_STATUSES: OrderStatus[] = [
   "picked_up",
@@ -131,7 +154,8 @@ export default function TrackingPage({
 
   const currentStatus = order.status;
   const orderNumber = order.order_number;
-  const currentIdx = STEPS.findIndex((s) => s.status === currentStatus);
+  const steps = getSteps(order.order_type);
+  const currentIdx = steps.findIndex((s) => s.status === currentStatus);
   const isDone = TERMINAL_STATUSES.includes(currentStatus);
 
   return (
@@ -180,7 +204,7 @@ export default function TrackingPage({
           </div>
         ) : (
           <div className="space-y-0 mb-10">
-            {STEPS.map((step, i) => {
+            {steps.map((step, i) => {
               const isComplete = i < currentIdx;
               const isCurrent = i === currentIdx;
 
@@ -200,7 +224,7 @@ export default function TrackingPage({
                     ) : (
                       <Circle className="h-7 w-7 text-border" />
                     )}
-                    {i < STEPS.length - 1 && (
+                    {i < steps.length - 1 && (
                       <div
                         className={cn(
                           "w-0.5 h-14",

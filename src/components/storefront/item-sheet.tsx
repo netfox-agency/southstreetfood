@@ -114,7 +114,7 @@ export function ItemSheet({
   const [item, setItem] = useState<ItemData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
-  const [selectedExtras, setSelectedExtras] = useState<Set<string>>(new Set());
+  const [selectedExtras, setSelectedExtras] = useState<Map<string, number>>(new Map());
   const [quantity, setQuantity] = useState(1);
   const [visible, setVisible] = useState(false);
 
@@ -184,16 +184,19 @@ export function ItemSheet({
     return () => window.removeEventListener("keydown", handler);
   }, [handleClose]);
 
+  const isUnbounded = (group: ExtraGroup) =>
+    group.max_selections === null || group.max_selections >= 999;
+
   const toggleExtra = (extraId: string, groupId: string) => {
     if (!item) return;
     const group = item.extra_groups.find((g) => g.id === groupId);
     if (!group) return;
 
     setSelectedExtras((prev) => {
-      const next = new Set(prev);
+      const next = new Map(prev);
       if (group.max_selections === 1) {
         group.items.forEach((gi) => next.delete(gi.id));
-        if (!prev.has(extraId)) next.add(extraId);
+        if (!prev.has(extraId)) next.set(extraId, 1);
         return next;
       }
       if (next.has(extraId)) {
@@ -203,15 +206,33 @@ export function ItemSheet({
           const count = group.items.filter((i) => next.has(i.id)).length;
           if (count >= group.max_selections) return prev;
         }
-        next.add(extraId);
+        next.set(extraId, 1);
       }
       return next;
     });
   };
 
+  const setExtraQty = (extraId: string, qty: number) => {
+    setSelectedExtras((prev) => {
+      const next = new Map(prev);
+      if (qty <= 0) {
+        next.delete(extraId);
+      } else {
+        next.set(extraId, qty);
+      }
+      return next;
+    });
+  };
+
+  // Build flat list of extras with quantities expanded for cart
   const selectedExtrasList = item
     ? item.extra_groups.flatMap((g) =>
-        g.items.filter((e) => selectedExtras.has(e.id))
+        g.items
+          .filter((e) => selectedExtras.has(e.id))
+          .flatMap((e) => {
+            const qty = selectedExtras.get(e.id) || 1;
+            return Array.from({ length: qty }, () => e);
+          })
       )
     : [];
 
@@ -225,9 +246,10 @@ export function ItemSheet({
 
     for (const group of item.extra_groups) {
       if (group.min_selections > 0) {
-        const count = group.items.filter((i) =>
-          selectedExtras.has(i.id)
-        ).length;
+        const count = group.items.reduce(
+          (sum, i) => sum + (selectedExtras.get(i.id) || 0),
+          0
+        );
         if (count < group.min_selections) {
           toast.error(
             `Selectionne au moins ${group.min_selections} option(s) dans "${group.name.replace(/^[^a-zA-Z]*\s?/, "")}"`
@@ -394,11 +416,13 @@ export function ItemSheet({
 
                 {/* Extra groups */}
                 {item.extra_groups.map((group) => {
-                  const groupSelectedCount = group.items.filter((i) =>
-                    selectedExtras.has(i.id)
-                  ).length;
+                  const groupSelectedCount = group.items.reduce(
+                    (sum, i) => sum + (selectedExtras.get(i.id) || 0),
+                    0
+                  );
+                  const unbounded = isUnbounded(group);
                   const effectiveMax =
-                    group.max_selections !== null && group.max_selections < 999
+                    !unbounded && group.max_selections !== null
                       ? group.max_selections
                       : null;
                   const atMax =
@@ -430,9 +454,62 @@ export function ItemSheet({
                       <div className="mt-2 divide-y divide-border">
                         {group.items.map((extra) => {
                           const isSelected = selectedExtras.has(extra.id);
+                          const extraQty = selectedExtras.get(extra.id) || 0;
                           const isDisabled =
                             !extra.is_available || (atMax && !isSelected);
 
+                          // Unbounded groups → quantity stepper
+                          if (unbounded && !isSingleSelect) {
+                            return (
+                              <div
+                                key={extra.id}
+                                className={cn(
+                                  "flex items-center justify-between py-3",
+                                  !extra.is_available && "opacity-40"
+                                )}
+                              >
+                                <div>
+                                  <span className="text-sm text-foreground">
+                                    {extra.name}
+                                  </span>
+                                  {extra.price > 0 && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      +{formatPrice(extra.price)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {extraQty > 0 && (
+                                    <button
+                                      onClick={() =>
+                                        setExtraQty(extra.id, extraQty - 1)
+                                      }
+                                      disabled={!extra.is_available}
+                                      className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                    >
+                                      <Minus className="h-3 w-3 text-foreground" />
+                                    </button>
+                                  )}
+                                  {extraQty > 0 && (
+                                    <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground">
+                                      {extraQty}
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      setExtraQty(extra.id, extraQty + 1)
+                                    }
+                                    disabled={!extra.is_available}
+                                    className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                  >
+                                    <Plus className="h-3 w-3 text-foreground" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Bounded groups → checkbox / radio toggle
                           return (
                             <button
                               key={extra.id}
