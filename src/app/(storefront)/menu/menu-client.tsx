@@ -97,29 +97,25 @@ function MenuItemRow({
     toast.success(`${item.name} ajouté au panier`);
   };
 
-  const handleCardClick = (e: React.MouseEvent) => {
-    if (item.has_options) {
-      e.preventDefault();
-      onOpenSheet({
-        slug: item.slug,
-        name: item.name,
-        base_price: item.base_price,
-        image_url: item.image_url,
-        description: item.description,
-      });
-    }
-    // For simple items, the Link navigates normally to /item/[slug]
+  const openSheet = () => {
+    onOpenSheet({
+      slug: item.slug,
+      name: item.name,
+      base_price: item.base_price,
+      image_url: item.image_url,
+      description: item.description,
+    });
   };
 
   return (
-    <Link href={`/item/${item.slug}`} onClick={handleCardClick}>
-      <div
-        className={cn(
-          "flex items-stretch border border-border rounded-2xl overflow-hidden transition-all duration-300 group cursor-pointer",
-          "hover:border-foreground/15 hover:shadow-sm",
-          !item.is_available && "opacity-50 pointer-events-none"
-        )}
-      >
+    <div
+      onClick={openSheet}
+      className={cn(
+        "flex items-stretch border border-border rounded-2xl overflow-hidden transition-all duration-300 group cursor-pointer",
+        "hover:border-foreground/15 hover:shadow-sm",
+        !item.is_available && "opacity-50 pointer-events-none"
+      )}
+    >
         <div className="flex-1 p-5 flex flex-col justify-center min-w-0">
           <h3 className="font-semibold text-[15px] text-foreground truncate">
             {item.name}
@@ -156,24 +152,12 @@ function MenuItemRow({
           )}
           {item.is_available &&
             (item.has_options ? (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onOpenSheet({
-                    slug: item.slug,
-                    name: item.name,
-                    base_price: item.base_price,
-                    image_url: item.image_url,
-                    description: item.description,
-                  });
-                }}
-                aria-label={`Composer ${item.name}`}
-                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 active:scale-95 transition-transform cursor-pointer"
+              <div
+                aria-hidden="true"
+                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
               >
                 <Plus className="h-4 w-4 text-foreground" />
-              </button>
+              </div>
             ) : (
               <button
                 type="button"
@@ -185,8 +169,7 @@ function MenuItemRow({
               </button>
             ))}
         </div>
-      </div>
-    </Link>
+    </div>
   );
 }
 
