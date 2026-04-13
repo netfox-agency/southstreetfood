@@ -29,7 +29,8 @@ export default function CartPage() {
   const selectedCity = deliveryAddress?.city || "";
   const cityFee = selectedCity ? getDeliveryFeeForCity(selectedCity) : null;
   const deliveryFee = orderType === "delivery" && cityFee !== null ? cityFee : 0;
-  const cityValid = orderType !== "delivery" || (selectedCity !== "" && cityFee !== null);
+  const streetFilled = (deliveryAddress?.street || "").trim().length > 0;
+  const deliveryValid = orderType !== "delivery" || (selectedCity !== "" && cityFee !== null && streetFilled);
   const currentSubtotal = subtotal();
   const total = currentSubtotal + deliveryFee;
 
@@ -356,12 +357,12 @@ export default function CartPage() {
         )}
 
         {/* Checkout button */}
-        {belowMin || !cityValid ? (
+        {belowMin || !deliveryValid ? (
           <>
-            {!cityValid && orderType === "delivery" && (
+            {!deliveryValid && orderType === "delivery" && (
               <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
                 <MapPin className="h-4 w-4 shrink-0" />
-                Selectionnez votre ville de livraison
+                {!selectedCity ? "Sélectionnez votre ville de livraison" : !streetFilled ? "Renseignez votre adresse" : "Adresse de livraison incomplète"}
               </div>
             )}
             <button
