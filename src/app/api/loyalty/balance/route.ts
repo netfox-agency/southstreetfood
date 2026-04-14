@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 /**
  * GET /api/loyalty/balance?phone=06XXXXXXXX — public
@@ -7,6 +8,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Balance = SUM(loyalty_points_earned) from all completed orders for that phone.
  */
 export async function GET(request: NextRequest) {
+  // Rate limit: 60 requests per minute per IP
+  const ip = getClientIp(request);
+  const rl = rateLimit("loyalty.balance", ip, 60, 60_000);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: "Trop de requêtes, réessayez dans quelques secondes" },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const phone = searchParams.get("phone")?.trim();
 

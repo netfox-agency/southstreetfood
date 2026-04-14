@@ -194,7 +194,6 @@ export function HistoryClient({ initialOrders, initialDate }: Props) {
           {(
             [
               { key: "all", label: "Tous types" },
-              { key: "dine_in", label: "Sur place" },
               { key: "collect", label: "À emporter" },
               { key: "delivery", label: "Livraison" },
             ] as { key: FilterType; label: string }[]

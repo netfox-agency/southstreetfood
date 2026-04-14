@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Store, Clock, ChevronDown, Info } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, ChevronDown, Info } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { DELIVERY_ZONES, getDeliveryFeeForCity } from "@/lib/constants";
@@ -70,8 +70,9 @@ export default function CartPage() {
     ? `${selectedCity} · ${formatPrice(cityFee)}`
     : `Dès ${formatPrice(DELIVERY_ZONES[0].fee)}`;
 
+  const orderTypeSelected = orderType !== null;
+
   const orderTypes = [
-    { key: "dine_in" as const, label: "Sur place", sub: "Au restaurant", icon: Store, enabled: true },
     { key: "collect" as const, label: "A emporter", sub: "Click & Collect", icon: MapPin, enabled: settings.collectEnabled },
     { key: "delivery" as const, label: "Livraison", sub: deliverySub, icon: Truck, enabled: settings.deliveryEnabled },
   ];
@@ -94,7 +95,7 @@ export default function CartPage() {
         {/* Order type */}
         <div className="mb-5">
           <h2 className="text-sm font-semibold text-[#1d1d1f] mb-3">Mode de commande</h2>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {orderTypes.map((type) => (
               <button
                 key={type.key}
@@ -357,9 +358,15 @@ export default function CartPage() {
         )}
 
         {/* Checkout button */}
-        {belowMin || !deliveryValid ? (
+        {!orderTypeSelected && (
+          <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 shrink-0" />
+            Choisissez votre mode de commande
+          </div>
+        )}
+        {!orderTypeSelected || belowMin || !deliveryValid ? (
           <>
-            {!deliveryValid && orderType === "delivery" && (
+            {orderTypeSelected && !deliveryValid && orderType === "delivery" && (
               <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
                 <MapPin className="h-4 w-4 shrink-0" />
                 {!selectedCity ? "Sélectionnez votre ville de livraison" : !streetFilled ? "Renseignez votre adresse" : "Adresse de livraison incomplète"}

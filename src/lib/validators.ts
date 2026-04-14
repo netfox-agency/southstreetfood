@@ -8,7 +8,7 @@ const MAX_EXTRAS_PER_ITEM = 20;
 const MAX_NAME = 120;
 
 export const createOrderSchema = z.object({
-  orderType: z.enum(["collect", "delivery", "dine_in"]),
+  orderType: z.enum(["collect", "delivery"]),
   customerName: z.string().trim().min(2, "Nom requis").max(MAX_NAME),
   customerPhone: z
     .string()

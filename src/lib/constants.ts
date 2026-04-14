@@ -6,7 +6,7 @@ export const BRAND = {
   phone: "05 59 00 00 00",
   email: "contact@southstreetfood.fr",
   address: "Bayonne, France",
-  instagram: "https://instagram.com/southstreetfood",
+  instagram: "https://www.instagram.com/southstreetfood64",
   snapchat: "https://snapchat.com/add/southstreetfood",
 } as const;
 

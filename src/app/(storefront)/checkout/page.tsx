@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Store, Star } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Star } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { getDeliveryFeeForCity } from "@/lib/constants";
@@ -62,13 +62,13 @@ export default function CheckoutPage() {
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 || !orderType) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-5">
         <ShoppingBag className="h-12 w-12 text-[#d1d1d6] mb-4" />
-        <h1 className="text-xl font-bold text-[#1d1d1f] mb-2">Panier vide</h1>
-        <Link href="/menu" className="text-sm text-[#86868b] underline">
-          Retour au menu
+        <h1 className="text-xl font-bold text-[#1d1d1f] mb-2">{!orderType ? "Mode de commande requis" : "Panier vide"}</h1>
+        <Link href={!orderType ? "/cart" : "/menu"} className="text-sm text-[#86868b] underline">
+          {!orderType ? "Retour au panier" : "Retour au menu"}
         </Link>
       </div>
     );
@@ -247,12 +247,6 @@ export default function CheckoutPage() {
                   <span>A emporter</span>
                 </>
               )}
-              {orderType === "dine_in" && (
-                <>
-                  <Store className="h-4 w-4" />
-                  <span>Sur place</span>
-                </>
-              )}
             </div>
 
             {/* Items */}
@@ -299,7 +293,6 @@ export default function CheckoutPage() {
               <p className="text-[13px] text-[#86868b]">
                 {orderType === "delivery" && "Vous payez à la réception de votre commande"}
                 {orderType === "collect" && "Vous payez au comptoir lors du retrait"}
-                {orderType === "dine_in" && "Vous payez à table ou au comptoir"}
               </p>
             </div>
           </div>

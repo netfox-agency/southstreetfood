@@ -23,7 +23,7 @@ const COLUMNS: { key: string; label: string; status: OrderStatus }[] = [
   { key: "ready", label: "Prêtes", status: "ready" },
 ];
 
-type FilterType = "all" | "dine_in" | "collect" | "delivery";
+type FilterType = "all" | "collect" | "delivery";
 
 function getMinutes(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
@@ -437,7 +437,6 @@ export default function AdminOrdersPage() {
           {(
             [
               { key: "all", label: "Toutes" },
-              { key: "dine_in", label: "Sur place" },
               { key: "collect", label: "À emporter" },
               { key: "delivery", label: "Livraison" },
             ] as { key: FilterType; label: string }[]

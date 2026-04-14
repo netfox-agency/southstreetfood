@@ -27,4 +27,4 @@ export interface DeliveryAddress {
   instructions?: string;
 }
 
-export type OrderTypeChoice = "collect" | "delivery" | "dine_in";
+export type OrderTypeChoice = "collect" | "delivery";

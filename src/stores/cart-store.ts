@@ -4,7 +4,7 @@ import type { CartItem, DeliveryAddress, OrderTypeChoice } from "@/types/cart";
 
 interface CartState {
   items: CartItem[];
-  orderType: OrderTypeChoice;
+  orderType: OrderTypeChoice | null;
   scheduledSlot: string | null;
   deliveryAddress: DeliveryAddress | null;
   loyaltyRewardId: string | null;
@@ -17,7 +17,7 @@ interface CartState {
   addItem: (item: Omit<CartItem, "id">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
-  setOrderType: (type: OrderTypeChoice) => void;
+  setOrderType: (type: OrderTypeChoice | null) => void;
   setScheduledSlot: (slot: string | null) => void;
   setDeliveryAddress: (address: DeliveryAddress | null) => void;
   setLoyaltyRewardId: (id: string | null) => void;
@@ -36,7 +36,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
-      orderType: "collect",
+      orderType: null,
       scheduledSlot: null,
       deliveryAddress: null,
       loyaltyRewardId: null,
@@ -73,7 +73,7 @@ export const useCartStore = create<CartState>()(
 
       setOrderType: (orderType) => {
         set({ orderType });
-        // Only "delivery" needs an address. Clear it for collect/dine_in.
+        // Only "delivery" needs an address. Clear it for collect.
         if (orderType !== "delivery") {
           set({ deliveryAddress: null });
         }
@@ -90,7 +90,7 @@ export const useCartStore = create<CartState>()(
       clear: () =>
         set({
           items: [],
-          orderType: "collect",
+          orderType: null,
           scheduledSlot: null,
           deliveryAddress: null,
           loyaltyRewardId: null,

@@ -77,14 +77,6 @@ export function ConfirmationClient({ order }: { order: OrderWithItems }) {
                   </span>
                 </>
               )}
-              {order.order_type === "dine_in" && (
-                <>
-                  <Store className="h-4 w-4 text-emerald-500" />
-                  <span className="text-muted-foreground">
-                    Servi sur place
-                  </span>
-                </>
-              )}
             </div>
           </div>
 

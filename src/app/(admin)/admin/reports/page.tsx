@@ -37,7 +37,7 @@ type Stats = {
   totalRevenue: number;
   totalDeliveryFees: number;
   avgOrderValue: number;
-  byType: { dine_in: number; collect: number; delivery: number };
+  byType: { dine_in?: number; collect: number; delivery: number };
 };
 
 const formatPrice = (cents: number) =>
@@ -50,7 +50,6 @@ const formatTime = (dateStr: string) =>
   });
 
 const typeLabels: Record<string, { label: string; icon: typeof Store }> = {
-  dine_in: { label: "Sur place", icon: Store },
   collect: { label: "A emporter", icon: MapPin },
   delivery: { label: "Livraison", icon: Truck },
 };
@@ -229,10 +228,6 @@ export default function ReportsPage() {
                   <Truck className="h-[18px] w-[18px] text-purple-600" />
                 </div>
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <p className="text-lg font-bold text-[#1d1d1f] tabular-nums">
-                    {stats.byType.dine_in}
-                  </p>
-                  <span className="text-xs text-[#86868b]">place</span>
                   <p className="text-lg font-bold text-[#1d1d1f] tabular-nums">
                     {stats.byType.collect}
                   </p>
