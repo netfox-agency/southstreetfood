@@ -35,23 +35,43 @@ export function useRealtimeOrders() {
   // because createClient is cheap (just wires env vars into a client).
   const supabase = useMemo(() => createClient(), []);
 
+  const SELECT_WITH_RELATIONS = "*, order_items(*), delivery_address:delivery_addresses(*)";
+
   const refetch = useCallback(async () => {
     const { data } = await supabase
       .from("orders")
-      .select("*, order_items(*)")
+      .select(SELECT_WITH_RELATIONS)
       .in("status", ACTIVE_STATUSES)
       .order("created_at", { ascending: false });
-    return (data ?? []) as OrderWithItems[];
+    // Supabase returns delivery_addresses as an array; unwrap to single object
+    return ((data ?? []) as unknown[]).map((row) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = row as any;
+      return {
+        ...r,
+        delivery_address: Array.isArray(r.delivery_address)
+          ? r.delivery_address[0] ?? null
+          : r.delivery_address ?? null,
+      } as OrderWithItems;
+    });
   }, [supabase]);
 
   const fetchOne = useCallback(
     async (orderId: string): Promise<OrderWithItems | null> => {
       const { data } = await supabase
         .from("orders")
-        .select("*, order_items(*)")
+        .select(SELECT_WITH_RELATIONS)
         .eq("id", orderId)
         .single();
-      return (data as OrderWithItems | null) ?? null;
+      if (!data) return null;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const r = data as any;
+      return {
+        ...r,
+        delivery_address: Array.isArray(r.delivery_address)
+          ? r.delivery_address[0] ?? null
+          : r.delivery_address ?? null,
+      } as OrderWithItems;
     },
     [supabase]
   );

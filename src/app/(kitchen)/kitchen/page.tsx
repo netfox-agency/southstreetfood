@@ -193,10 +193,18 @@ function OrderCard({
         </div>
       )}
 
-      {/* Customer name */}
-      <p className="text-xs text-[#86868b] mb-3 truncate">
-        {order.customer_name}
-      </p>
+      {/* Customer + delivery info */}
+      <div className="mb-3">
+        <p className="text-xs text-[#86868b] truncate">
+          {order.customer_name}
+        </p>
+        {order.order_type === "delivery" && order.delivery_address && (
+          <p className="text-xs text-[#e8416f] font-medium truncate mt-0.5">
+            <MapPin className="h-3 w-3 inline -mt-0.5 mr-0.5" />
+            {order.delivery_address.street}, {order.delivery_address.city}
+          </p>
+        )}
+      </div>
 
       {/* Actions — print + advance */}
       <div className="flex gap-2">
@@ -223,10 +231,12 @@ function OrderDetail({
   order,
   onClose,
   onAdvance,
+  onCancel,
 }: {
   order: OrderWithItems;
   onClose: () => void;
   onAdvance: () => void;
+  onCancel: () => void;
 }) {
   const minutes = getMinutes(order.created_at);
   const isDelivery = order.order_type === "delivery";
@@ -394,6 +404,14 @@ function OrderDetail({
               {buttonLabel(order)}
             </button>
           </div>
+
+          {/* Cancel */}
+          <button
+            onClick={onCancel}
+            className="w-full h-10 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            Annuler la commande
+          </button>
         </div>
       </motion.div>
     </motion.div>
@@ -548,6 +566,15 @@ export default function KitchenPage() {
       if (selected?.id === order.id) setSelected(null);
     },
     [updateOrderStatus, selected]
+  );
+
+  const cancelOrder = useCallback(
+    async (order: OrderWithItems) => {
+      if (!window.confirm(`Annuler la commande #${String(order.order_number).padStart(4, "0")} ?`)) return;
+      await updateOrderStatus(order.id, "cancelled");
+      setSelected(null);
+    },
+    [updateOrderStatus]
   );
 
   const undo = useCallback(async () => {
@@ -771,6 +798,7 @@ export default function KitchenPage() {
             order={selected}
             onClose={() => setSelected(null)}
             onAdvance={() => advance(selected)}
+            onCancel={() => cancelOrder(selected)}
           />
         )}
       </AnimatePresence>

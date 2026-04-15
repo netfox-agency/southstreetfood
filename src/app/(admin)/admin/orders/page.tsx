@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store } from "lucide-react";
+import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store, Navigation } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { PrintTicketButton } from "@/components/print-ticket-button";
 import { cn, formatPrice } from "@/lib/utils";
@@ -201,10 +201,12 @@ function OrderDetail({
   order,
   onClose,
   onAdvance,
+  onCancel,
 }: {
   order: OrderWithItems;
   onClose: () => void;
   onAdvance: () => void;
+  onCancel: () => void;
 }) {
   const minutes = getMinutes(order.created_at);
   const isDelivery = order.order_type === "delivery";
@@ -270,13 +272,30 @@ function OrderDetail({
           </div>
 
           {isDelivery && order.delivery_address && (
-            <div className="flex items-start gap-2 p-3 rounded-xl bg-[#f5f5f7] text-sm">
-              <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-[#86868b]" />
-              <span className="text-[#1d1d1f]">
-                {order.delivery_address.street},{" "}
-                {order.delivery_address.postal_code}{" "}
-                {order.delivery_address.city}
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 p-3 rounded-xl bg-[#f5f5f7] text-sm">
+                <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-[#86868b]" />
+                <span className="text-[#1d1d1f]">
+                  {order.delivery_address.street},{" "}
+                  {order.delivery_address.postal_code}{" "}
+                  {order.delivery_address.city}
+                </span>
+              </div>
+              {(order.status === "ready" || order.status === "out_for_delivery") && (
+                <a
+                  href={
+                    order.delivery_address.lat && order.delivery_address.lng
+                      ? `https://www.google.com/maps/dir/?api=1&destination=${order.delivery_address.lat},${order.delivery_address.lng}`
+                      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.delivery_address.street}, ${order.delivery_address.postal_code} ${order.delivery_address.city}`)}`
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 active:scale-[0.98] transition-all"
+                >
+                  <Navigation className="h-4 w-4" />
+                  Naviguer vers le client
+                </a>
+              )}
             </div>
           )}
 
@@ -352,6 +371,14 @@ function OrderDetail({
               </button>
             )}
           </div>
+
+          {/* Cancel */}
+          <button
+            onClick={onCancel}
+            className="w-full h-10 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            Annuler la commande
+          </button>
         </div>
       </motion.div>
     </motion.div>
@@ -402,6 +429,15 @@ export default function AdminOrdersPage() {
       if (selected?.id === order.id) setSelected(null);
     },
     [updateOrderStatus, selected]
+  );
+
+  const cancelOrder = useCallback(
+    async (order: OrderWithItems) => {
+      if (!window.confirm(`Annuler la commande #${String(order.order_number).padStart(4, "0")} ?`)) return;
+      await updateOrderStatus(order.id, "cancelled");
+      setSelected(null);
+    },
+    [updateOrderStatus]
   );
 
   const undo = useCallback(async () => {
@@ -540,6 +576,7 @@ export default function AdminOrdersPage() {
             order={selected}
             onClose={() => setSelected(null)}
             onAdvance={() => advance(selected)}
+            onCancel={() => cancelOrder(selected)}
           />
         )}
       </AnimatePresence>
