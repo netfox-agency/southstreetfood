@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store, Printer } from "lucide-react";
+import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
+import { PrintTicketButton } from "@/components/print-ticket-button";
 import { cn, formatPrice } from "@/lib/utils";
 import type { OrderWithItems } from "@/types/order";
 import type { OrderStatus } from "@/types/database";
@@ -341,15 +342,7 @@ function OrderDetail({
           </div>
 
           <div className="flex gap-2">
-            <a
-              href={`/ticket/${order.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-14 w-14 rounded-xl border-2 border-[#e5e5ea] flex items-center justify-center hover:bg-[#f5f5f7] transition-all cursor-pointer shrink-0"
-              title="Imprimer le ticket"
-            >
-              <Printer className="h-5 w-5 text-[#1d1d1f]" />
-            </a>
+            <PrintTicketButton orderId={order.id} size="lg" />
             {buttonLabel(order) && (
               <button
                 onClick={onAdvance}

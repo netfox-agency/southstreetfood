@@ -14,10 +14,10 @@ import {
   ShoppingBag,
   Store,
   Navigation,
-  Printer,
 } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { useSound } from "@/hooks/use-sound";
+import { PrintTicketButton } from "@/components/print-ticket-button";
 import { createClient } from "@/lib/supabase/client";
 import { cn, formatPrice } from "@/lib/utils";
 import type { OrderWithItems } from "@/types/order";
@@ -198,16 +198,19 @@ function OrderCard({
         {order.customer_name}
       </p>
 
-      {/* Action button — single tap, big target */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onAdvance();
-        }}
-        className="w-full h-14 rounded-xl bg-[#1d1d1f] text-white font-semibold hover:opacity-90 active:scale-[0.97] transition-all cursor-pointer"
-      >
-        {buttonLabel(order)}
-      </button>
+      {/* Actions — print + advance */}
+      <div className="flex gap-2">
+        <PrintTicketButton orderId={order.id} size="lg" />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAdvance();
+          }}
+          className="flex-1 h-14 rounded-xl bg-[#1d1d1f] text-white font-semibold hover:opacity-90 active:scale-[0.97] transition-all cursor-pointer"
+        >
+          {buttonLabel(order)}
+        </button>
+      </div>
     </motion.div>
   );
 }
@@ -383,15 +386,7 @@ function OrderDetail({
 
           {/* Action */}
           <div className="flex gap-2">
-            <a
-              href={`/ticket/${order.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-14 w-14 rounded-xl border-2 border-[#e5e5ea] flex items-center justify-center hover:bg-[#f5f5f7] transition-all cursor-pointer shrink-0"
-              title="Imprimer le ticket"
-            >
-              <Printer className="h-5 w-5 text-[#1d1d1f]" />
-            </a>
+            <PrintTicketButton orderId={order.id} size="lg" />
             <button
               onClick={onAdvance}
               className="flex-1 h-14 rounded-xl bg-[#1d1d1f] text-white font-semibold text-lg hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer"
