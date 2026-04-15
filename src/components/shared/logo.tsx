@@ -31,7 +31,7 @@ export function Logo({ className, size = "md", asLink = true }: LogoProps) {
       alt="South Street Food"
       width={w}
       height={h}
-      priority={size === "lg"}
+      priority
       className="object-contain transition-transform group-hover:scale-[1.03]"
     />
   );

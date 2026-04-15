@@ -233,19 +233,34 @@ export default function CheckoutPage() {
           <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5">
             <h2 className="font-semibold text-[15px] text-[#1d1d1f] mb-4">Recapitulatif</h2>
 
-            {/* Order type */}
-            <div className="flex items-center gap-2 text-sm text-[#86868b] mb-4 pb-4 border-b border-[#f0f0f2]">
-              {orderType === "delivery" && (
-                <>
-                  <Truck className="h-4 w-4" />
-                  <span>Livraison</span>
-                </>
-              )}
-              {orderType === "collect" && (
-                <>
-                  <MapPin className="h-4 w-4" />
-                  <span>A emporter</span>
-                </>
+            {/* Order type + delivery address */}
+            <div className="mb-4 pb-4 border-b border-[#f0f0f2]">
+              <div className="flex items-center gap-2 text-sm text-[#86868b]">
+                {orderType === "delivery" && (
+                  <>
+                    <Truck className="h-4 w-4" />
+                    <span>Livraison</span>
+                  </>
+                )}
+                {orderType === "collect" && (
+                  <>
+                    <MapPin className="h-4 w-4" />
+                    <span>A emporter</span>
+                  </>
+                )}
+              </div>
+              {orderType === "delivery" && deliveryAddress?.street && (
+                <div className="mt-2 ml-6 text-sm text-[#1d1d1f]">
+                  <p>{deliveryAddress.street}</p>
+                  <p className="text-[#86868b]">
+                    {deliveryAddress.postalCode} {deliveryAddress.city}
+                  </p>
+                  {deliveryAddress.instructions && (
+                    <p className="text-xs text-[#aeaeb2] italic mt-0.5">
+                      {deliveryAddress.instructions}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
 
