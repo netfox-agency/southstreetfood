@@ -162,6 +162,13 @@ const GROUPS = {
     items: [["🥩 Supplément steak 180g", EUR(2.5)]],
   },
 
+  // ── Gratinage (tacos)
+  gratinage: {
+    name: "🧀 Gratinage",
+    min: 0, max: 1, order: 55,
+    items: [["🧀 Gratiné", EUR(2)]],
+  },
+
   // ── Saveurs sup (partout)
   saveurs: {
     name: "✨ Une Étincelle de Saveur sup'",
@@ -172,11 +179,11 @@ const GROUPS = {
     ].map((n) => [n, EUR(1.5)]),
   },
 
-  // ── Extra cheese
+  // ── Extra cheese (South Cheese = Raclette + Cheddar)
   extra_cheese: {
-    name: "🧀 Extra Cheese",
+    name: "🧀 South Cheese (Raclette-Cheddar)",
     min: 0, max: 1, order: 55,
-    items: [["🧀 Cheddar Fondu", EUR(3)]],
+    items: [["🧀 South Cheese", EUR(3)]],
   },
 
   // ── Accompagnement frites
@@ -195,15 +202,15 @@ const GROUPS = {
     name: "🥤 Rafraîchit Toi",
     min: 0, max: 9990, order: 70,
     items: [
-      ["Coca-Cola", EUR(2.49)],
-      ["Coca-Cola cherry", EUR(2.49)],
-      ["Coca-Cola zéro", EUR(2.49)],
-      ["Oasis fraise framboise", EUR(2.49)],
-      ["Oasis tropical", EUR(2.49)],
-      ["Hawaï", EUR(2.49)],
-      ["Fanta", EUR(2.49)],
-      ["Orangina", EUR(2.49)],
-      ["Eau plate", EUR(1.99)],
+      ["Coca-Cola", EUR(2)],
+      ["Coca-Cola cherry", EUR(2)],
+      ["Coca-Cola zéro", EUR(2)],
+      ["Oasis fraise framboise", EUR(2)],
+      ["Oasis tropical", EUR(2)],
+      ["Hawaï", EUR(2)],
+      ["Fanta", EUR(2)],
+      ["Orangina", EUR(2)],
+      ["Eau plate", EUR(1.5)],
       ["Red Bull", EUR(2.99)],
     ],
   },
@@ -213,10 +220,10 @@ const GROUPS = {
     name: "🫣 Tes sûr d'être Calé ?",
     min: 0, max: 3996, order: 80,
     items: [
-      ["🍗 Tenders croustillant x5", EUR(6)],
-      ["🍗 Nuggets Croustillants x6", EUR(6)],
-      ["🧀 Chili cheese x6", EUR(6)],
-      ["🧀 Bouchée Camembert x6", EUR(6)],
+      ["🍗 Tenders croustillant x5", EUR(5.5)],
+      ["🍗 Nuggets Croustillants x6", EUR(5.5)],
+      ["🧀 Chili cheese x6", EUR(5.5)],
+      ["🧀 Bouchée Camembert x6", EUR(5.5)],
     ],
   },
 
@@ -240,69 +247,69 @@ const ITEMS = {
   // ══ COMPOSE (Tacos / Bowls) ══
   "tacos-m": {
     name: "Tacos M",
-    price: EUR(9.9),
+    price: EUR(9),
     desc: "Un tacos 1 viande généreux, garni de la viande de votre choix, accompagné de frites fondantes et d'une sauce fromagère gourmande. Le tout dans une tortilla grillée, pour un mélange savoureux et réconfortant à chaque bouchée.",
-    groups: ["prot_1", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_1", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
   "tacos-l": {
     name: "Tacos L",
-    price: EUR(11.9),
+    price: EUR(10),
     desc: "Un tacos 2 viandes généreux, composé de deux viandes au choix, accompagné de frites fondantes et d'une sauce fromagère gourmande. Le tout dans une tortilla grillée, pour un mélange riche et savoureux à chaque bouchée.",
-    groups: ["prot_2", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_2", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
   "tacos-xl": {
     name: "Tacos XL",
-    price: EUR(13.9),
+    price: EUR(11),
     desc: "Un tacos 3 viandes ultra généreux, composé de trois viandes au choix, accompagné de frites fondantes et d'une sauce fromagère gourmande. Le tout dans une tortilla grillée, pour une explosion de saveurs riche et irrésistible.",
-    groups: ["prot_3", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_3", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
   "bowl-m": {
     name: "Bowl M",
-    price: EUR(9.9),
+    price: EUR(9),
     desc: "Un Bowl 1 viande généreux, garni de la viande de votre choix, accompagné de frites fondantes et d'une sauce fromagère gourmande. Le tout dans un Bowl, pour un mélange savoureux et réconfortant à chaque bouchée.",
-    groups: ["prot_1", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_1", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
   "bowl-l": {
     name: "Bowl L",
-    price: EUR(11.9),
+    price: EUR(10),
     desc: "Un Bowl 2 viandes généreux, composé de deux viandes au choix, accompagné de frites fondantes et d'une sauce gourmande. Le tout dans un Bowl, pour un mélange riche et savoureux à chaque bouchée.",
-    groups: ["prot_2", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_2", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
   "bowl-xl": {
     name: "Bowl XL",
-    price: EUR(13.9),
+    price: EUR(11),
     desc: "Un Bowl 3 viandes ultra généreux, composé de trois viandes au choix, accompagné de frites fondantes et d'une sauce fromagère gourmande. Le tout dans un Bowl, pour une explosion de saveurs riche et irrésistible.",
-    groups: ["prot_3", "sauces", "tacos_ingredients", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
+    groups: ["prot_3", "sauces", "tacos_ingredients", "saveurs", "gratinage", "accomp", "boissons", "partager"],
   },
 
   // ══ BURGERS ══
   "cheeseburger": {
     name: "Cheeseburger",
-    price: EUR(5.5),
+    price: EUR(5),
     desc: "Un cheeseburger simple et savoureux, composé d'un steak haché juteux et d'une tranche de cheddar fondante. Le tout dans un pain moelleux, relevé d'une sauce gourmande pour un classique efficace et plein de goût.",
     groups: ["crud_cornichon", "sauces", "sup_45", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
   },
   "montagnard-burger": {
     name: "Montagnard burger",
-    price: EUR(12),
+    price: EUR(11),
     desc: "Un burger montagnard au choix : 2 steak haché 90g ou 2 filet de poulet crunchy, généreusement garni de raclette fondante et de bacon croustillant. Le tout dans un pain brioché moelleux, pour une expérience gourmande, riche et réconfortante aux saveurs de la montagne.",
     groups: ["prot_choice", "crud_4", "sauces", "sup_90", "saveurs", "extra_cheese", "accomp", "partager", "boissons"],
   },
   "le-big-mc": {
     name: "Le Big Mc",
-    price: EUR(8.5),
+    price: EUR(7),
     desc: "Un Big Mc iconique composé de deux steaks hachés, de cheddar fondant, de salade croquante, d'oignons et cornichons. Le tout dans un pain en trois étages, nappé d'une sauce signature pour un goût unique et incontournable.",
     groups: ["crud_bigmc", "sauces", "sup_45", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
   },
   "big-cheeseburger": {
     name: "Big cheeseburger",
-    price: EUR(9.5),
+    price: EUR(8),
     desc: "Un Big Cheese généreux au choix : 1 steak haché 90g ou 1 poulet crunchy, accompagné de cheddar fondant. Le tout dans un pain brioché moelleux avec une sauce gourmande pour une version encore plus riche et savoureuse du classique.",
     groups: ["prot_choice", "sauces", "sup_90", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
   },
   "le-180": {
     name: "Le 180",
-    price: EUR(12),
+    price: EUR(11),
     desc: "Un burger gourmand composé d'un steak de 180g, juteux et parfaitement grillé, niché dans un pain moelleux. Accompagné de cheddar fondant, de crudités fraîches et d'une sauce savoureuse pour un équilibre parfait à chaque bouchée.",
     groups: ["crud_4", "sauces", "sup_180", "saveurs", "extra_cheese", "accomp", "boissons", "partager"],
   },
@@ -317,13 +324,13 @@ const ITEMS = {
   // note: DB has wrap-poulet + wrap-steak, no wrap-kebab. We keep what exists.
   "wrap-poulet": {
     name: "Wrap poulet",
-    price: EUR(9.5),
+    price: EUR(8),
     desc: "Un wrap poulet gourmand garni de morceaux de poulet croustillant, accompagnés de crudités fraîches et de cheddar. Le tout enroulé dans une tortilla moelleuse avec une sauce onctueuse pour un équilibre parfait entre croquant et fraîcheur.",
     groups: ["crud_wrap", "sauces", "saveurs", "extra_cheese", "accomp", "partager", "boissons"],
   },
   "wrap-steak": {
     name: "Wrap steak",
-    price: EUR(9.5),
+    price: EUR(8),
     desc: "Un wrap généreux garni de deux steaks hachés de 45g, juteux et savoureux, accompagnés de cheddar fondu et de crudités fraîches. Le tout enroulé dans une tortilla moelleuse avec une sauce gourmande pour un format pratique et plein de goût.",
     groups: ["crud_wrap", "sauces", "saveurs", "extra_cheese", "accomp", "partager", "boissons"],
   },
@@ -331,7 +338,7 @@ const ITEMS = {
   // ══ FIT ══
   "salade-cesar": {
     name: "Salade Cesar",
-    price: EUR(7),
+    price: EUR(6),
     desc: "Une salade César gourmande et colorée, mêlant salade croquante, tomates cerises juteuses, maïs sucré, oignons et croûtons dorés, le tout sublimé par du poulet croustillant. Un équilibre parfait entre fraîcheur et gourmandise, relevé par une sauce onctueuse pour une expérience savoureuse à chaque bouchée.",
     groups: ["crud_salade", "boissons"],
   },
@@ -339,19 +346,19 @@ const ITEMS = {
   // ══ À PARTAGER ══
   "tenders-x5": {
     name: "Tenders croustillants x5",
-    price: EUR(6.5),
+    price: EUR(5.5),
     desc: "Des tenders de poulet croustillants à l'extérieur et fondants à l'intérieur, préparés avec un poulet savoureux. Accompagnés d'une sauce gourmande, pour une pause simple et pleine de plaisir.",
     groups: ["accomp", "extra_cheese", "boissons"],
   },
   "nuggets-x6": {
     name: "Nuggets croustillants x6",
-    price: EUR(6.5),
+    price: EUR(5.5),
     desc: "Des nuggets de poulet croustillants à l'extérieur et moelleux à l'intérieur, préparés à partir de poulet savoureux. À déguster avec une sauce gourmande pour un plaisir simple et efficace à chaque bouchée.",
     groups: ["accomp", "extra_cheese", "boissons"],
   },
   "chili-cheese-x6": {
     name: "Chili cheese x6",
-    price: EUR(6.5),
+    price: EUR(5.5),
     desc: "Des bouchées de chili cheese croustillantes à l'extérieur et fondantes à cœur, pour une touche à la fois douce et savoureuse. À déguster avec une sauce gourmande.",
     groups: ["accomp", "extra_cheese", "boissons"],
   },
@@ -359,19 +366,19 @@ const ITEMS = {
   // ══ PATATE ══
   "frites-sale": {
     name: "Frites sale",
-    price: EUR(2.5),
+    price: EUR(2),
     desc: "Des frites dorées et croustillantes, légèrement salées pour révéler toute leur saveur. Fondantes à l'intérieur, elles sont l'accompagnement parfait, simple et irrésistible.",
     groups: [],
   },
   "frites-cheddar": {
     name: "Frites Cheddar",
-    price: EUR(4),
+    price: EUR(3.5),
     desc: "Des frites croustillantes et dorées, nappées d'un cheddar fondant et généreux. Un mélange ultra gourmand entre croquant et onctuosité pour un plaisir intense à chaque bouchée.",
     groups: [],
   },
   "frites-cheddar-bacon": {
     name: "Frites Cheddar Bacon",
-    price: EUR(5),
+    price: EUR(4.5),
     desc: "Des frites dorées et croustillantes, généreusement recouvertes de cheddar fondant et de bacon croustillant aux notes fumées. Un mariage intense entre fondant, croquant et gourmandise, pour une explosion de saveurs à chaque bouchée.",
     groups: [],
   },
@@ -379,19 +386,19 @@ const ITEMS = {
   // ══ DESSERTS ══
   "tiramisu": {
     name: "Tiramisus",
-    price: EUR(4),
+    price: EUR(3.5),
     desc: "Un tiramisu onctueux aux couches généreuses de crème légère et de biscuits. Un dessert classique, doux et réconfortant, parfait pour une touche sucrée à tout moment.",
     groups: ["boissons"],
   },
   "tarte-daims": {
     name: "Tarte au daims",
-    price: EUR(4),
+    price: EUR(3.5),
     desc: "Une part de tarte au Daim irrésistiblement gourmande, mêlant une base croustillante à une crème fondante au caramel, parsemée d'éclats de Daim croquants. Un dessert riche et intensément savoureux, où se rencontrent douceur, croquant et notes délicatement caramélisées pour un pur moment de plaisir.",
     groups: ["boissons"],
   },
   "cheesecake": {
     name: "Cheesecake",
-    price: EUR(4.99),
+    price: EUR(3.5),
     desc: "Un cheesecake onctueux et fondant, reposant sur une base biscuitée croustillante. Personnalisable selon vos envies avec un coulis au choix : fruits rouges, caramel ou spéculoos, pour une touche gourmande sur mesure.",
     groups: ["coulis", "boissons"],
   },
