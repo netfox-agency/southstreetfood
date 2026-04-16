@@ -3,9 +3,9 @@ export const BRAND = {
   tagline: "Le street food de Bayonne",
   description:
     "Burgers, tacos et wraps artisanaux. Livraison sur Bayonne-Anglet-Biarritz jusqu'a 4h du matin.",
-  phone: "05 59 00 00 00",
+  phone: "07 69 79 91 89",
   email: "contact@southstreetfood.fr",
-  address: "Bayonne, France",
+  address: "32 Chemin de Loustaunaou, 64100 Bayonne",
   instagram: "https://www.instagram.com/southstreetfood64",
   snapchat: "https://snapchat.com/add/southstreetfood",
 } as const;
@@ -75,3 +75,44 @@ export const LOYALTY = {
   pointsPerEuro: 10,
   minPointsRedeem: 100,
 } as const;
+
+/**
+ * Menu (formule +3€) — items eligible to be upgraded to "Menu".
+ * A Menu = item + drink 33cl + frites for +3€ flat.
+ *   - Drinks: any standard 33cl included, Red Bull +1€ supplement
+ *   - Frites: salées included, Cheddar +1.50€, Cheddar Bacon +2.50€
+ */
+export const MENU_UPGRADE_PRICE = 300; // +3€ in cents to go "en menu"
+
+export const MENU_ELIGIBLE_SLUGS: readonly string[] = [
+  // Burgers
+  "cheeseburger",
+  "montagnard-burger",
+  "le-big-mc",
+  "big-cheeseburger",
+  "le-180",
+  // Wraps & Roll
+  "wrap-poulet",
+  "wrap-steak",
+  "wrap-kebab",
+  "roll",
+  // Tacos & Bowl
+  "tacos-m",
+  "tacos-l",
+  "tacos-xl",
+  "bowl-m",
+  "bowl-l",
+  "bowl-xl",
+] as const;
+
+/** Slug prefixes for drinks that cost extra in a Menu. */
+export const MENU_DRINK_SUPPLEMENTS: Record<string, number> = {
+  "red-bull": 100, // +1€ for Red Bull
+};
+
+/** Frites options in a Menu, with price delta from salée (included). */
+export const MENU_FRIES_OPTIONS = [
+  { slug: "frites-sale", label: "Frites salées", supplement: 0 },
+  { slug: "frites-cheddar", label: "Frites Cheddar", supplement: 150 },
+  { slug: "frites-cheddar-bacon", label: "Frites Cheddar Bacon", supplement: 250 },
+] as const;

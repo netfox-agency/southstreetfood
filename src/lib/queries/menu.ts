@@ -1,4 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
+import {
+  MENU_DRINK_SUPPLEMENTS,
+  MENU_FRIES_OPTIONS,
+} from "@/lib/constants";
 
 export async function getCategories() {
   const supabase = await createClient();
@@ -166,6 +170,65 @@ export async function getBestSellers(limit = 4) {
   if (error) throw error;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (data || []) as any[];
+}
+
+/**
+ * Fetch the side-options shown when a customer switches an item "en Menu".
+ * Returns drinks (from DB, with Red Bull +1€ supplement) + fries (from code constants).
+ *
+ * Drinks are fetched live so if the owner adds/removes a drink, the menu updates
+ * automatically. Fries are constants because there are only 3 and their upgrades
+ * are fixed business rules.
+ */
+export async function getMenuSideOptions() {
+  const supabase = await createClient();
+
+  // Find the drinks category id
+  const { data: cat } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("slug", "boissons")
+    .maybeSingle();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const catRow = cat as any;
+
+  let drinks: {
+    id: string;
+    slug: string;
+    name: string;
+    image_url: string | null;
+    supplement: number;
+  }[] = [];
+
+  if (catRow?.id) {
+    const { data: drinkRows } = await supabase
+      .from("menu_items")
+      .select("id, slug, name, image_url")
+      .eq("category_id", catRow.id)
+      .eq("is_available", true)
+      .order("display_order");
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rows = (drinkRows || []) as any[];
+
+    drinks = rows.map((d) => ({
+      id: d.id,
+      slug: d.slug,
+      name: d.name,
+      image_url: d.image_url,
+      // Red Bull (or anything flagged in MENU_DRINK_SUPPLEMENTS) gets a small supplement
+      supplement: MENU_DRINK_SUPPLEMENTS[d.slug] ?? 0,
+    }));
+  }
+
+  const fries = MENU_FRIES_OPTIONS.map((f) => ({
+    slug: f.slug,
+    label: f.label,
+    supplement: f.supplement,
+  }));
+
+  return { drinks, fries };
 }
 
 export async function getRestaurantSettings() {
