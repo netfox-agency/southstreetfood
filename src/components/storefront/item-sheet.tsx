@@ -233,11 +233,11 @@ export function ItemSheet({
     group.max_selections === null || group.max_selections >= 999;
 
   /**
-   * Hide drink/fries extra groups when "En Menu" is active — those choices
-   * are covered by the dedicated menu selectors below, no point asking twice.
+   * Side groups = boissons / frites / accompagnements. We split extras into
+   * two phases so the Menu switch can sit between "build your burger" and
+   * "pick your sides" — the cashier moment IRL.
    */
-  const isHiddenByMenu = (group: ExtraGroup) => {
-    if (!isMenu) return false;
+  const isSideGroup = (group: ExtraGroup) => {
     const lower = group.name.toLowerCase();
     return (
       lower.includes("boisson") ||
@@ -247,9 +247,17 @@ export function ItemSheet({
     );
   };
 
-  const visibleExtraGroups = item
-    ? item.extra_groups.filter((g) => !isHiddenByMenu(g))
+  const burgerExtraGroups = item
+    ? item.extra_groups.filter((g) => !isSideGroup(g))
     : [];
+  const sideExtraGroupsRaw = item
+    ? item.extra_groups.filter((g) => isSideGroup(g))
+    : [];
+  // Side groups disappear when Menu is ON — the menu's own fries/drink
+  // selectors cover those choices, no point asking twice.
+  const sideExtraGroups = isMenu ? [] : sideExtraGroupsRaw;
+  // Used by validation + cart payload — must match what the customer sees.
+  const visibleExtraGroups = [...burgerExtraGroups, ...sideExtraGroups];
 
   const toggleExtra = (extraId: string, groupId: string) => {
     if (!item) return;
@@ -286,6 +294,148 @@ export function ItemSheet({
       }
       return next;
     });
+  };
+
+  // Render one extra group (sauces, suppléments, boissons, etc.). Extracted
+  // because we render burger groups + side groups in two separate phases
+  // (the Menu switch sits between them) and we don't want to duplicate
+  // ~150 lines of JSX.
+  const renderExtraGroup = (group: ExtraGroup) => {
+    const groupSelectedCount = group.items.reduce(
+      (sum, i) => sum + (selectedExtras.get(i.id) || 0),
+      0,
+    );
+    const unbounded = isUnbounded(group);
+    const effectiveMax =
+      !unbounded && group.max_selections !== null
+        ? group.max_selections
+        : null;
+    const atMax =
+      effectiveMax !== null && groupSelectedCount >= effectiveMax;
+    const isRequired = group.min_selections > 0;
+    const isSingleSelect = group.max_selections === 1;
+
+    return (
+      <div key={group.id} className="mb-6 pt-5 border-t border-border">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div className="min-w-0">
+            <h3 className="text-[15px] font-bold text-foreground leading-tight">
+              {group.name}
+            </h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {groupSubtitle(group)}
+            </p>
+          </div>
+          {isRequired && (
+            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+              Obligatoire
+            </span>
+          )}
+        </div>
+        <div className="mt-2 divide-y divide-border">
+          {group.items.map((extra) => {
+            const isSelected = selectedExtras.has(extra.id);
+            const extraQty = selectedExtras.get(extra.id) || 0;
+            const isDisabled =
+              !extra.is_available || (atMax && !isSelected);
+
+            // Unbounded groups → quantity stepper
+            if (unbounded && !isSingleSelect) {
+              return (
+                <div
+                  key={extra.id}
+                  className={cn(
+                    "flex items-center justify-between py-3",
+                    !extra.is_available && "opacity-40",
+                  )}
+                >
+                  <div>
+                    <span className="text-sm text-foreground">
+                      {extra.name}
+                    </span>
+                    {extra.price > 0 && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        +{formatPrice(extra.price)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    {extraQty > 0 && (
+                      <button
+                        onClick={() => setExtraQty(extra.id, extraQty - 1)}
+                        disabled={!extra.is_available}
+                        className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                      >
+                        <Minus className="h-3 w-3 text-foreground" />
+                      </button>
+                    )}
+                    {extraQty > 0 && (
+                      <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground">
+                        {extraQty}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setExtraQty(extra.id, extraQty + 1)}
+                      disabled={!extra.is_available}
+                      className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      <Plus className="h-3 w-3 text-foreground" />
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+
+            // Bounded groups → checkbox / radio toggle
+            return (
+              <button
+                key={extra.id}
+                onClick={() => toggleExtra(extra.id, group.id)}
+                disabled={isDisabled}
+                className={cn(
+                  "w-full flex items-center justify-between py-3 text-left cursor-pointer transition-opacity",
+                  isDisabled && !isSelected && "opacity-40 cursor-not-allowed",
+                )}
+              >
+                <span className="text-sm text-foreground">{extra.name}</span>
+                <div className="flex items-center gap-3 shrink-0">
+                  {extra.price > 0 && (
+                    <span className="text-xs text-muted-foreground">
+                      +{formatPrice(extra.price)}
+                    </span>
+                  )}
+                  {isSingleSelect ? (
+                    <div
+                      className={cn(
+                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                        isSelected ? "border-foreground" : "border-border",
+                      )}
+                    >
+                      {isSelected && (
+                        <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                      )}
+                    </div>
+                  ) : (
+                    <div
+                      className={cn(
+                        "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors",
+                        isSelected
+                          ? "bg-foreground border-foreground"
+                          : "border-border",
+                      )}
+                    >
+                      {isSelected && (
+                        <Check className="h-3 w-3 text-background" />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
   };
 
   // Build flat list of extras with quantities expanded for cart — only from
@@ -491,15 +641,75 @@ export function ItemSheet({
               <SheetSkeleton />
             ) : item ? (
               <>
-                {/* ═══ EN MENU UPSELL ═══
-                    Top-level decision : single dish vs full meal. This is
-                    the FIRST question after the customer sees the item,
-                    because in real life you don't pick fries and drinks
-                    BEFORE deciding whether you want them at all. Toggling
-                    ON also hides the boisson/frites extras further down,
-                    so the order of decisions matches the order of effects. */}
+                {/* Variants */}
+                {item.variants.length > 1 && (
+                  <div className="mb-6 pt-5 border-t border-border">
+                    <div className="mb-1">
+                      <h3 className="text-[15px] font-bold text-foreground">
+                        Choisir une formule
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Choisir 1
+                      </p>
+                    </div>
+                    <div className="mt-3 divide-y divide-border">
+                      {item.variants.map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() => setSelectedVariant(v)}
+                          disabled={!v.is_available}
+                          className={cn(
+                            "w-full flex items-center justify-between py-3.5 text-left cursor-pointer",
+                            !v.is_available && "opacity-40 cursor-not-allowed"
+                          )}
+                        >
+                          <span className="text-sm text-foreground">
+                            {v.name}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            {v.price_modifier !== 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {v.price_modifier > 0 ? "+" : "-"}
+                                {formatPrice(Math.abs(v.price_modifier))}
+                              </span>
+                            )}
+                            <div
+                              className={cn(
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                                selectedVariant?.id === v.id
+                                  ? "border-foreground"
+                                  : "border-border"
+                              )}
+                            >
+                              {selectedVariant?.id === v.id && (
+                                <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* ═══ BURGER CONFIG (sauces, suppléments) ═══
+                    Tout ce qui modifie le plat lui-même : viandes, sauces,
+                    cheddar, bacon, etc. Le client construit son burger ici
+                    AVANT qu'on lui propose le menu. */}
+                {burgerExtraGroups.map(renderExtraGroup)}
+
+                {/* ═══ EN MENU UPSELL (moment caissier IRL) ═══
+                    Le client a fini de configurer son burger. Pile au moment
+                    où on bascule sur les accompagnements (boisson + frites),
+                    on demande "tu le prends en menu ?". Comme un caissier
+                    qui dit "et avec ça, en menu ?" — c'est LE moment naturel.
+
+                    Si menu = ON  → fries/drink selectors inline juste en
+                                     dessous + groupes boisson/frites masqués
+                    Si menu = OFF → groupes boisson/frites visibles plus bas
+                                     dans leur section normale */}
                 {isMenuEligible && menuOptions && (
-                  <div className="mb-6">
+                  <div className="mb-6 pt-5 border-t border-border">
                     <button
                       type="button"
                       onClick={() => setIsMenu(!isMenu)}
@@ -541,8 +751,7 @@ export function ItemSheet({
                     </button>
 
                     {/* Inline expand — max-height + opacity keeps layout
-                        stable, no content pop. Fries/drink cards flash red
-                        when the customer tries to add to cart without picking. */}
+                        stable. Cards flash red when validation fails. */}
                     <div
                       className={cn(
                         "overflow-hidden transition-all duration-300 ease-out",
@@ -676,211 +885,11 @@ export function ItemSheet({
                   </div>
                 )}
 
-                {/* Variants */}
-                {item.variants.length > 1 && (
-                  <div className="mb-6 pt-5 border-t border-border">
-                    <div className="mb-1">
-                      <h3 className="text-[15px] font-bold text-foreground">
-                        Choisir une formule
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Choisir 1
-                      </p>
-                    </div>
-                    <div className="mt-3 divide-y divide-border">
-                      {item.variants.map((v) => (
-                        <button
-                          key={v.id}
-                          onClick={() => setSelectedVariant(v)}
-                          disabled={!v.is_available}
-                          className={cn(
-                            "w-full flex items-center justify-between py-3.5 text-left cursor-pointer",
-                            !v.is_available && "opacity-40 cursor-not-allowed"
-                          )}
-                        >
-                          <span className="text-sm text-foreground">
-                            {v.name}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            {v.price_modifier !== 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                {v.price_modifier > 0 ? "+" : "-"}
-                                {formatPrice(Math.abs(v.price_modifier))}
-                              </span>
-                            )}
-                            <div
-                              className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0",
-                                selectedVariant?.id === v.id
-                                  ? "border-foreground"
-                                  : "border-border"
-                              )}
-                            >
-                              {selectedVariant?.id === v.id && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Extra groups */}
-                {visibleExtraGroups.map((group) => {
-                  const groupSelectedCount = group.items.reduce(
-                    (sum, i) => sum + (selectedExtras.get(i.id) || 0),
-                    0
-                  );
-                  const unbounded = isUnbounded(group);
-                  const effectiveMax =
-                    !unbounded && group.max_selections !== null
-                      ? group.max_selections
-                      : null;
-                  const atMax =
-                    effectiveMax !== null &&
-                    groupSelectedCount >= effectiveMax;
-                  const isRequired = group.min_selections > 0;
-                  const isSingleSelect = group.max_selections === 1;
-
-                  return (
-                    <div
-                      key={group.id}
-                      className="mb-6 pt-5 border-t border-border"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-1">
-                        <div className="min-w-0">
-                          <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                            {group.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {groupSubtitle(group)}
-                          </p>
-                        </div>
-                        {isRequired && (
-                          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
-                            Obligatoire
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2 divide-y divide-border">
-                        {group.items.map((extra) => {
-                          const isSelected = selectedExtras.has(extra.id);
-                          const extraQty = selectedExtras.get(extra.id) || 0;
-                          const isDisabled =
-                            !extra.is_available || (atMax && !isSelected);
-
-                          // Unbounded groups → quantity stepper
-                          if (unbounded && !isSingleSelect) {
-                            return (
-                              <div
-                                key={extra.id}
-                                className={cn(
-                                  "flex items-center justify-between py-3",
-                                  !extra.is_available && "opacity-40"
-                                )}
-                              >
-                                <div>
-                                  <span className="text-sm text-foreground">
-                                    {extra.name}
-                                  </span>
-                                  {extra.price > 0 && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      +{formatPrice(extra.price)}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {extraQty > 0 && (
-                                    <button
-                                      onClick={() =>
-                                        setExtraQty(extra.id, extraQty - 1)
-                                      }
-                                      disabled={!extra.is_available}
-                                      className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                                    >
-                                      <Minus className="h-3 w-3 text-foreground" />
-                                    </button>
-                                  )}
-                                  {extraQty > 0 && (
-                                    <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground">
-                                      {extraQty}
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={() =>
-                                      setExtraQty(extra.id, extraQty + 1)
-                                    }
-                                    disabled={!extra.is_available}
-                                    className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                                  >
-                                    <Plus className="h-3 w-3 text-foreground" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          // Bounded groups → checkbox / radio toggle
-                          return (
-                            <button
-                              key={extra.id}
-                              onClick={() =>
-                                toggleExtra(extra.id, group.id)
-                              }
-                              disabled={isDisabled}
-                              className={cn(
-                                "w-full flex items-center justify-between py-3 text-left cursor-pointer transition-opacity",
-                                isDisabled &&
-                                  !isSelected &&
-                                  "opacity-40 cursor-not-allowed"
-                              )}
-                            >
-                              <span className="text-sm text-foreground">
-                                {extra.name}
-                              </span>
-                              <div className="flex items-center gap-3 shrink-0">
-                                {extra.price > 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{formatPrice(extra.price)}
-                                  </span>
-                                )}
-                                {isSingleSelect ? (
-                                  <div
-                                    className={cn(
-                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                      isSelected
-                                        ? "border-foreground"
-                                        : "border-border"
-                                    )}
-                                  >
-                                    {isSelected && (
-                                      <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={cn(
-                                      "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors",
-                                      isSelected
-                                        ? "bg-foreground border-foreground"
-                                        : "border-border"
-                                    )}
-                                  >
-                                    {isSelected && (
-                                      <Check className="h-3 w-3 text-background" />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
+                {/* ═══ SIDE EXTRAS (boissons + frites en commande à la carte) ═══
+                    Visibles seulement si Menu = OFF. Si Menu = ON, ces
+                    groupes sont déjà gérés par les sélecteurs inline
+                    au-dessus, on ne demande pas deux fois. */}
+                {sideExtraGroups.map(renderExtraGroup)}
               </>
             ) : null}
           </div>
