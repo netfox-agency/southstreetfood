@@ -491,66 +491,15 @@ export function ItemSheet({
               <SheetSkeleton />
             ) : item ? (
               <>
-                {/* Variants */}
-                {item.variants.length > 1 && (
-                  <div className="mb-6 pt-5 border-t border-border">
-                    <div className="mb-1">
-                      <h3 className="text-[15px] font-bold text-foreground">
-                        Choisir une formule
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Choisir 1
-                      </p>
-                    </div>
-                    <div className="mt-3 divide-y divide-border">
-                      {item.variants.map((v) => (
-                        <button
-                          key={v.id}
-                          onClick={() => setSelectedVariant(v)}
-                          disabled={!v.is_available}
-                          className={cn(
-                            "w-full flex items-center justify-between py-3.5 text-left cursor-pointer",
-                            !v.is_available && "opacity-40 cursor-not-allowed"
-                          )}
-                        >
-                          <span className="text-sm text-foreground">
-                            {v.name}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            {v.price_modifier !== 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                {v.price_modifier > 0 ? "+" : "-"}
-                                {formatPrice(Math.abs(v.price_modifier))}
-                              </span>
-                            )}
-                            <div
-                              className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0",
-                                selectedVariant?.id === v.id
-                                  ? "border-foreground"
-                                  : "border-border"
-                              )}
-                            >
-                              {selectedVariant?.id === v.id && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* ═══ EN MENU UPSELL ═══
-                    Placed RIGHT AFTER the variant pick, BEFORE extras. The
-                    menu/no-menu decision changes what the customer is asked
-                    next (boisson/frites extras get hidden when menu = ON),
-                    so it has to come first. Otherwise the customer would
-                    pick a drink in the extras, then see "you want a menu?"
-                    at the bottom and be confused. */}
+                    Top-level decision : single dish vs full meal. This is
+                    the FIRST question after the customer sees the item,
+                    because in real life you don't pick fries and drinks
+                    BEFORE deciding whether you want them at all. Toggling
+                    ON also hides the boisson/frites extras further down,
+                    so the order of decisions matches the order of effects. */}
                 {isMenuEligible && menuOptions && (
-                  <div className="mb-6 pt-5 border-t border-border">
+                  <div className="mb-6">
                     <button
                       type="button"
                       onClick={() => setIsMenu(!isMenu)}
@@ -723,6 +672,57 @@ export function ItemSheet({
                           })}
                         </div>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Variants */}
+                {item.variants.length > 1 && (
+                  <div className="mb-6 pt-5 border-t border-border">
+                    <div className="mb-1">
+                      <h3 className="text-[15px] font-bold text-foreground">
+                        Choisir une formule
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Choisir 1
+                      </p>
+                    </div>
+                    <div className="mt-3 divide-y divide-border">
+                      {item.variants.map((v) => (
+                        <button
+                          key={v.id}
+                          onClick={() => setSelectedVariant(v)}
+                          disabled={!v.is_available}
+                          className={cn(
+                            "w-full flex items-center justify-between py-3.5 text-left cursor-pointer",
+                            !v.is_available && "opacity-40 cursor-not-allowed"
+                          )}
+                        >
+                          <span className="text-sm text-foreground">
+                            {v.name}
+                          </span>
+                          <div className="flex items-center gap-3">
+                            {v.price_modifier !== 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {v.price_modifier > 0 ? "+" : "-"}
+                                {formatPrice(Math.abs(v.price_modifier))}
+                              </span>
+                            )}
+                            <div
+                              className={cn(
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0",
+                                selectedVariant?.id === v.id
+                                  ? "border-foreground"
+                                  : "border-border"
+                              )}
+                            >
+                              {selectedVariant?.id === v.id && (
+                                <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
