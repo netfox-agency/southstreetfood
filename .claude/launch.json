@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
+      "name": "ssf-dev",
       "runtimeExecutable": "/usr/local/bin/node",
-      "runtimeArgs": ["/Users/melvin/claude code/south-street-food/node_modules/.bin/next", "dev"],
-      "port": 3000
+      "runtimeArgs": ["/Users/melvin/claude code/south-street-food/node_modules/.bin/next", "dev", "-p", "3002"],
+      "port": 3002,
+      "autoPort": false
     }
   ]
 }
