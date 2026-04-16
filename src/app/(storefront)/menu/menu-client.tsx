@@ -8,6 +8,7 @@ import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ItemSheet } from "@/components/storefront/item-sheet";
+import { MENU_ELIGIBLE_SLUGS } from "@/lib/constants";
 
 interface MenuItemData {
   id: string;
@@ -123,6 +124,14 @@ function MenuItemRow({
           <p className="text-sm font-medium text-foreground mt-0.5">
             {formatPrice(item.base_price)}
           </p>
+          {/* "En Menu +3€" hint — only on items eligible for the formule menu
+              (burgers, wraps, tacos/bowl). Tells the customer the upgrade
+              exists before they even open the sheet. */}
+          {MENU_ELIGIBLE_SLUGS.includes(item.slug) && (
+            <p className="text-[12px] font-semibold text-brand mt-1">
+              + Menu (frites + boisson) +3€
+            </p>
+          )}
           {item.description && (
             <p className="text-[13px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
               {item.description}

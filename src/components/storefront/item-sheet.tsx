@@ -5,6 +5,7 @@ import { X, Minus, Plus, AlertTriangle, Check } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { MENU_UPGRADE_PRICE } from "@/lib/constants";
 
 /* ───────── types ───────── */
 
@@ -31,6 +32,25 @@ interface Variant {
   is_available: boolean;
 }
 
+interface MenuDrinkOption {
+  id: string;
+  slug: string;
+  name: string;
+  image_url: string | null;
+  supplement: number;
+}
+
+interface MenuFriesOption {
+  slug: string;
+  label: string;
+  supplement: number;
+}
+
+interface MenuOptions {
+  drinks: MenuDrinkOption[];
+  fries: MenuFriesOption[];
+}
+
 interface ItemData {
   id: string;
   name: string;
@@ -44,6 +64,10 @@ interface ItemData {
   categories: { name: string; slug: string } | null;
   variants: Variant[];
   extra_groups: ExtraGroup[];
+  /** Bundled by /api/menu/[slug] — true when item can be upgraded "en Menu". */
+  isMenuEligible?: boolean;
+  /** Bundled by /api/menu/[slug] — only present when isMenuEligible. */
+  menuOptions?: MenuOptions | null;
 }
 
 /* ───────── helpers ───────── */
@@ -117,6 +141,10 @@ export function ItemSheet({
   const [selectedExtras, setSelectedExtras] = useState<Map<string, number>>(new Map());
   const [quantity, setQuantity] = useState(1);
   const [visible, setVisible] = useState(false);
+  // ── Menu (formule) state ──
+  const [isMenu, setIsMenu] = useState(false);
+  const [menuDrinkId, setMenuDrinkId] = useState<string | null>(null);
+  const [menuFriesSlug, setMenuFriesSlug] = useState<string | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -149,6 +177,11 @@ export function ItemSheet({
             data.variants.find((v: Variant) => v.is_available) ||
             null
         );
+        // Default fries to the first option (salées, included) so the customer
+        // only has to pick a drink to validate the menu.
+        if (data.menuOptions?.fries?.[0]?.slug) {
+          setMenuFriesSlug(data.menuOptions.fries[0].slug);
+        }
       } catch {
         toast.error("Impossible de charger l'article");
         handleClose();
@@ -187,6 +220,25 @@ export function ItemSheet({
   const isUnbounded = (group: ExtraGroup) =>
     group.max_selections === null || group.max_selections >= 999;
 
+  /**
+   * Hide drink/fries extra groups when "En Menu" is active — those choices
+   * are covered by the dedicated menu selectors below, no point asking twice.
+   */
+  const isHiddenByMenu = (group: ExtraGroup) => {
+    if (!isMenu) return false;
+    const lower = group.name.toLowerCase();
+    return (
+      lower.includes("boisson") ||
+      lower.includes("rafra") ||
+      lower.includes("frite") ||
+      lower.includes("accompagn")
+    );
+  };
+
+  const visibleExtraGroups = item
+    ? item.extra_groups.filter((g) => !isHiddenByMenu(g))
+    : [];
+
   const toggleExtra = (extraId: string, groupId: string) => {
     if (!item) return;
     const group = item.extra_groups.find((g) => g.id === groupId);
@@ -224,27 +276,47 @@ export function ItemSheet({
     });
   };
 
-  // Build flat list of extras with quantities expanded for cart
-  const selectedExtrasList = item
-    ? item.extra_groups.flatMap((g) =>
-        g.items
-          .filter((e) => selectedExtras.has(e.id))
-          .flatMap((e) => {
-            const qty = selectedExtras.get(e.id) || 1;
-            return Array.from({ length: qty }, () => e);
-          })
-      )
-    : [];
+  // Build flat list of extras with quantities expanded for cart — only from
+  // visible groups so a Menu pre-selection from the boissons/accomp groups
+  // doesn't leak into the price.
+  const selectedExtrasList = visibleExtraGroups.flatMap((g) =>
+    g.items
+      .filter((e) => selectedExtras.has(e.id))
+      .flatMap((e) => {
+        const qty = selectedExtras.get(e.id) || 1;
+        return Array.from({ length: qty }, () => e);
+      })
+  );
 
   const extrasTotal = selectedExtrasList.reduce((sum, e) => sum + e.price, 0);
   const variantMod = selectedVariant?.price_modifier || 0;
-  const unitPrice = (item?.base_price ?? previewData.base_price) + variantMod;
+
+  // ── Menu (formule) pricing ──
+  const menuOptions = item?.menuOptions ?? null;
+  const isMenuEligible = !!item?.isMenuEligible;
+  const selectedDrink =
+    isMenu && menuDrinkId
+      ? menuOptions?.drinks.find((d) => d.id === menuDrinkId) ?? null
+      : null;
+  const selectedFries =
+    isMenu && menuFriesSlug
+      ? menuOptions?.fries.find((f) => f.slug === menuFriesSlug) ?? null
+      : null;
+  const menuUpgrade = isMenu ? MENU_UPGRADE_PRICE : 0;
+  const menuDrinkSupp = selectedDrink?.supplement ?? 0;
+  const menuFriesSupp = selectedFries?.supplement ?? 0;
+  const menuTotal = menuUpgrade + menuDrinkSupp + menuFriesSupp;
+
+  const unitPrice =
+    (item?.base_price ?? previewData.base_price) + variantMod + menuTotal;
   const lineTotal = (unitPrice + extrasTotal) * quantity;
 
   const handleAddToCart = () => {
     if (!item) return;
 
-    for (const group of item.extra_groups) {
+    // Validate only visible groups — drink/fries groups are hidden when
+    // En Menu is on, and replaced by the dedicated menu selectors.
+    for (const group of visibleExtraGroups) {
       if (group.min_selections > 0) {
         const count = group.items.reduce(
           (sum, i) => sum + (selectedExtras.get(i.id) || 0),
@@ -259,13 +331,44 @@ export function ItemSheet({
       }
     }
 
+    // ── Menu validation ──
+    if (isMenu) {
+      if (!selectedFries) {
+        toast.error("Choisis tes frites pour le menu");
+        return;
+      }
+      if (!selectedDrink) {
+        toast.error("Choisis ta boisson pour le menu");
+        return;
+      }
+    }
+
+    // Prepend virtual fries/drink rows so the cart and kitchen ticket
+    // show exactly what the customer chose. Price is 0 because supplements
+    // are baked into unitPrice via menuTotal — don't double-count.
+    const allExtras = [...selectedExtrasList];
+    if (isMenu && selectedFries && selectedDrink) {
+      allExtras.unshift(
+        {
+          id: `menu-fries-${selectedFries.slug}`,
+          name: `🍟 ${selectedFries.label}${selectedFries.supplement > 0 ? "" : " (incluses)"}`,
+          price: 0,
+        } as ExtraItem,
+        {
+          id: `menu-drink-${selectedDrink.id}`,
+          name: `🥤 ${selectedDrink.name}${selectedDrink.supplement > 0 ? "" : " (incluse)"}`,
+          price: 0,
+        } as ExtraItem,
+      );
+    }
+
     addItem({
       menuItemId: item.id,
-      menuItemName: item.name,
+      menuItemName: isMenu ? `${item.name} · En Menu` : item.name,
       menuItemImage: item.image_url,
       variantId: selectedVariant?.id || null,
       variantName: selectedVariant?.name || null,
-      extras: selectedExtrasList.map((e) => ({
+      extras: allExtras.map((e) => ({
         id: e.id,
         name: e.name,
         price: e.price,
@@ -275,7 +378,9 @@ export function ItemSheet({
       extrasPrice: extrasTotal,
       specialInstructions: null,
     });
-    toast.success(`${item.name} ajouté au panier`);
+    toast.success(
+      isMenu ? `${item.name} en Menu ajouté au panier` : `${item.name} ajouté au panier`,
+    );
     handleClose();
   };
 
@@ -363,6 +468,178 @@ export function ItemSheet({
               <SheetSkeleton />
             ) : item ? (
               <>
+                {/* ═══ MENU TOGGLE (formule +3€) ═══ */}
+                {isMenuEligible && menuOptions && (
+                  <div className="mb-6 pt-5 border-t border-border">
+                    <div className="mb-3">
+                      <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                        Tu veux en Menu ?
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Menu = frites + boisson 33cl pour +3€
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <button
+                        type="button"
+                        onClick={() => setIsMenu(false)}
+                        className={cn(
+                          "relative flex flex-col items-start p-3 rounded-2xl border-2 transition-all cursor-pointer text-left",
+                          !isMenu
+                            ? "border-foreground bg-foreground/5"
+                            : "border-border hover:border-foreground/40",
+                        )}
+                      >
+                        <span className="text-sm font-bold text-foreground">
+                          Seul
+                        </span>
+                        <span className="text-xs text-muted-foreground mt-0.5">
+                          {formatPrice(item.base_price + variantMod)}
+                        </span>
+                        {!isMenu && (
+                          <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-foreground flex items-center justify-center">
+                            <Check className="h-2.5 w-2.5 text-background" />
+                          </div>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsMenu(true)}
+                        className={cn(
+                          "relative flex flex-col items-start p-3 rounded-2xl border-2 transition-all cursor-pointer text-left",
+                          isMenu
+                            ? "border-foreground bg-foreground/5"
+                            : "border-border hover:border-foreground/40",
+                        )}
+                      >
+                        <span className="text-sm font-bold text-foreground">
+                          En Menu
+                        </span>
+                        <span className="text-xs text-muted-foreground mt-0.5">
+                          +{formatPrice(MENU_UPGRADE_PRICE)} · frites + boisson
+                        </span>
+                        {isMenu && (
+                          <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-foreground flex items-center justify-center">
+                            <Check className="h-2.5 w-2.5 text-background" />
+                          </div>
+                        )}
+                      </button>
+                    </div>
+
+                    {isMenu && (
+                      <>
+                        {/* Fries selector */}
+                        <div className="mt-6">
+                          <div className="mb-1 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                                🍟 Tes frites
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Choisir 1
+                              </p>
+                            </div>
+                            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+                              Obligatoire
+                            </span>
+                          </div>
+                          <div className="mt-2 divide-y divide-border">
+                            {menuOptions.fries.map((f) => {
+                              const isSel = menuFriesSlug === f.slug;
+                              return (
+                                <button
+                                  key={f.slug}
+                                  type="button"
+                                  onClick={() => setMenuFriesSlug(f.slug)}
+                                  className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
+                                >
+                                  <span className="text-sm text-foreground">
+                                    {f.label}
+                                  </span>
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    <span className="text-xs text-muted-foreground">
+                                      {f.supplement > 0
+                                        ? `+${formatPrice(f.supplement)}`
+                                        : "incluses"}
+                                    </span>
+                                    <div
+                                      className={cn(
+                                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                        isSel
+                                          ? "border-foreground"
+                                          : "border-border",
+                                      )}
+                                    >
+                                      {isSel && (
+                                        <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Drink selector */}
+                        <div className="mt-6">
+                          <div className="mb-1 flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                                🥤 Ta boisson
+                              </h3>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                Choisir 1
+                              </p>
+                            </div>
+                            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+                              Obligatoire
+                            </span>
+                          </div>
+                          <div className="mt-2 divide-y divide-border">
+                            {menuOptions.drinks.map((d) => {
+                              const isSel = menuDrinkId === d.id;
+                              return (
+                                <button
+                                  key={d.id}
+                                  type="button"
+                                  onClick={() => setMenuDrinkId(d.id)}
+                                  className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
+                                >
+                                  <span className="text-sm text-foreground">
+                                    {d.name}
+                                  </span>
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    <span className="text-xs text-muted-foreground">
+                                      {d.supplement > 0
+                                        ? `+${formatPrice(d.supplement)}`
+                                        : "incluse"}
+                                    </span>
+                                    <div
+                                      className={cn(
+                                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                        isSel
+                                          ? "border-foreground"
+                                          : "border-border",
+                                      )}
+                                    >
+                                      {isSel && (
+                                        <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Variants */}
                 {item.variants.length > 1 && (
                   <div className="mb-6 pt-5 border-t border-border">
@@ -415,7 +692,7 @@ export function ItemSheet({
                 )}
 
                 {/* Extra groups */}
-                {item.extra_groups.map((group) => {
+                {visibleExtraGroups.map((group) => {
                   const groupSelectedCount = group.items.reduce(
                     (sum, i) => sum + (selectedExtras.get(i.id) || 0),
                     0

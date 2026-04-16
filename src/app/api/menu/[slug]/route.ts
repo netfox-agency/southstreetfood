@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getMenuItemBySlug } from "@/lib/queries/menu";
+import { getMenuItemBySlug, getMenuSideOptions } from "@/lib/queries/menu";
+import { MENU_ELIGIBLE_SLUGS } from "@/lib/constants";
 
 export async function GET(
   _req: Request,
@@ -12,9 +13,17 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(item, {
-    headers: {
-      "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+  // Bundle menu eligibility + side options (drinks/fries) into the same
+  // response so the bottom-sheet only needs one roundtrip.
+  const isMenuEligible = MENU_ELIGIBLE_SLUGS.includes(slug);
+  const menuOptions = isMenuEligible ? await getMenuSideOptions() : null;
+
+  return NextResponse.json(
+    { ...item, isMenuEligible, menuOptions },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
     },
-  });
+  );
 }
