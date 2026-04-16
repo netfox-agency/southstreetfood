@@ -145,9 +145,14 @@ export function ItemSheet({
   const [isMenu, setIsMenu] = useState(false);
   const [menuDrinkId, setMenuDrinkId] = useState<string | null>(null);
   const [menuFriesSlug, setMenuFriesSlug] = useState<string | null>(null);
+  // Visual flash when the customer skips a required Menu field — replaces
+  // the toast. Values: "fries" | "drink" | null.
+  const [flashField, setFlashField] = useState<"fries" | "drink" | null>(null);
 
   const sheetRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const friesSectionRef = useRef<HTMLDivElement>(null);
+  const drinkSectionRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
 
   // Slide-in animation
@@ -199,6 +204,13 @@ export function ItemSheet({
     setVisible(false);
     setTimeout(onClose, 300); // wait for slide-out
   }, [onClose]);
+
+  // When the customer flips the Menu switch OFF, wipe the drink choice so
+  // re-enabling later doesn't silently re-use a stale pick. Fries stays set
+  // to the default (salées) — that's always a safe default.
+  useEffect(() => {
+    if (!isMenu) setMenuDrinkId(null);
+  }, [isMenu]);
 
   // Close on backdrop click
   const handleBackdropClick = useCallback(
@@ -332,13 +344,24 @@ export function ItemSheet({
     }
 
     // ── Menu validation ──
+    // Instead of a toast (easy to miss on mobile, requires reading), we
+    // scroll the missing section into view and flash it red for ~1.5s.
+    // The customer's eye is dragged straight to what's missing.
     if (isMenu) {
+      const flashAndScroll = (
+        target: "fries" | "drink",
+        ref: React.RefObject<HTMLDivElement | null>,
+      ) => {
+        setFlashField(target);
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => setFlashField(null), 1500);
+      };
       if (!selectedFries) {
-        toast.error("Choisis tes frites pour le menu");
+        flashAndScroll("fries", friesSectionRef);
         return;
       }
       if (!selectedDrink) {
-        toast.error("Choisis ta boisson pour le menu");
+        flashAndScroll("drink", drinkSectionRef);
         return;
       }
     }
@@ -468,178 +491,6 @@ export function ItemSheet({
               <SheetSkeleton />
             ) : item ? (
               <>
-                {/* ═══ MENU TOGGLE (formule +3€) ═══ */}
-                {isMenuEligible && menuOptions && (
-                  <div className="mb-6 pt-5 border-t border-border">
-                    <div className="mb-3">
-                      <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                        Tu veux en Menu ?
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Menu = frites + boisson 33cl pour +3€
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <button
-                        type="button"
-                        onClick={() => setIsMenu(false)}
-                        className={cn(
-                          "relative flex flex-col items-start p-3 rounded-2xl border-2 transition-all cursor-pointer text-left",
-                          !isMenu
-                            ? "border-foreground bg-foreground/5"
-                            : "border-border hover:border-foreground/40",
-                        )}
-                      >
-                        <span className="text-sm font-bold text-foreground">
-                          Seul
-                        </span>
-                        <span className="text-xs text-muted-foreground mt-0.5">
-                          {formatPrice(item.base_price + variantMod)}
-                        </span>
-                        {!isMenu && (
-                          <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-foreground flex items-center justify-center">
-                            <Check className="h-2.5 w-2.5 text-background" />
-                          </div>
-                        )}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setIsMenu(true)}
-                        className={cn(
-                          "relative flex flex-col items-start p-3 rounded-2xl border-2 transition-all cursor-pointer text-left",
-                          isMenu
-                            ? "border-foreground bg-foreground/5"
-                            : "border-border hover:border-foreground/40",
-                        )}
-                      >
-                        <span className="text-sm font-bold text-foreground">
-                          En Menu
-                        </span>
-                        <span className="text-xs text-muted-foreground mt-0.5">
-                          +{formatPrice(MENU_UPGRADE_PRICE)} · frites + boisson
-                        </span>
-                        {isMenu && (
-                          <div className="absolute top-2 right-2 h-4 w-4 rounded-full bg-foreground flex items-center justify-center">
-                            <Check className="h-2.5 w-2.5 text-background" />
-                          </div>
-                        )}
-                      </button>
-                    </div>
-
-                    {isMenu && (
-                      <>
-                        {/* Fries selector */}
-                        <div className="mt-6">
-                          <div className="mb-1 flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                                🍟 Tes frites
-                              </h3>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Choisir 1
-                              </p>
-                            </div>
-                            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
-                              Obligatoire
-                            </span>
-                          </div>
-                          <div className="mt-2 divide-y divide-border">
-                            {menuOptions.fries.map((f) => {
-                              const isSel = menuFriesSlug === f.slug;
-                              return (
-                                <button
-                                  key={f.slug}
-                                  type="button"
-                                  onClick={() => setMenuFriesSlug(f.slug)}
-                                  className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
-                                >
-                                  <span className="text-sm text-foreground">
-                                    {f.label}
-                                  </span>
-                                  <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-xs text-muted-foreground">
-                                      {f.supplement > 0
-                                        ? `+${formatPrice(f.supplement)}`
-                                        : "incluses"}
-                                    </span>
-                                    <div
-                                      className={cn(
-                                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                        isSel
-                                          ? "border-foreground"
-                                          : "border-border",
-                                      )}
-                                    >
-                                      {isSel && (
-                                        <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                                      )}
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Drink selector */}
-                        <div className="mt-6">
-                          <div className="mb-1 flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                                🥤 Ta boisson
-                              </h3>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                Choisir 1
-                              </p>
-                            </div>
-                            <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
-                              Obligatoire
-                            </span>
-                          </div>
-                          <div className="mt-2 divide-y divide-border">
-                            {menuOptions.drinks.map((d) => {
-                              const isSel = menuDrinkId === d.id;
-                              return (
-                                <button
-                                  key={d.id}
-                                  type="button"
-                                  onClick={() => setMenuDrinkId(d.id)}
-                                  className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
-                                >
-                                  <span className="text-sm text-foreground">
-                                    {d.name}
-                                  </span>
-                                  <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-xs text-muted-foreground">
-                                      {d.supplement > 0
-                                        ? `+${formatPrice(d.supplement)}`
-                                        : "incluse"}
-                                    </span>
-                                    <div
-                                      className={cn(
-                                        "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                        isSel
-                                          ? "border-foreground"
-                                          : "border-border",
-                                      )}
-                                    >
-                                      {isSel && (
-                                        <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                                      )}
-                                    </div>
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-
                 {/* Variants */}
                 {item.variants.length > 1 && (
                   <div className="mb-6 pt-5 border-t border-border">
@@ -845,6 +696,190 @@ export function ItemSheet({
                     </div>
                   );
                 })}
+
+                {/* ═══ EN MENU UPSELL (McDo cashier pattern) ═══
+                    Placed AFTER the customer has configured their item — this
+                    is the "would you like fries with that?" moment. A single
+                    iOS-style switch avoids the cognitive load of a 2-card
+                    binary choice. Toggle ON → fries + drink selectors expand
+                    inline right here, no layout jump, no modal. */}
+                {isMenuEligible && menuOptions && (
+                  <div className="mt-2 pt-5 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => setIsMenu(!isMenu)}
+                      aria-pressed={isMenu}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-3 p-4 rounded-2xl transition-colors cursor-pointer text-left",
+                        isMenu
+                          ? "bg-brand/5 border-2 border-brand"
+                          : "bg-muted/60 border-2 border-transparent hover:bg-muted",
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="shrink-0 text-2xl leading-none">
+                          🍟🥤
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[15px] font-bold text-foreground leading-tight">
+                            Tu le veux en Menu ?
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Ajoute frites + boisson 33cl pour +
+                            {formatPrice(MENU_UPGRADE_PRICE)}
+                          </p>
+                        </div>
+                      </div>
+                      <div
+                        className={cn(
+                          "shrink-0 relative w-11 h-6 rounded-full transition-colors",
+                          isMenu ? "bg-brand" : "bg-border",
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            "absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform",
+                            isMenu ? "translate-x-[22px]" : "translate-x-0.5",
+                          )}
+                        />
+                      </div>
+                    </button>
+
+                    {/* Inline expand — max-height + opacity keeps layout
+                        stable, no content pop. Fries/drink cards flash red
+                        when the customer tries to add to cart without picking. */}
+                    <div
+                      className={cn(
+                        "overflow-hidden transition-all duration-300 ease-out",
+                        isMenu
+                          ? "max-h-[1200px] opacity-100 mt-4"
+                          : "max-h-0 opacity-0",
+                      )}
+                    >
+                      {/* Fries */}
+                      <div
+                        ref={friesSectionRef}
+                        className={cn(
+                          "rounded-2xl px-4 py-3 transition-all duration-300",
+                          flashField === "fries"
+                            ? "bg-red-50 ring-2 ring-red-400"
+                            : "bg-transparent ring-0",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-1">
+                          <div className="min-w-0">
+                            <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                              🍟 Tes frites
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Choisir 1
+                            </p>
+                          </div>
+                          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+                            Obligatoire
+                          </span>
+                        </div>
+                        <div className="mt-2 divide-y divide-border">
+                          {menuOptions.fries.map((f) => {
+                            const isSel = menuFriesSlug === f.slug;
+                            return (
+                              <button
+                                key={f.slug}
+                                type="button"
+                                onClick={() => setMenuFriesSlug(f.slug)}
+                                className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
+                              >
+                                <span className="text-sm text-foreground">
+                                  {f.label}
+                                </span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span className="text-xs text-muted-foreground">
+                                    {f.supplement > 0
+                                      ? `+${formatPrice(f.supplement)}`
+                                      : "incluses"}
+                                  </span>
+                                  <div
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                      isSel
+                                        ? "border-foreground"
+                                        : "border-border",
+                                    )}
+                                  >
+                                    {isSel && (
+                                      <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Drink */}
+                      <div
+                        ref={drinkSectionRef}
+                        className={cn(
+                          "mt-3 rounded-2xl px-4 py-3 transition-all duration-300",
+                          flashField === "drink"
+                            ? "bg-red-50 ring-2 ring-red-400"
+                            : "bg-transparent ring-0",
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3 mb-1">
+                          <div className="min-w-0">
+                            <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                              🥤 Ta boisson
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Choisir 1
+                            </p>
+                          </div>
+                          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+                            Obligatoire
+                          </span>
+                        </div>
+                        <div className="mt-2 divide-y divide-border">
+                          {menuOptions.drinks.map((d) => {
+                            const isSel = menuDrinkId === d.id;
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => setMenuDrinkId(d.id)}
+                                className="w-full flex items-center justify-between py-3 text-left cursor-pointer"
+                              >
+                                <span className="text-sm text-foreground">
+                                  {d.name}
+                                </span>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span className="text-xs text-muted-foreground">
+                                    {d.supplement > 0
+                                      ? `+${formatPrice(d.supplement)}`
+                                      : "incluse"}
+                                  </span>
+                                  <div
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                      isSel
+                                        ? "border-foreground"
+                                        : "border-border",
+                                    )}
+                                  >
+                                    {isSel && (
+                                      <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : null}
           </div>
