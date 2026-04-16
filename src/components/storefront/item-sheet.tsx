@@ -542,169 +542,15 @@ export function ItemSheet({
                   </div>
                 )}
 
-                {/* Extra groups */}
-                {visibleExtraGroups.map((group) => {
-                  const groupSelectedCount = group.items.reduce(
-                    (sum, i) => sum + (selectedExtras.get(i.id) || 0),
-                    0
-                  );
-                  const unbounded = isUnbounded(group);
-                  const effectiveMax =
-                    !unbounded && group.max_selections !== null
-                      ? group.max_selections
-                      : null;
-                  const atMax =
-                    effectiveMax !== null &&
-                    groupSelectedCount >= effectiveMax;
-                  const isRequired = group.min_selections > 0;
-                  const isSingleSelect = group.max_selections === 1;
-
-                  return (
-                    <div
-                      key={group.id}
-                      className="mb-6 pt-5 border-t border-border"
-                    >
-                      <div className="flex items-start justify-between gap-3 mb-1">
-                        <div className="min-w-0">
-                          <h3 className="text-[15px] font-bold text-foreground leading-tight">
-                            {group.name}
-                          </h3>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {groupSubtitle(group)}
-                          </p>
-                        </div>
-                        {isRequired && (
-                          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
-                            Obligatoire
-                          </span>
-                        )}
-                      </div>
-                      <div className="mt-2 divide-y divide-border">
-                        {group.items.map((extra) => {
-                          const isSelected = selectedExtras.has(extra.id);
-                          const extraQty = selectedExtras.get(extra.id) || 0;
-                          const isDisabled =
-                            !extra.is_available || (atMax && !isSelected);
-
-                          // Unbounded groups → quantity stepper
-                          if (unbounded && !isSingleSelect) {
-                            return (
-                              <div
-                                key={extra.id}
-                                className={cn(
-                                  "flex items-center justify-between py-3",
-                                  !extra.is_available && "opacity-40"
-                                )}
-                              >
-                                <div>
-                                  <span className="text-sm text-foreground">
-                                    {extra.name}
-                                  </span>
-                                  {extra.price > 0 && (
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      +{formatPrice(extra.price)}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
-                                  {extraQty > 0 && (
-                                    <button
-                                      onClick={() =>
-                                        setExtraQty(extra.id, extraQty - 1)
-                                      }
-                                      disabled={!extra.is_available}
-                                      className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                                    >
-                                      <Minus className="h-3 w-3 text-foreground" />
-                                    </button>
-                                  )}
-                                  {extraQty > 0 && (
-                                    <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground">
-                                      {extraQty}
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={() =>
-                                      setExtraQty(extra.id, extraQty + 1)
-                                    }
-                                    disabled={!extra.is_available}
-                                    className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
-                                  >
-                                    <Plus className="h-3 w-3 text-foreground" />
-                                  </button>
-                                </div>
-                              </div>
-                            );
-                          }
-
-                          // Bounded groups → checkbox / radio toggle
-                          return (
-                            <button
-                              key={extra.id}
-                              onClick={() =>
-                                toggleExtra(extra.id, group.id)
-                              }
-                              disabled={isDisabled}
-                              className={cn(
-                                "w-full flex items-center justify-between py-3 text-left cursor-pointer transition-opacity",
-                                isDisabled &&
-                                  !isSelected &&
-                                  "opacity-40 cursor-not-allowed"
-                              )}
-                            >
-                              <span className="text-sm text-foreground">
-                                {extra.name}
-                              </span>
-                              <div className="flex items-center gap-3 shrink-0">
-                                {extra.price > 0 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{formatPrice(extra.price)}
-                                  </span>
-                                )}
-                                {isSingleSelect ? (
-                                  <div
-                                    className={cn(
-                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                                      isSelected
-                                        ? "border-foreground"
-                                        : "border-border"
-                                    )}
-                                  >
-                                    {isSelected && (
-                                      <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div
-                                    className={cn(
-                                      "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors",
-                                      isSelected
-                                        ? "bg-foreground border-foreground"
-                                        : "border-border"
-                                    )}
-                                  >
-                                    {isSelected && (
-                                      <Check className="h-3 w-3 text-background" />
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {/* ═══ EN MENU UPSELL (McDo cashier pattern) ═══
-                    Placed AFTER the customer has configured their item — this
-                    is the "would you like fries with that?" moment. A single
-                    iOS-style switch avoids the cognitive load of a 2-card
-                    binary choice. Toggle ON → fries + drink selectors expand
-                    inline right here, no layout jump, no modal. */}
+                {/* ═══ EN MENU UPSELL ═══
+                    Placed RIGHT AFTER the variant pick, BEFORE extras. The
+                    menu/no-menu decision changes what the customer is asked
+                    next (boisson/frites extras get hidden when menu = ON),
+                    so it has to come first. Otherwise the customer would
+                    pick a drink in the extras, then see "you want a menu?"
+                    at the bottom and be confused. */}
                 {isMenuEligible && menuOptions && (
-                  <div className="mt-2 pt-5 border-t border-border">
+                  <div className="mb-6 pt-5 border-t border-border">
                     <button
                       type="button"
                       onClick={() => setIsMenu(!isMenu)}
@@ -880,6 +726,161 @@ export function ItemSheet({
                     </div>
                   </div>
                 )}
+
+                {/* Extra groups */}
+                {visibleExtraGroups.map((group) => {
+                  const groupSelectedCount = group.items.reduce(
+                    (sum, i) => sum + (selectedExtras.get(i.id) || 0),
+                    0
+                  );
+                  const unbounded = isUnbounded(group);
+                  const effectiveMax =
+                    !unbounded && group.max_selections !== null
+                      ? group.max_selections
+                      : null;
+                  const atMax =
+                    effectiveMax !== null &&
+                    groupSelectedCount >= effectiveMax;
+                  const isRequired = group.min_selections > 0;
+                  const isSingleSelect = group.max_selections === 1;
+
+                  return (
+                    <div
+                      key={group.id}
+                      className="mb-6 pt-5 border-t border-border"
+                    >
+                      <div className="flex items-start justify-between gap-3 mb-1">
+                        <div className="min-w-0">
+                          <h3 className="text-[15px] font-bold text-foreground leading-tight">
+                            {group.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {groupSubtitle(group)}
+                          </p>
+                        </div>
+                        {isRequired && (
+                          <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-md bg-muted text-[11px] font-medium text-foreground">
+                            Obligatoire
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 divide-y divide-border">
+                        {group.items.map((extra) => {
+                          const isSelected = selectedExtras.has(extra.id);
+                          const extraQty = selectedExtras.get(extra.id) || 0;
+                          const isDisabled =
+                            !extra.is_available || (atMax && !isSelected);
+
+                          // Unbounded groups → quantity stepper
+                          if (unbounded && !isSingleSelect) {
+                            return (
+                              <div
+                                key={extra.id}
+                                className={cn(
+                                  "flex items-center justify-between py-3",
+                                  !extra.is_available && "opacity-40"
+                                )}
+                              >
+                                <div>
+                                  <span className="text-sm text-foreground">
+                                    {extra.name}
+                                  </span>
+                                  {extra.price > 0 && (
+                                    <span className="text-xs text-muted-foreground ml-2">
+                                      +{formatPrice(extra.price)}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {extraQty > 0 && (
+                                    <button
+                                      onClick={() =>
+                                        setExtraQty(extra.id, extraQty - 1)
+                                      }
+                                      disabled={!extra.is_available}
+                                      className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                    >
+                                      <Minus className="h-3 w-3 text-foreground" />
+                                    </button>
+                                  )}
+                                  {extraQty > 0 && (
+                                    <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground">
+                                      {extraQty}
+                                    </span>
+                                  )}
+                                  <button
+                                    onClick={() =>
+                                      setExtraQty(extra.id, extraQty + 1)
+                                    }
+                                    disabled={!extra.is_available}
+                                    className="h-7 w-7 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer disabled:cursor-not-allowed"
+                                  >
+                                    <Plus className="h-3 w-3 text-foreground" />
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Bounded groups → checkbox / radio toggle
+                          return (
+                            <button
+                              key={extra.id}
+                              onClick={() =>
+                                toggleExtra(extra.id, group.id)
+                              }
+                              disabled={isDisabled}
+                              className={cn(
+                                "w-full flex items-center justify-between py-3 text-left cursor-pointer transition-opacity",
+                                isDisabled &&
+                                  !isSelected &&
+                                  "opacity-40 cursor-not-allowed"
+                              )}
+                            >
+                              <span className="text-sm text-foreground">
+                                {extra.name}
+                              </span>
+                              <div className="flex items-center gap-3 shrink-0">
+                                {extra.price > 0 && (
+                                  <span className="text-xs text-muted-foreground">
+                                    +{formatPrice(extra.price)}
+                                  </span>
+                                )}
+                                {isSingleSelect ? (
+                                  <div
+                                    className={cn(
+                                      "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                      isSelected
+                                        ? "border-foreground"
+                                        : "border-border"
+                                    )}
+                                  >
+                                    {isSelected && (
+                                      <div className="h-2.5 w-2.5 rounded-full bg-foreground" />
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div
+                                    className={cn(
+                                      "h-5 w-5 rounded-md border-2 flex items-center justify-center transition-colors",
+                                      isSelected
+                                        ? "bg-foreground border-foreground"
+                                        : "border-border"
+                                    )}
+                                  >
+                                    {isSelected && (
+                                      <Check className="h-3 w-3 text-background" />
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </>
             ) : null}
           </div>
