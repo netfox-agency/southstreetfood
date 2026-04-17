@@ -21,8 +21,14 @@ const navLinks = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // Zustand + persist hydrate apres le SSR (le serveur n'a pas acces au
+  // localStorage). Sans ce guard, le cart badge cause un hydration mismatch :
+  // SSR rend 0 items → client rend N items → React panique.
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const itemCount = useCartStore((s) => s.itemCount());
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 10);
@@ -70,7 +76,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <Link href="/cart" className="relative p-2 text-white/60 hover:text-white transition-colors">
               <ShoppingBag className="h-[18px] w-[18px]" />
-              {itemCount > 0 && (
+              {mounted && itemCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-white text-[9px] font-semibold text-black flex items-center justify-center">
                   {itemCount}
                 </span>
