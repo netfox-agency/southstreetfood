@@ -49,29 +49,23 @@ function Reveal({
 function Hero() {
   return (
     <section className="relative h-screen overflow-hidden bg-black -mt-16">
-      {/* Full-bleed hero image — mobile portrait + desktop landscape */}
-      <div className="absolute inset-0 z-0 sm:hidden">
-        <Image
-          src="/hero-food-mobile.png"
-          alt="South Street Food — burgers, tacos, wraps et boissons"
-          fill
-          className="object-cover object-[center_20%]"
-          priority
-          unoptimized
-          sizes="100vw"
-        />
-      </div>
-      <div className="absolute inset-0 z-0 hidden sm:block">
-        <Image
-          src="/hero-food.png"
-          alt="South Street Food — burgers, tacos, wraps et boissons"
-          fill
-          className="object-cover object-center"
-          priority
-          unoptimized
-          sizes="100vw"
-        />
-      </div>
+      {/* ── Video hero : compressee 720p H.264 ~0.9 MB, + poster JPG 71 KB
+          (affichage instantane), hebergees sur Supabase Storage.
+          - autoPlay + muted + playsInline = autoplay ok sur iOS/Android
+          - preload="auto" = commence le DL asap (safe, fichier leger)
+          - +faststart cote encoding = joue des les premiers KB recus
+          - object-position different mobile/desktop via classes responsives */}
+      <video
+        className="absolute inset-0 z-0 h-full w-full object-cover object-[center_20%] sm:object-center"
+        src="https://exwfddsyavnlntnogpoz.supabase.co/storage/v1/object/public/site-assets/hero-video.mp4"
+        poster="https://exwfddsyavnlntnogpoz.supabase.co/storage/v1/object/public/site-assets/hero-poster.jpg"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      />
       {/* Gradient */}
       <div className="absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
