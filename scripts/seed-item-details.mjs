@@ -162,11 +162,16 @@ const GROUPS = {
     items: [["🥩 Supplément steak 180g", EUR(2.5)]],
   },
 
-  // ── Gratinage (tacos)
+  // ── Gratinage : le client choisit parmi 4 fromages, +2€ flat
   gratinage: {
     name: "🧀 Gratinage",
     min: 0, max: 1, order: 55,
-    items: [["🧀 Gratiné", EUR(2)]],
+    items: [
+      ["🧀 Chèvre miel", EUR(2)],
+      ["🧀 Cheddar", EUR(2)],
+      ["🧀 Emmental", EUR(2)],
+      ["🧀 Raclette", EUR(2)],
+    ],
   },
 
   // ── Saveurs sup (partout)
