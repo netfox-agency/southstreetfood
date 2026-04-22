@@ -6,7 +6,10 @@ import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, Shoppin
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { DELIVERY_ZONES, getDeliveryFeeForCity } from "@/lib/constants";
-import { AddressAutocomplete } from "@/components/storefront/address-autocomplete";
+import {
+  AddressAutocomplete,
+  osmEmbedUrl,
+} from "@/components/storefront/address-autocomplete";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -164,24 +167,21 @@ export default function CartPage() {
               }
             />
 
-            {/* Mini carte preview : iframe Google Maps Embed gratuite,
-                centree sur lat/lng de l'adresse selectionnee. Confirme
-                visuellement au client que c'est la bonne adresse avant
-                de commander. N'apparait que si lat/lng presents (=
-                adresse selectionnee via autocomplete, pas fallback). */}
-            {deliveryAddress?.lat &&
-              deliveryAddress?.lng &&
-              process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
-                <div className="rounded-xl overflow-hidden border border-[#e5e5ea]">
-                  <iframe
-                    title="Carte de livraison"
-                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${deliveryAddress.lat},${deliveryAddress.lng}&zoom=16`}
-                    className="w-full h-44 block"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              )}
+            {/* Mini carte preview : iframe OpenStreetMap (100% gratuit,
+                aucune cle API, aucune carte bancaire). Centree sur lat/lng
+                avec marker. Confirme visuellement au client que c'est la
+                bonne adresse avant de commander. */}
+            {deliveryAddress?.lat && deliveryAddress?.lng && (
+              <div className="rounded-xl overflow-hidden border border-[#e5e5ea]">
+                <iframe
+                  title="Carte de livraison"
+                  src={osmEmbedUrl(deliveryAddress.lat, deliveryAddress.lng)}
+                  className="w-full h-44 block"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            )}
 
             {/* Instructions */}
             <div>
