@@ -10,6 +10,8 @@ export type LoyaltyCatalogItem = {
   menuItemId: string | null;
   menuItemPrice: number | null;
   rewardType: string;
+  /** Pour les combo_menu : liste des menu_item_ids a ajouter gratuitement. */
+  bundleMenuItemIds: string[] | null;
 };
 
 /**
@@ -28,7 +30,7 @@ export async function GET() {
   const { data, error } = await admin
     .from("loyalty_rewards")
     .select(
-      "id, name, description, points_cost, reward_type, image_url, reward_menu_item_id, menu_items:reward_menu_item_id(base_price, image_url)",
+      "id, name, description, points_cost, reward_type, image_url, reward_menu_item_id, bundle_menu_item_ids, menu_items:reward_menu_item_id(base_price, image_url)",
     )
     .eq("is_active", true)
     .order("points_cost", { ascending: true });
@@ -47,6 +49,7 @@ export async function GET() {
     menuItemId: r.reward_menu_item_id,
     menuItemPrice: r.menu_items?.base_price ?? null,
     rewardType: r.reward_type,
+    bundleMenuItemIds: r.bundle_menu_item_ids ?? null,
   }));
 
   return NextResponse.json(

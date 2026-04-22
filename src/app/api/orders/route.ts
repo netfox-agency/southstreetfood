@@ -146,9 +146,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Fidelite : si une recompense est selectionnee, on valide cote serveur
-    // que le user est connecte et qu'il a le solde requis. On prepare une
-    // ligne gratuite (price=0) qui sera ajoutee au panier avant creation.
-    let loyaltyRewardLine: {
+    // que le user est connecte et qu'il a le solde requis. On prepare une ou
+    // plusieurs lignes gratuites (price=0) qui seront ajoutees au panier
+    // avant creation. free_item = 1 ligne, combo_menu = N lignes (bundle).
+    type RewardLine = {
       menuItemId: string;
       variantId: string | null;
       quantity: number;
@@ -158,7 +159,8 @@ export async function POST(request: NextRequest) {
       variantName: string | null;
       extrasJson: { name: string; price: number }[];
       specialInstructions: string | null;
-    } | null = null;
+    };
+    let loyaltyRewardLines: RewardLine[] = [];
     let loyaltyRewardId: string | null = null;
     let loyaltyUserId: string | null = null;
     let loyaltyPointsCost = 0;
@@ -179,7 +181,7 @@ export async function POST(request: NextRequest) {
         admin
           .from("loyalty_rewards")
           .select(
-            "id, name, points_cost, reward_type, reward_menu_item_id, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
+            "id, name, points_cost, reward_type, reward_menu_item_id, bundle_menu_item_ids, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
           )
           .eq("id", data.loyaltyRewardId)
           .single(),
@@ -207,27 +209,61 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      if (reward.reward_type !== "free_item" || !reward.menu_items) {
+
+      loyaltyRewardId = reward.id;
+      loyaltyUserId = authUser.id;
+      loyaltyPointsCost = reward.points_cost;
+
+      if (reward.reward_type === "free_item" && reward.menu_items) {
+        loyaltyRewardLines = [
+          {
+            menuItemId: reward.menu_items.id,
+            variantId: null,
+            quantity: 1,
+            unitPrice: 0,
+            extrasPrice: 0,
+            itemName: `${reward.menu_items.name} (recompense fidelite)`,
+            variantName: null,
+            extrasJson: [],
+            specialInstructions: `Offert · -${reward.points_cost} pts`,
+          },
+        ];
+      } else if (
+        reward.reward_type === "combo_menu" &&
+        Array.isArray(reward.bundle_menu_item_ids) &&
+        reward.bundle_menu_item_ids.length > 0
+      ) {
+        // Fetch les menu_items du combo pour remplir les noms/ids
+        const admin2 = createAdminClient();
+        const { data: bundleItems } = await admin2
+          .from("menu_items")
+          .select("id, name")
+          .in("id", reward.bundle_menu_item_ids);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const items = (bundleItems ?? []) as any[];
+        if (items.length === 0) {
+          return NextResponse.json(
+            { error: "Combo fidelite invalide" },
+            { status: 400 },
+          );
+        }
+        loyaltyRewardLines = items.map((mi) => ({
+          menuItemId: mi.id,
+          variantId: null,
+          quantity: 1,
+          unitPrice: 0,
+          extrasPrice: 0,
+          itemName: `${mi.name} (menu fidelite)`,
+          variantName: null,
+          extrasJson: [],
+          specialInstructions: `Offert · Menu ${reward.points_cost} pts`,
+        }));
+      } else {
         return NextResponse.json(
           { error: "Type de recompense non supporte" },
           { status: 400 },
         );
       }
-
-      loyaltyRewardId = reward.id;
-      loyaltyUserId = authUser.id;
-      loyaltyPointsCost = reward.points_cost;
-      loyaltyRewardLine = {
-        menuItemId: reward.menu_items.id,
-        variantId: null,
-        quantity: 1,
-        unitPrice: 0,
-        extrasPrice: 0,
-        itemName: `${reward.menu_items.name} (recompense fidelite)`,
-        variantName: null,
-        extrasJson: [],
-        specialInstructions: `Offert · -${reward.points_cost} pts`,
-      };
     }
 
     const finalItems = [
@@ -242,7 +278,7 @@ export async function POST(request: NextRequest) {
         extrasJson: it.extrasJson.map(({ name, price }) => ({ name, price })),
         specialInstructions: it.specialInstructions,
       })),
-      ...(loyaltyRewardLine ? [loyaltyRewardLine] : []),
+      ...loyaltyRewardLines,
     ];
 
     const result = await createOrder({

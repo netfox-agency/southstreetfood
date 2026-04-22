@@ -30,7 +30,7 @@ export default async function FidelitePage() {
   const { data: catalogData } = await admin
     .from("loyalty_rewards")
     .select(
-      "id, name, description, points_cost, reward_type, image_url, reward_menu_item_id, menu_items:reward_menu_item_id(base_price, image_url)",
+      "id, name, description, points_cost, reward_type, image_url, reward_menu_item_id, bundle_menu_item_ids, menu_items:reward_menu_item_id(base_price, image_url)",
     )
     .eq("is_active", true)
     .order("points_cost", { ascending: true });
@@ -45,6 +45,7 @@ export default async function FidelitePage() {
     menuItemId: r.reward_menu_item_id,
     menuItemPrice: r.menu_items?.base_price ?? null,
     rewardType: r.reward_type,
+    bundleMenuItemIds: r.bundle_menu_item_ids ?? null,
   }));
 
   if (!user) {
