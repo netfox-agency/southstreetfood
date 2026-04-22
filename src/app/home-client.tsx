@@ -116,12 +116,14 @@ function Hero() {
           transition={{ duration: 0.8, ease, delay: 1 }}
           className="mt-8 flex items-center gap-5"
         >
-          {/* Bouton principal : blanc solide sur fond dark, pattern Apple
-              classique. Plus de contraste et de clarte qu'un glass-effect
-              qui se perd dans la video. */}
+          {/* Bouton principal : glass effect type Apple Vision Pro
+              - bg-white/15 + backdrop-blur donnent l'effet translucide
+              - border-white/25 pour delimiter le bouton de la video
+              - hover elargit a /25 pour un feedback subtil
+              - shadow-black/20 pour le decoller de l'image */}
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-medium text-black bg-white hover:bg-white/90 rounded-full shadow-lg shadow-black/20 transition-all duration-300"
+            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-medium text-white bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/25 rounded-full shadow-lg shadow-black/20 transition-all duration-300"
           >
             Commander
             <ArrowRight className="h-4 w-4" />
