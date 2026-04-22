@@ -4,6 +4,86 @@ import {
   MENU_FRIES_OPTIONS,
 } from "@/lib/constants";
 
+/**
+ * Essaye de fetcher via la VIEW `menu_items_with_availability` (qui calcule
+ * effective_available avec la cascade ingredients). Si la VIEW n'existe pas
+ * encore (migrations 006-008 pas appliquees cote DB), fallback sur la table
+ * `menu_items` brute et synthese des champs manquants.
+ *
+ * Ce fallback permet au code de se deployer AVANT les migrations SQL sans
+ * casser la prod. Une fois les migrations appliquees, la VIEW est utilisee
+ * automatiquement (la cascade devient active).
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchMenuItemsWithAvailability(supabase: any) {
+  const viewRes = await supabase
+    .from("menu_items_with_availability")
+    .select("*")
+    .order("display_order");
+
+  if (!viewRes.error) return viewRes;
+
+  // 42P01 = undefined_table, PGRST205 = PostgREST "relation not found"
+  const isMissingView =
+    viewRes.error?.code === "42P01" ||
+    viewRes.error?.code === "PGRST205" ||
+    /not find|does not exist/i.test(viewRes.error?.message || "");
+
+  if (!isMissingView) return viewRes;
+
+  // Fallback : lit la table brute et synthese effective_available depuis
+  // is_available (pas de cascade ingredient active, migrations en attente)
+  const fallback = await supabase
+    .from("menu_items")
+    .select("*")
+    .order("display_order");
+  if (fallback.error) return fallback;
+  return {
+    ...fallback,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: (fallback.data || []).map((row: any) => ({
+      ...row,
+      effective_available: row.is_available !== false,
+      blocking_ingredient: null,
+    })),
+  };
+}
+
+/**
+ * Meme pattern pour extras.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function fetchExtraItemsWithAvailability(supabase: any, filter: { in: { column: string; values: string[] } }) {
+  const viewRes = await supabase
+    .from("extra_items_with_availability")
+    .select("*")
+    .in(filter.in.column, filter.in.values)
+    .order("display_order");
+
+  if (!viewRes.error) return viewRes;
+  const isMissingView =
+    viewRes.error?.code === "42P01" ||
+    viewRes.error?.code === "PGRST205" ||
+    /not find|does not exist/i.test(viewRes.error?.message || "");
+  if (!isMissingView) return viewRes;
+
+  const fallback = await supabase
+    .from("extra_items")
+    .select("*")
+    .in(filter.in.column, filter.in.values)
+    .order("display_order");
+  if (fallback.error) return fallback;
+  return {
+    ...fallback,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: (fallback.data || []).map((row: any) => ({
+      ...row,
+      effective_available: row.is_available !== false,
+      blocking_ingredient: null,
+    })),
+  };
+}
+
 export async function getCategories() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -42,10 +122,7 @@ export async function getCategoriesWithItems() {
         .select("*")
         .eq("is_active", true)
         .order("display_order"),
-      supabase
-        .from("menu_items_with_availability")
-        .select("*")
-        .order("display_order"),
+      fetchMenuItemsWithAvailability(supabase),
       supabase.from("menu_item_variants").select("menu_item_id"),
       supabase.from("menu_item_extra_groups").select("menu_item_id"),
     ]);
@@ -90,13 +167,40 @@ export async function getCategoriesWithItems() {
 export async function getMenuItemBySlug(slug: string) {
   const supabase = await createClient();
 
-  // 1. Fetch item via la VIEW pour avoir effective_available + blocking_ingredient
-  const { data, error } = await supabase
+  // 1. Fetch item — try VIEW d'abord (cascade ingredients), fallback table
+  //    brute si migrations pas encore appliquees
+  let singleRes = await supabase
     .from("menu_items_with_availability")
     .select("*")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
 
+  if (
+    singleRes.error &&
+    (singleRes.error.code === "42P01" ||
+      singleRes.error.code === "PGRST205" ||
+      /not find|does not exist/i.test(singleRes.error.message || ""))
+  ) {
+    singleRes = await supabase
+      .from("menu_items")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (singleRes.data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const row = singleRes.data as any;
+      singleRes = {
+        ...singleRes,
+        data: {
+          ...row,
+          effective_available: row.is_available !== false,
+          blocking_ingredient: null,
+        },
+      };
+    }
+  }
+
+  const { data, error } = singleRes;
   if (error || !data) return null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -133,18 +237,16 @@ export async function getMenuItemBySlug(slug: string) {
       (j: { extra_group_id: string }) => j.extra_group_id
     );
 
-    // 3. Fetch extra groups AND their items (via VIEW effective_available)
+    // 3. Fetch extra groups AND their items (via VIEW avec fallback)
     const [groupsRes, extraItemsRes] = await Promise.all([
       supabase
         .from("extra_groups")
         .select("*")
         .in("id", groupIds)
         .order("display_order"),
-      supabase
-        .from("extra_items_with_availability")
-        .select("*")
-        .in("extra_group_id", groupIds)
-        .order("display_order"),
+      fetchExtraItemsWithAvailability(supabase, {
+        in: { column: "extra_group_id", values: groupIds },
+      }),
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,8 +283,8 @@ export async function getMenuItemBySlug(slug: string) {
 
 export async function getBestSellers(limit = 4) {
   const supabase = await createClient();
-  // VIEW avec effective_available (prend en compte cascade ingredients)
-  const { data, error } = await supabase
+  // VIEW avec effective_available (cascade ingredients), fallback table brute
+  let res = await supabase
     .from("menu_items_with_availability")
     .select("id, name, slug, base_price, description, image_url, is_featured, effective_available")
     .eq("is_featured", true)
@@ -190,9 +292,24 @@ export async function getBestSellers(limit = 4) {
     .order("display_order")
     .limit(limit);
 
-  if (error) throw error;
+  if (
+    res.error &&
+    (res.error.code === "42P01" ||
+      res.error.code === "PGRST205" ||
+      /not find|does not exist/i.test(res.error.message || ""))
+  ) {
+    res = await supabase
+      .from("menu_items")
+      .select("id, name, slug, base_price, description, image_url, is_featured")
+      .eq("is_featured", true)
+      .eq("is_available", true)
+      .order("display_order")
+      .limit(limit);
+  }
+
+  if (res.error) throw res.error;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (data || []) as any[];
+  return (res.data || []) as any[];
 }
 
 /**

@@ -91,31 +91,86 @@ export async function priceCartServerSide(
   // We also pull restaurant_settings so the delivery fee is
   // DB-authoritative (admin can tweak it without a redeploy).
   // IMPORTANT : on lit via les VIEWs pour avoir effective_available qui
-  // prend en compte la cascade ingredients (si un ingredient est OOS,
-  // effective_available = false meme si is_available = true). Sans ca
-  // un client pourrait commander un item dont un ingredient vient d'etre
-  // marque en rupture cote cuisine (fenetre ISR 30s + cascade ingredient
-  // non propagee vers is_available).
-  const [menuItemsRes, variantsRes, extrasRes, settingsRes] = await Promise.all([
+  // prend en compte la cascade ingredients. Si les VIEWs n'existent pas
+  // encore (migrations 006-008 pas appliquees), fallback sur les tables
+  // brutes et synthese de effective_available depuis is_available.
+  //
+  // Helper inline car la fonction a besoin d'etre locale au pricing flow
+  // (pas de partage de state entre les 3 queries).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isMissingRel = (err: any) =>
+    err?.code === "42P01" ||
+    err?.code === "PGRST205" ||
+    /not find|does not exist/i.test(err?.message || "");
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fetchMenuItems = async () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
+    const first = await (supabase as any)
       .from("menu_items_with_availability")
       .select("id, name, base_price, effective_available, blocking_ingredient")
-      .in("id", menuItemIds),
+      .in("id", menuItemIds);
+    if (!first.error) return first;
+    if (!isMissingRel(first.error)) return first;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fb = await (supabase as any)
+      .from("menu_items")
+      .select("id, name, base_price, is_available")
+      .in("id", menuItemIds);
+    if (fb.error) return fb;
+    return {
+      ...fb,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: (fb.data || []).map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        base_price: r.base_price,
+        effective_available: r.is_available !== false,
+        blocking_ingredient: null,
+      })),
+    };
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fetchExtras = async () => {
+    if (extraIds.length === 0) return { data: [], error: null };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const first = await (supabase as any)
+      .from("extra_items_with_availability")
+      .select("id, extra_group_id, name, price, effective_available, blocking_ingredient")
+      .in("id", extraIds);
+    if (!first.error) return first;
+    if (!isMissingRel(first.error)) return first;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const fb = await (supabase as any)
+      .from("extra_items")
+      .select("id, extra_group_id, name, price, is_available")
+      .in("id", extraIds);
+    if (fb.error) return fb;
+    return {
+      ...fb,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: (fb.data || []).map((r: any) => ({
+        id: r.id,
+        extra_group_id: r.extra_group_id,
+        name: r.name,
+        price: r.price,
+        effective_available: r.is_available !== false,
+        blocking_ingredient: null,
+      })),
+    };
+  };
+
+  const [menuItemsRes, variantsRes, extrasRes, settingsRes] = await Promise.all([
+    fetchMenuItems(),
     variantIds.length > 0
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("menu_item_variants")
-          .select("id, menu_item_id, name, price_modifier, is_available, availability_status")
+          .select("id, menu_item_id, name, price_modifier, is_available")
           .in("id", variantIds)
       : Promise.resolve({ data: [], error: null }),
-    extraIds.length > 0
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("extra_items_with_availability")
-          .select("id, extra_group_id, name, price, effective_available, blocking_ingredient")
-          .in("id", extraIds)
-      : Promise.resolve({ data: [], error: null }),
+    fetchExtras(),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
       .from("restaurant_settings")
@@ -143,7 +198,6 @@ export async function priceCartServerSide(
     name: string;
     price_modifier: number;
     is_available: boolean;
-    availability_status?: string;
   };
   type ExtraRow = {
     id: string;

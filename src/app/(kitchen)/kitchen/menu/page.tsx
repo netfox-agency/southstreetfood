@@ -5,6 +5,40 @@ import { MenuToggleClient, type CategoryWithItems } from "./menu-toggle-client";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Menu · Cuisine" };
 
+// Helper : try un select avec les nouvelles colonnes status+unavailable_until
+// (migrations 006 appliquees), fallback sur select legacy si elles manquent.
+// Retourne les data avec les colonnes synthetisees a default si absent.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function selectWithStockFallback(table: any, baseCols: string, newCols: string, orderBy?: string) {
+  // Try full select d'abord
+  let q = table.select(`${baseCols}, ${newCols}`);
+  if (orderBy) q = q.order(orderBy);
+  const full = await q;
+  if (!full.error) return full;
+
+  // Detect "column does not exist" : PGRST204 ou 42703
+  const missingCol =
+    full.error?.code === "42703" ||
+    full.error?.code === "PGRST204" ||
+    /column.*does not exist/i.test(full.error?.message || "");
+  if (!missingCol) return full;
+
+  // Fallback : select sans les nouvelles colonnes, synthese a 'in_stock'
+  let q2 = table.select(baseCols);
+  if (orderBy) q2 = q2.order(orderBy);
+  const partial = await q2;
+  if (partial.error) return partial;
+  return {
+    ...partial,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: (partial.data || []).map((r: any) => ({
+      ...r,
+      availability_status: "in_stock",
+      unavailable_until: null,
+    })),
+  };
+}
+
 async function getMenu(): Promise<CategoryWithItems[]> {
   const supabase = createAdminClient() as any;
 
@@ -13,18 +47,18 @@ async function getMenu(): Promise<CategoryWithItems[]> {
       .from("categories")
       .select("id, name, display_order")
       .order("display_order"),
-    supabase
-      .from("menu_items")
-      .select(
-        "id, category_id, name, base_price, is_available, display_order, availability_status, unavailable_until",
-      )
-      .order("display_order"),
-    supabase
-      .from("menu_item_variants")
-      .select(
-        "id, menu_item_id, name, price_modifier, is_available, availability_status, unavailable_until",
-      )
-      .order("name"),
+    selectWithStockFallback(
+      supabase.from("menu_items"),
+      "id, category_id, name, base_price, is_available, display_order",
+      "availability_status, unavailable_until",
+      "display_order",
+    ),
+    selectWithStockFallback(
+      supabase.from("menu_item_variants"),
+      "id, menu_item_id, name, price_modifier, is_available",
+      "availability_status, unavailable_until",
+      "name",
+    ),
   ]);
 
   const categories = (catsRes.data ?? []) as any[];
@@ -64,12 +98,12 @@ async function getExtrasGrouped() {
       .from("extra_groups")
       .select("id, name, display_order")
       .order("display_order"),
-    supabase
-      .from("extra_items")
-      .select(
-        "id, extra_group_id, name, price, is_available, availability_status, unavailable_until",
-      )
-      .order("name"),
+    selectWithStockFallback(
+      supabase.from("extra_items"),
+      "id, extra_group_id, name, price, is_available",
+      "availability_status, unavailable_until",
+      "name",
+    ),
   ]);
   const groups = (groupsRes.data ?? []) as any[];
   const items = (itemsRes.data ?? []) as any[];
@@ -91,11 +125,21 @@ async function getExtrasGrouped() {
 
 async function getIngredients() {
   const supabase = createAdminClient() as any;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("ingredients")
     .select("*")
     .order("display_order")
     .order("name");
+  // Migration 007 pas encore appliquee → table ingredients absente, on
+  // renvoie une liste vide. L'UI affiche "Aucun ingredient" avec un hint.
+  if (
+    error &&
+    (error.code === "42P01" ||
+      error.code === "PGRST205" ||
+      /not find|does not exist/i.test(error.message || ""))
+  ) {
+    return [] as any[];
+  }
   return (data ?? []) as any[];
 }
 
