@@ -77,8 +77,6 @@ export const LOYALTY = {
   pointsPerEuro: 1,
   /** Palier minimum pour debloquer une recompense. */
   minPointsRedeem: 100,
-  /** Bonus offert a la creation d'un compte (applique via trigger DB). */
-  welcomeBonus: 50,
 } as const;
 
 /**

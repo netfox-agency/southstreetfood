@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, Lock, Sparkles } from "lucide-react";
-import { LOYALTY } from "@/lib/constants";
 import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
 
 interface Props {
@@ -54,11 +53,8 @@ export function FideliteGuest({ catalog }: Props) {
             </h1>
             <p className="text-[14px] sm:text-base text-white/70 max-w-lg leading-relaxed">
               Chaque commande compte. Cumule tes points, debloque des
-              paliers, echange contre tes plats preferes.{" "}
-              <span className="text-white font-semibold">
-                {LOYALTY.welcomeBonus} points offerts
-              </span>{" "}
-              a la creation du compte.
+              paliers, echange contre tes plats preferes. Cree ton compte
+              pour commencer.
             </p>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3">
@@ -130,7 +126,7 @@ export function FideliteGuest({ catalog }: Props) {
               Pret a cumuler ?
             </p>
             <p className="text-[12px] sm:text-sm text-white/60 mt-0.5">
-              {LOYALTY.welcomeBonus} points offerts a l&apos;inscription.
+              1 euro depense = 1 point.
             </p>
           </div>
           <Link

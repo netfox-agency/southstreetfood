@@ -6,7 +6,6 @@ import Image from "next/image";
 import { Gift, Lock, Check, Sparkles, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/stores/cart-store";
-import { LOYALTY } from "@/lib/constants";
 import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
 
 /**
@@ -93,11 +92,10 @@ export function LoyaltyCartSection() {
               Gagne des points sur cette commande
             </p>
             <p className="text-[12px] text-[#86868b] mt-0.5 leading-relaxed">
-              Cree ton compte et recois{" "}
+              Cree ton compte pour cumuler des points a chaque commande.{" "}
               <span className="font-semibold text-[#1d1d1f]">
-                {LOYALTY.welcomeBonus} points offerts
+                1 euro depense = 1 point.
               </span>
-              . 1 euro depense = 1 point.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link

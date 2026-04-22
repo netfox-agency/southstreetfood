@@ -3,10 +3,9 @@
 import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
-import { LOYALTY } from "@/lib/constants";
 
 function SignupInner() {
   const router = useRouter();
@@ -63,7 +62,7 @@ function SignupInner() {
         return;
       }
 
-      toast.success(`Bienvenue ! ${LOYALTY.welcomeBonus} points offerts`);
+      toast.success("Compte cree. Bienvenue !");
       router.push(redirectTo);
       router.refresh();
     } catch {
@@ -85,13 +84,6 @@ function SignupInner() {
       </div>
 
       <div className="mx-auto max-w-md px-5 py-10">
-        <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#0a0a0a] text-white px-3 py-1.5">
-          <Sparkles className="h-3.5 w-3.5 text-[#e8416f]" />
-          <span className="text-[11px] font-semibold tracking-wider uppercase">
-            {LOYALTY.welcomeBonus} points offerts
-          </span>
-        </div>
-
         <h1 className="font-display text-5xl sm:text-6xl text-[#1d1d1f] tracking-tight leading-[0.95] mb-2">
           Bienvenue.
         </h1>
