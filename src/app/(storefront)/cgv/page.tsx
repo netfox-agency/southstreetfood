@@ -43,8 +43,12 @@ export default function CGVPage() {
               1. Objet
             </h2>
             <p className="text-muted-foreground">
-              Les présentes CGV régissent toute commande passée auprès de
-              South Street Food (ci-après « le Restaurant ») sur le site{" "}
+              Les présentes CGV régissent toute commande passée auprès de la
+              société{" "}
+              <strong className="text-foreground">South Street Food</strong>,
+              SAS au capital de 6&nbsp;800&nbsp;€, immatriculée au RCS de
+              Bayonne sous le numéro 948 154 380, dont le siège social est
+              situé {BRAND.address} (ci-après « le Restaurant »), sur le site{" "}
               <span className="text-foreground">southstreetfood.fr</span> ou
               directement au comptoir. Toute commande implique
               l&apos;acceptation sans réserve de ces conditions.

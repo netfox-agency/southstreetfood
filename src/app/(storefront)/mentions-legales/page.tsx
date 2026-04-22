@@ -36,9 +36,13 @@ export default function MentionsLegalesPage() {
             <p className="text-muted-foreground">
               <strong className="text-foreground">South Street Food</strong>
               <br />
-              Restaurant de street food, livraison sur Bayonne-Anglet-Biarritz.
+              Société par actions simplifiée (SAS) au capital de 6&nbsp;800,00&nbsp;€
               <br />
-              Adresse : {BRAND.address}
+              Siège social : {BRAND.address}
+              <br />
+              RCS Bayonne : 948 154 380
+              <br />
+              N° TVA intracommunautaire : FR38 948154380
               <br />
               Téléphone :{" "}
               <a
@@ -55,8 +59,6 @@ export default function MentionsLegalesPage() {
               >
                 {BRAND.email}
               </a>
-              <br />
-              SIREN : 948 154 380
             </p>
           </section>
 

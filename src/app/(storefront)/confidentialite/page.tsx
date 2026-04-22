@@ -52,7 +52,10 @@ export default function ConfidentialitePage() {
               1. Responsable du traitement
             </h2>
             <p className="text-muted-foreground">
-              South Street Food — SIREN 948 154 380 — {BRAND.address}.
+              <strong className="text-foreground">South Street Food</strong>
+              , SAS au capital de 6&nbsp;800&nbsp;€, immatriculée au RCS de
+              Bayonne sous le numéro 948 154 380, dont le siège social est
+              situé {BRAND.address}.
               <br />
               Contact :{" "}
               <a
