@@ -443,19 +443,32 @@ function CTA() {
   return (
     <Reveal className="py-24 sm:py-32 bg-brand">
       <div className="max-w-4xl mx-auto px-6 text-center">
+        {/* Meme traitement que le hero : Pricedown + gradient blanc subtil
+            + triple drop-shadow en couches. Les ombres sont calibrees pour
+            le fond rose brand (plus douces qu'un fond video pour ne pas
+            trop assombrir le bg colore). */}
         <motion.h2
           variants={fadeUp}
           custom={0}
-          className="text-4xl sm:text-5xl font-semibold tracking-tight mb-6 text-white"
+          className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95] tracking-wide uppercase mb-6"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, #ffffff 0%, #ffffff 55%, rgba(255, 255, 255, 0.82) 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            filter:
+              "drop-shadow(0 1px 0 rgba(255, 255, 255, 0.15)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18)) drop-shadow(0 10px 28px rgba(0, 0, 0, 0.32))",
+          }}
         >
-          Votre commande vous attend.
+          Votre commande vous attend
         </motion.h2>
         <motion.p
           variants={fadeUp}
           custom={1}
           className="text-white/70 text-lg mb-10 max-w-md mx-auto font-light"
         >
-          Livraison en 30 minutes ou retrait au restaurant.
+          Livraison en 40 minutes ou retrait au restaurant.
         </motion.p>
         <motion.div variants={fadeUp} custom={2}>
           <Link
