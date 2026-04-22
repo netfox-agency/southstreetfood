@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, ChevronDown, Info } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, Info } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { DELIVERY_ZONES, getDeliveryFeeForCity } from "@/lib/constants";
+import { AddressAutocomplete } from "@/components/storefront/address-autocomplete";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -122,7 +123,7 @@ export default function CartPage() {
           </div>
         </div>
 
-        {/* Delivery address */}
+        {/* Delivery address : Google Places Autocomplete + mini map preview */}
         {orderType === "delivery" && (
           <div className="mb-5 bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
             <h2 className="text-sm font-semibold text-[#1d1d1f] flex items-center gap-2">
@@ -130,100 +131,77 @@ export default function CartPage() {
               Adresse de livraison
             </h2>
 
-            {/* City selector */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Ville</label>
-              <div className="relative">
-                <select
-                  value={selectedCity}
-                  onChange={(e) => {
-                    const city = e.target.value;
-                    // Auto-fill postal code based on city
-                    const postalCodes: Record<string, string> = {
-                      "Bayonne": "64100", "Anglet": "64600", "Biarritz": "64200",
-                      "Tarnos": "40220", "Boucau": "64340", "Ondres": "40440",
-                      "Saint-Martin-de-Seignanx": "40390", "Bassussarry": "64200",
-                      "Bidart": "64210", "Saint-André-de-Seignanx": "40390",
-                      "Labenne": "40530", "Saint-Pierre-d'Irube": "64990",
-                    };
-                    setDeliveryAddress({
-                      street: deliveryAddress?.street || "",
-                      city,
-                      postalCode: postalCodes[city] || deliveryAddress?.postalCode || "",
-                      instructions: deliveryAddress?.instructions,
-                    });
-                  }}
-                  className="w-full h-12 pl-4 pr-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] appearance-none focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all cursor-pointer"
-                >
-                  <option value="">Choisir votre ville</option>
-                  {DELIVERY_ZONES.map((zone) => (
-                    <optgroup key={zone.fee} label={`${formatPrice(zone.fee)} de livraison`}>
-                      {zone.cities.map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b] pointer-events-none" />
-              </div>
-              {/* Fee badge */}
-              {selectedCity && cityFee !== null && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-100">
-                  <Truck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-xs font-semibold text-emerald-700">
-                    Livraison {formatPrice(cityFee)}
-                  </span>
+            {/* Autocomplete Google Places :
+                - Bias Bayonne/BAB (+/- 0.15 deg)
+                - componentRestrictions country FR
+                - Parse street/city/postalCode/lat/lng automatiquement
+                - Fallback dropdown ville + inputs si l'API Google echoue
+                - Affichage fee auto + warning si ville hors zone */}
+            <AddressAutocomplete
+              value={
+                deliveryAddress?.street
+                  ? `${deliveryAddress.street}${deliveryAddress.postalCode ? `, ${deliveryAddress.postalCode}` : ""}${deliveryAddress.city ? ` ${deliveryAddress.city}` : ""}`
+                  : ""
+              }
+              deliveryFee={cityFee}
+              onAddressSelect={(addr) =>
+                setDeliveryAddress({
+                  street: addr.street,
+                  city: addr.city,
+                  postalCode: addr.postalCode,
+                  lat: addr.lat,
+                  lng: addr.lng,
+                  instructions: deliveryAddress?.instructions,
+                })
+              }
+              onClear={() =>
+                setDeliveryAddress({
+                  street: "",
+                  city: "",
+                  postalCode: "",
+                  instructions: deliveryAddress?.instructions,
+                })
+              }
+            />
+
+            {/* Mini carte preview : iframe Google Maps Embed gratuite,
+                centree sur lat/lng de l'adresse selectionnee. Confirme
+                visuellement au client que c'est la bonne adresse avant
+                de commander. N'apparait que si lat/lng presents (=
+                adresse selectionnee via autocomplete, pas fallback). */}
+            {deliveryAddress?.lat &&
+              deliveryAddress?.lng &&
+              process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && (
+                <div className="rounded-xl overflow-hidden border border-[#e5e5ea]">
+                  <iframe
+                    title="Carte de livraison"
+                    src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&q=${deliveryAddress.lat},${deliveryAddress.lng}&zoom=16`}
+                    className="w-full h-44 block"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
                 </div>
               )}
-            </div>
-
-            {/* Street */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Adresse</label>
-              <input
-                type="text"
-                placeholder="12 rue de la Republique"
-                value={deliveryAddress?.street || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: e.target.value,
-                  city: selectedCity,
-                  postalCode: deliveryAddress?.postalCode || "",
-                  instructions: deliveryAddress?.instructions,
-                })}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-              />
-            </div>
-
-            {/* Postal code (auto-filled) */}
-            <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Code postal</label>
-              <input
-                type="text"
-                placeholder="64100"
-                value={deliveryAddress?.postalCode || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: deliveryAddress?.street || "",
-                  city: selectedCity,
-                  postalCode: e.target.value,
-                  instructions: deliveryAddress?.instructions,
-                })}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-              />
-            </div>
 
             {/* Instructions */}
             <div>
-              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">Instructions (optionnel)</label>
+              <label className="text-xs font-medium text-[#86868b] mb-1.5 block">
+                Instructions (optionnel)
+              </label>
               <input
                 type="text"
                 placeholder="Code d'entree, etage, batiment..."
                 value={deliveryAddress?.instructions || ""}
-                onChange={(e) => setDeliveryAddress({
-                  street: deliveryAddress?.street || "",
-                  city: selectedCity,
-                  postalCode: deliveryAddress?.postalCode || "",
-                  instructions: e.target.value,
-                })}
+                onChange={(e) =>
+                  setDeliveryAddress({
+                    street: deliveryAddress?.street || "",
+                    city: selectedCity,
+                    postalCode: deliveryAddress?.postalCode || "",
+                    lat: deliveryAddress?.lat,
+                    lng: deliveryAddress?.lng,
+                    instructions: e.target.value,
+                  })
+                }
                 className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
               />
             </div>
@@ -236,9 +214,16 @@ export default function CartPage() {
               </summary>
               <div className="mt-3 space-y-2">
                 {DELIVERY_ZONES.map((zone) => (
-                  <div key={zone.fee} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]">
-                    <span className="text-[#1d1d1f]">{zone.cities.join(", ")}</span>
-                    <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">{formatPrice(zone.fee)}</span>
+                  <div
+                    key={zone.fee}
+                    className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]"
+                  >
+                    <span className="text-[#1d1d1f]">
+                      {zone.cities.join(", ")}
+                    </span>
+                    <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">
+                      {formatPrice(zone.fee)}
+                    </span>
                   </div>
                 ))}
               </div>
