@@ -72,38 +72,32 @@ function Hero() {
 
       {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
-        {/* Titre en Pricedown (GTA Vice City) — effet chrome metal :
-            gradient vertical blanc > bleu clair > bleu profond > bleu clair >
-            blanc qui imite l'image BURGERS de reference. Stroke sombre pour
-            detacher du fond video peu importe sa luminosite, drop-shadow
-            pour la profondeur. Tailles plus mesurees : on veut un impact
-            contenu, pas un mur de texte qui ecrase la video. */}
+        {/* Hero style Apple : typographie moderne, pas d'effet chrome.
+            - Font-sans standard (pas Pricedown — la font GTA reste pour les
+              section titles "NOS INCONTOURNABLES" qui elles supportent ce
+              style). Ici on veut raffine, pas kitsch.
+            - Desktop : "Le gout du sud." tient sur UNE SEULE ligne grace a
+              un sizing calibre + whitespace-nowrap sur sm+.
+            - Mobile : wrap naturel sur 2 lignes.
+            - "sud." en italic font-light pour le contraste Apple classique
+              entre poids heavy (semibold) et light italic = signature elegante.
+            - Drop-shadow leger juste assez pour detacher du fond video, pas
+              un mur d'effets. */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="font-display text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-wide uppercase max-w-2xl"
-          style={{
-            backgroundImage:
-              "linear-gradient(180deg, #ffffff 0%, #e8f2ff 22%, #6ea8d8 48%, #1e3a6f 62%, #6ea8d8 82%, #ffffff 100%)",
-            WebkitBackgroundClip: "text",
-            backgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-            WebkitTextStroke: "1.5px rgba(0, 0, 0, 0.35)",
-            filter:
-              "drop-shadow(0 2px 0 rgba(0,0,0,0.35)) drop-shadow(0 8px 24px rgba(0,0,0,0.55))",
-          }}
+          className="text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] font-semibold text-white leading-[1.02] tracking-[-0.035em] sm:whitespace-nowrap text-balance drop-shadow-[0_2px_16px_rgba(0,0,0,0.55)]"
         >
-          Le go&ucirc;t
-          <br />
-          du sud
+          Le go&ucirc;t du{" "}
+          <span className="italic font-light">sud.</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 0.7 }}
-          className="mt-5 text-center sm:text-left text-white text-base sm:text-lg font-light max-w-md leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
+          className="mt-5 text-center sm:text-left text-white/80 text-base sm:text-lg font-light max-w-md leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
         >
           Livr&eacute; chez vous jusqu&apos;&agrave; 4h.
         </motion.p>
@@ -114,18 +108,23 @@ function Hero() {
           transition={{ duration: 0.8, ease, delay: 1 }}
           className="mt-8 flex items-center gap-5"
         >
+          {/* Bouton principal : blanc solide sur fond dark, pattern Apple
+              classique. Plus de contraste et de clarte qu'un glass-effect
+              qui se perd dans la video. */}
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-brand hover:bg-brand-dark rounded-full shadow-lg shadow-black/30 transition-all duration-300"
+            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-medium text-black bg-white hover:bg-white/90 rounded-full shadow-lg shadow-black/20 transition-all duration-300"
           >
             Commander
             <ArrowRight className="h-4 w-4" />
           </Link>
+          {/* Lien secondaire ghost, style Apple "Learn more >" */}
           <a
             href="#best-sellers"
-            className="text-sm text-white/80 hover:text-white font-light transition-colors hidden sm:inline drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
+            className="text-sm text-white/70 hover:text-white font-light transition-colors hidden sm:inline-flex items-center gap-1 drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
           >
             Nos incontournables
+            <ArrowRight className="h-3.5 w-3.5" />
           </a>
         </motion.div>
       </div>
