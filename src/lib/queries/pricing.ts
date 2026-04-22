@@ -90,24 +90,30 @@ export async function priceCartServerSide(
   // Parallel fetch — one round-trip per table instead of N+1.
   // We also pull restaurant_settings so the delivery fee is
   // DB-authoritative (admin can tweak it without a redeploy).
+  // IMPORTANT : on lit via les VIEWs pour avoir effective_available qui
+  // prend en compte la cascade ingredients (si un ingredient est OOS,
+  // effective_available = false meme si is_available = true). Sans ca
+  // un client pourrait commander un item dont un ingredient vient d'etre
+  // marque en rupture cote cuisine (fenetre ISR 30s + cascade ingredient
+  // non propagee vers is_available).
   const [menuItemsRes, variantsRes, extrasRes, settingsRes] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (supabase as any)
-      .from("menu_items")
-      .select("id, name, base_price, is_available")
+      .from("menu_items_with_availability")
+      .select("id, name, base_price, effective_available, blocking_ingredient")
       .in("id", menuItemIds),
     variantIds.length > 0
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
           .from("menu_item_variants")
-          .select("id, menu_item_id, name, price_modifier, is_available")
+          .select("id, menu_item_id, name, price_modifier, is_available, availability_status")
           .in("id", variantIds)
       : Promise.resolve({ data: [], error: null }),
     extraIds.length > 0
       ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (supabase as any)
-          .from("extra_items")
-          .select("id, extra_group_id, name, price, is_available")
+          .from("extra_items_with_availability")
+          .select("id, extra_group_id, name, price, effective_available, blocking_ingredient")
           .in("id", extraIds)
       : Promise.resolve({ data: [], error: null }),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,7 +132,10 @@ export async function priceCartServerSide(
     id: string;
     name: string;
     base_price: number;
-    is_available: boolean;
+    /** Vient de la VIEW : inclut la cascade ingredients */
+    effective_available: boolean;
+    /** Nom du 1er ingredient bloquant (si OOS), pour l'erreur user */
+    blocking_ingredient: string | null;
   };
   type VariantRow = {
     id: string;
@@ -134,12 +143,15 @@ export async function priceCartServerSide(
     name: string;
     price_modifier: number;
     is_available: boolean;
+    availability_status?: string;
   };
   type ExtraRow = {
     id: string;
+    extra_group_id: string;
     name: string;
     price: number;
-    is_available: boolean;
+    effective_available: boolean;
+    blocking_ingredient: string | null;
   };
 
   const menuIndex = new Map<string, MenuItemRow>(
@@ -160,8 +172,15 @@ export async function priceCartServerSide(
         "ITEM_NOT_FOUND"
       );
     }
-    if (!menuItem.is_available) {
-      throw new PricingError(`${menuItem.name} non disponible`, "ITEM_UNAVAILABLE");
+    if (!menuItem.effective_available) {
+      // Message plus utile : dit quel ingredient manque si c'est la cause
+      const reason = menuItem.blocking_ingredient
+        ? ` (plus de ${menuItem.blocking_ingredient})`
+        : "";
+      throw new PricingError(
+        `${menuItem.name} non disponible${reason}`,
+        "ITEM_UNAVAILABLE",
+      );
     }
 
     let unitPrice = menuItem.base_price;
@@ -194,10 +213,13 @@ export async function priceCartServerSide(
           "EXTRA_NOT_FOUND"
         );
       }
-      if (!extra.is_available) {
+      if (!extra.effective_available) {
+        const reason = extra.blocking_ingredient
+          ? ` (plus de ${extra.blocking_ingredient})`
+          : "";
         throw new PricingError(
-          `Supplement ${extra.name} non disponible`,
-          "EXTRA_UNAVAILABLE"
+          `Supplement ${extra.name} non disponible${reason}`,
+          "EXTRA_UNAVAILABLE",
         );
       }
       extrasPrice += extra.price;

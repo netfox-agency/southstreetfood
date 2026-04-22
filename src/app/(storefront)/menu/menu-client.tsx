@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ItemSheet } from "@/components/storefront/item-sheet";
 import { MENU_ELIGIBLE_SLUGS } from "@/lib/constants";
+import { useStockRealtime } from "@/hooks/use-stock-realtime";
 
 interface MenuItemData {
   id: string;
@@ -183,6 +184,11 @@ function MenuItemRow({
 }
 
 export function MenuClient({ categories }: { categories: CategoryData[] }) {
+  // Realtime cascade : si un ingredient ou item passe OOS cote cuisine,
+  // la page se refresh automatiquement (debounce 400ms) pour refleter
+  // l'etat reel sans refresh manuel du client.
+  useStockRealtime();
+
   const [search, setSearch] = useState("");
   const [activeSlug, setActiveSlug] = useState(categories[0]?.slug || "");
   const [sheetData, setSheetData] = useState<SheetPreview | null>(null);

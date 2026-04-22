@@ -87,9 +87,14 @@ BEGIN
     AND (unavailable_until IS NULL OR unavailable_until <= NOW());
   GET DIAGNOSTICS v_ingredients = ROW_COUNT;
 
-  -- Log la run pour observability
-  INSERT INTO stock_reset_log (items_reset, variants_reset, extras_reset, ingredients_reset)
-  VALUES (v_items, v_variants, v_extras, v_ingredients);
+  -- Log la run pour observability, mais UNIQUEMENT si au moins 1 row a
+  -- ete reset. On schedule 2 runs/jour (03h + 04h UTC pour couvrir DST),
+  -- une des 2 est toujours no-op — pas la peine de polluer la table avec
+  -- 365 entries/an de "0 0 0 0".
+  IF (v_items + v_variants + v_extras + v_ingredients) > 0 THEN
+    INSERT INTO stock_reset_log (items_reset, variants_reset, extras_reset, ingredients_reset)
+    VALUES (v_items, v_variants, v_extras, v_ingredients);
+  END IF;
 
   RETURN QUERY SELECT v_items, v_variants, v_extras, v_ingredients;
 END;

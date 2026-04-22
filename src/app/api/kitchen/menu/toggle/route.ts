@@ -26,7 +26,22 @@ const newFormatSchema = z.object({
     "unavailable_today",
     "unavailable_indefinite",
   ]),
-  unavailable_until: z.string().datetime().optional().nullable(),
+  // Borne dure : unavailable_until doit etre dans le futur mais pas au-dela
+  // de 30 jours. Empeche un payload buggy (ou malicieux) de bloquer un item
+  // pour 10 ans en passant une date lointaine.
+  unavailable_until: z
+    .string()
+    .datetime()
+    .refine(
+      (d) => {
+        const t = new Date(d).getTime();
+        const now = Date.now();
+        return t > now - 60_000 && t < now + 30 * 24 * 60 * 60 * 1000;
+      },
+      { message: "unavailable_until doit etre dans les 30 prochains jours" },
+    )
+    .optional()
+    .nullable(),
 });
 
 const legacyFormatSchema = z.object({
