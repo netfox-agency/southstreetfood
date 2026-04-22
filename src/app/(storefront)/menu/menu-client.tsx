@@ -33,22 +33,11 @@ interface CategoryData {
   items: MenuItemData[];
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  compose: "✍️",
-  "tacos-signatures": "✨",
-  "burgers-premium": "🤌",
-  wraps: "🌯",
-  fit: "🥗",
-  partager: "🍗",
-  patate: "🍟",
-  boissons: "🧃",
-  desserts: "🧁",
-  cheese: "🧀",
-};
-
-const ITEM_EMOJIS: Record<string, string> = {
+// Emojis de fallback — utilises UNIQUEMENT quand un item n'a pas d'image
+// (pour eviter un vide visuel). Les titres de categorie n'utilisent plus
+// d'emoji, look Apple propre.
+const ITEM_FALLBACK_EMOJIS: Record<string, string> = {
   compose: "🌮",
-  "tacos-signatures": "🌮",
   "burgers-premium": "🍔",
   wraps: "🌯",
   fit: "🥗",
@@ -158,7 +147,7 @@ function MenuItemRow({
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-muted to-background flex items-center justify-center text-3xl">
-              {ITEM_EMOJIS[categorySlug] || "🍽️"}
+              {ITEM_FALLBACK_EMOJIS[categorySlug] || "🍽️"}
             </div>
           )}
           {item.is_available &&
@@ -332,7 +321,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
                     : "border-transparent text-muted-foreground hover:text-foreground"
                 )}
               >
-                {CATEGORY_EMOJIS[cat.slug] || ""} {cat.name}
+                {cat.name}
               </button>
             ))}
           </div>
@@ -350,7 +339,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
             className="mb-12"
           >
             <h2 className="text-xl font-bold text-foreground mb-5">
-              {CATEGORY_EMOJIS[cat.slug] || ""} {cat.name}
+              {cat.name}
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               {cat.items.map((item) => (
