@@ -99,15 +99,31 @@ export interface ToggleAvailabilityPayload {
 
 /**
  * Calcule la date de reset auto quand on passe un item/ingredient a
- * 'unavailable_today'. Reset = 05:00 heure de Paris le prochain jour
- * (apres la fin du service nocturne qui s'arrete a 04:00).
+ * 'unavailable_today'. Reset = 19:00 heure de Paris = debut du prochain
+ * service SSF.
  *
- * Si appele avant 05:00 Paris du jour courant, le reset est aujourd'hui
- * a 05:00 (pratiquement = quelques minutes/heures plus tard).
- * Sinon, c'est demain 05:00 Paris.
+ * Exemple : si le staff marque "Bacon" indispo un mercredi a 22h, le
+ * bacon revient disponible automatiquement le jeudi a 19h (debut du
+ * service du jeudi soir). Pas le jeudi 05h (au milieu de la journee
+ * ou le resto est ferme).
+ *
+ * Si on appelle AVANT 19h Paris du jour courant, le reset est aujourd'hui
+ * a 19h (dans quelques heures). Sinon, c'est demain 19h Paris.
  */
 export function computeNextResetAt(now: Date = new Date()): string {
-  // Parse "now" dans le fuseau Paris
+  return nextParisTimeAt(19, 0, now);
+}
+
+/**
+ * Retourne l'ISO timestamp du prochain "H:MM Paris" strictement dans le
+ * futur. Si on est avant H:MM aujourd'hui, retourne aujourd'hui. Sinon
+ * demain. Gere DST proprement via Intl.DateTimeFormat.
+ */
+export function nextParisTimeAt(
+  targetHour: number,
+  targetMinute: number,
+  now: Date = new Date(),
+): string {
   const parisFormatter = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Paris",
     year: "numeric",
@@ -124,20 +140,20 @@ export function computeNextResetAt(now: Date = new Date()): string {
   const month = parseInt(get("month"), 10);
   const day = parseInt(get("day"), 10);
   const hour = parseInt(get("hour"), 10);
+  const minute = parseInt(get("minute"), 10);
 
-  // Construit "YYYY-MM-DDT05:00:00" a Paris, puis traduit en UTC ISO
-  // via l'offset courant. Utilise un trick Date parsing +02:00/+01:00.
-  // Pour simplifier et rester correct, on build la date en interpretant
-  // "05:00 Paris" comme un UTC avec l'offset approprie.
+  // Build "today at targetHour:targetMinute Paris" comme UTC en appliquant
+  // l'offset Paris actuel.
   const parisDate = new Date(
-    Date.UTC(year, month - 1, day, 5, 0, 0),
+    Date.UTC(year, month - 1, day, targetHour, targetMinute, 0),
   );
-  // Aligne sur l'offset Paris : on retranche l'offset Paris pour ramener en UTC
   const parisOffsetMin = getParisOffsetMinutes(parisDate);
   parisDate.setUTCMinutes(parisDate.getUTCMinutes() - parisOffsetMin);
 
-  // Si on est deja apres 05:00 Paris aujourd'hui, on decale a demain
-  if (hour >= 5) {
+  // Deja passe aujourd'hui ? → demain
+  const nowMinutes = hour * 60 + minute;
+  const targetMinutes = targetHour * 60 + targetMinute;
+  if (nowMinutes >= targetMinutes) {
     parisDate.setUTCDate(parisDate.getUTCDate() + 1);
   }
 

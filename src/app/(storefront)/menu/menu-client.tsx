@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ItemSheet } from "@/components/storefront/item-sheet";
 import { MENU_ELIGIBLE_SLUGS } from "@/lib/constants";
 import { useStockRealtime } from "@/hooks/use-stock-realtime";
+import { ClosedBanner } from "@/components/storefront/closed-banner";
 
 interface MenuItemData {
   id: string;
@@ -262,6 +263,10 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Banner fermé — visible uniquement si resto fermé (horaires, override,
+          ou fermeture temporaire). Realtime : change instantanément si l'admin
+          toggle le statut côté cuisine. */}
+      <ClosedBanner />
       <div className="max-w-4xl mx-auto px-5 pt-8 pb-4">
         <Link
           href="/"

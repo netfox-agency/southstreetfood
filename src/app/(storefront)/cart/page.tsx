@@ -10,6 +10,10 @@ import {
   AddressAutocomplete,
   osmEmbedUrl,
 } from "@/components/storefront/address-autocomplete";
+import {
+  ClosedBanner,
+  useIsRestaurantOpen,
+} from "@/components/storefront/closed-banner";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -37,6 +41,7 @@ export default function CartPage() {
   const deliveryValid = orderType !== "delivery" || (selectedCity !== "" && cityFee !== null && streetFilled);
   const currentSubtotal = subtotal();
   const total = currentSubtotal + deliveryFee;
+  const { isOpen: isRestaurantOpen } = useIsRestaurantOpen();
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
   const belowMin =
@@ -83,6 +88,8 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f5f7]">
+      {/* Banner si resto ferme (horaires ou override). Realtime branche. */}
+      <ClosedBanner />
       <div className="mx-auto max-w-lg px-5 py-8">
         <Link
           href="/menu"
@@ -349,7 +356,7 @@ export default function CartPage() {
             Choisissez votre mode de commande
           </div>
         )}
-        {!orderTypeSelected || belowMin || !deliveryValid ? (
+        {!orderTypeSelected || belowMin || !deliveryValid || !isRestaurantOpen ? (
           <>
             {orderTypeSelected && !deliveryValid && orderType === "delivery" && (
               <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">

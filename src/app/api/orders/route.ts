@@ -87,6 +87,41 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // Check resto ouvert : on bloque les commandes hors horaires ou si
+    // l'admin a mis "fermé" manuellement. Sinon un client peut commander
+    // a 14h alors que le service est de 19h-4h, ou pendant une fermeture
+    // temporaire (staff deborde). Le message retourne explique quand ca
+    // reouvre.
+    try {
+      const { createAdminClient } = await import("@/lib/supabase/admin");
+      const { computeCurrentStatus } = await import(
+        "@/lib/queries/restaurant-status"
+      );
+      const admin = createAdminClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: settings } = await (admin as any)
+        .from("restaurant_settings")
+        .select("manual_status, temp_closed_until, opening_hours")
+        .eq("id", 1)
+        .single();
+      if (settings) {
+        const status = computeCurrentStatus(settings);
+        if (!status.isOpen) {
+          return NextResponse.json(
+            { error: status.message, reason: status.reason, reopensAt: status.reopensAt },
+            { status: 423 }, // 423 Locked : resource temporarily unavailable
+          );
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("[api/orders] status check failed:", err);
+      }
+      // En cas d'erreur inattendue dans le check status, on laisse passer
+      // pour ne pas bloquer les commandes si le check a un bug. L'admin
+      // preferera traiter des commandes en trop que de tout bloquer.
+    }
+
     // Server-authoritative pricing — NEVER trust client-sent unitPrice /
     // extrasPrice. We recompute from the DB, which also enforces
     // availability.

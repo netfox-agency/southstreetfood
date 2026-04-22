@@ -23,6 +23,7 @@ import { cn, formatPrice } from "@/lib/utils";
 import type { OrderWithItems } from "@/types/order";
 import type { OrderStatus } from "@/types/database";
 import { KitchenNav } from "@/components/kitchen/kitchen-nav";
+import { StatusWidget } from "@/components/kitchen/status-widget";
 
 /* ─────────────────────────────────────────────
    Flow ultra simple — Uber Eats style
@@ -683,6 +684,11 @@ export default function KitchenPage() {
           )}
         </button>
       </header>
+
+      {/* ───── Restaurant status widget (horaires + override manuel) ───── */}
+      <div className="shrink-0 bg-white border-b border-[#e5e5ea] px-5 py-3">
+        <StatusWidget />
+      </div>
 
       {/* ───── All-Day batch strip ───── */}
       {allDayItems.length > 0 && (
