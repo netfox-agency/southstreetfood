@@ -72,14 +72,27 @@ function Hero() {
 
       {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
-        {/* Titre en Pricedown (meme font que "NOS INCONTOURNABLES" et que
-            le BURGERS chrome/GTA Vice City) — blanc, tracking large,
-            drop-shadow pour profondeur sur la video de fond. */}
+        {/* Titre en Pricedown (GTA Vice City) — effet chrome metal :
+            gradient vertical blanc > bleu clair > bleu profond > bleu clair >
+            blanc qui imite l'image BURGERS de reference. Stroke sombre pour
+            detacher du fond video peu importe sa luminosite, drop-shadow
+            pour la profondeur. Tailles plus mesurees : on veut un impact
+            contenu, pas un mur de texte qui ecrase la video. */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="font-display text-center sm:text-left text-6xl sm:text-7xl lg:text-8xl xl:text-9xl text-white leading-[0.9] tracking-wide uppercase max-w-3xl drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
+          className="font-display text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-wide uppercase max-w-2xl"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, #ffffff 0%, #e8f2ff 22%, #6ea8d8 48%, #1e3a6f 62%, #6ea8d8 82%, #ffffff 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            WebkitTextStroke: "1.5px rgba(0, 0, 0, 0.35)",
+            filter:
+              "drop-shadow(0 2px 0 rgba(0,0,0,0.35)) drop-shadow(0 8px 24px rgba(0,0,0,0.55))",
+          }}
         >
           Le go&ucirc;t
           <br />
@@ -90,7 +103,7 @@ function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease, delay: 0.7 }}
-          className="mt-4 text-center sm:text-left text-white/60 text-base sm:text-lg font-light max-w-md leading-relaxed"
+          className="mt-5 text-center sm:text-left text-white text-base sm:text-lg font-light max-w-md leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
         >
           Livr&eacute; chez vous jusqu&apos;&agrave; 4h.
         </motion.p>
@@ -103,14 +116,14 @@ function Hero() {
         >
           <Link
             href="/menu"
-            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.18] rounded-full border border-white/[0.2] backdrop-blur-md transition-all duration-300"
+            className="inline-flex items-center gap-2 px-7 py-3 text-sm font-semibold text-white bg-brand hover:bg-brand-dark rounded-full shadow-lg shadow-black/30 transition-all duration-300"
           >
             Commander
             <ArrowRight className="h-4 w-4" />
           </Link>
           <a
             href="#best-sellers"
-            className="text-sm text-white/40 hover:text-white/60 font-light transition-colors hidden sm:inline"
+            className="text-sm text-white/80 hover:text-white font-light transition-colors hidden sm:inline drop-shadow-[0_1px_4px_rgba(0,0,0,0.6)]"
           >
             Nos incontournables
           </a>
