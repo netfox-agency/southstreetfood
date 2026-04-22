@@ -12,6 +12,7 @@ import {
 import { Logo } from "@/components/shared/logo";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
+import { NavbarAuth } from "@/components/storefront/navbar-auth";
 
 const navLinks = [
   { href: "/menu", label: "La carte" },
@@ -72,8 +73,10 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Right — cart + CTA */}
-          <div className="flex items-center gap-3">
+          {/* Right — auth + cart + CTA */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <NavbarAuth />
+
             <Link href="/cart" className="relative p-2 text-white/60 hover:text-white transition-colors">
               <ShoppingBag className="h-[18px] w-[18px]" />
               {mounted && itemCount > 0 && (
