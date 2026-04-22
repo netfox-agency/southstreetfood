@@ -145,16 +145,93 @@ export async function POST(request: NextRequest) {
       throw err;
     }
 
-    const result = await createOrder({
-      orderType: data.orderType,
-      customerName: data.customerName,
-      customerPhone: data.customerPhone,
-      customerEmail: data.customerEmail || undefined,
-      notes: data.notes,
-      subtotal: priced.subtotal,
-      deliveryFee: priced.deliveryFee,
-      total: priced.total,
-      items: priced.items.map((it) => ({
+    // Fidelite : si une recompense est selectionnee, on valide cote serveur
+    // que le user est connecte et qu'il a le solde requis. On prepare une
+    // ligne gratuite (price=0) qui sera ajoutee au panier avant creation.
+    let loyaltyRewardLine: {
+      menuItemId: string;
+      variantId: string | null;
+      quantity: number;
+      unitPrice: number;
+      extrasPrice: number;
+      itemName: string;
+      variantName: string | null;
+      extrasJson: { name: string; price: number }[];
+      specialInstructions: string | null;
+    } | null = null;
+    let loyaltyRewardId: string | null = null;
+    let loyaltyUserId: string | null = null;
+    let loyaltyPointsCost = 0;
+
+    if (data.loyaltyRewardId) {
+      const authSupabase = await createClient();
+      const {
+        data: { user: authUser },
+      } = await authSupabase.auth.getUser();
+      if (!authUser) {
+        return NextResponse.json(
+          { error: "Connecte-toi pour utiliser une recompense" },
+          { status: 401 },
+        );
+      }
+      const admin = createAdminClient();
+      const [{ data: rewardRow }, { data: profileRow }] = await Promise.all([
+        admin
+          .from("loyalty_rewards")
+          .select(
+            "id, name, points_cost, reward_type, reward_menu_item_id, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
+          )
+          .eq("id", data.loyaltyRewardId)
+          .single(),
+        admin
+          .from("profiles")
+          .select("loyalty_points")
+          .eq("id", authUser.id)
+          .single(),
+      ]);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const reward = rewardRow as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const currentBalance = (profileRow as any)?.loyalty_points ?? 0;
+
+      if (!reward || reward.is_active === false) {
+        return NextResponse.json(
+          { error: "Recompense indisponible" },
+          { status: 400 },
+        );
+      }
+      if (currentBalance < reward.points_cost) {
+        return NextResponse.json(
+          { error: "Points insuffisants pour cette recompense" },
+          { status: 400 },
+        );
+      }
+      if (reward.reward_type !== "free_item" || !reward.menu_items) {
+        return NextResponse.json(
+          { error: "Type de recompense non supporte" },
+          { status: 400 },
+        );
+      }
+
+      loyaltyRewardId = reward.id;
+      loyaltyUserId = authUser.id;
+      loyaltyPointsCost = reward.points_cost;
+      loyaltyRewardLine = {
+        menuItemId: reward.menu_items.id,
+        variantId: null,
+        quantity: 1,
+        unitPrice: 0,
+        extrasPrice: 0,
+        itemName: `${reward.menu_items.name} (recompense fidelite)`,
+        variantName: null,
+        extrasJson: [],
+        specialInstructions: `Offert · -${reward.points_cost} pts`,
+      };
+    }
+
+    const finalItems = [
+      ...priced.items.map((it) => ({
         menuItemId: it.menuItemId,
         variantId: it.variantId,
         quantity: it.quantity,
@@ -165,7 +242,22 @@ export async function POST(request: NextRequest) {
         extrasJson: it.extrasJson.map(({ name, price }) => ({ name, price })),
         specialInstructions: it.specialInstructions,
       })),
+      ...(loyaltyRewardLine ? [loyaltyRewardLine] : []),
+    ];
+
+    const result = await createOrder({
+      orderType: data.orderType,
+      customerName: data.customerName,
+      customerPhone: data.customerPhone,
+      customerEmail: data.customerEmail || undefined,
+      notes: data.notes,
+      subtotal: priced.subtotal,
+      deliveryFee: priced.deliveryFee,
+      total: priced.total,
+      items: finalItems,
       deliveryAddress: data.deliveryAddress || null,
+      userId: loyaltyUserId ?? undefined,
+      loyaltyRewardId: loyaltyRewardId ?? undefined,
     });
 
     if (result.error) {
@@ -176,6 +268,34 @@ export async function POST(request: NextRequest) {
     const order = (result as any).order;
     if (!order?.id) {
       return NextResponse.json({ error: "No order created" }, { status: 500 });
+    }
+
+    // Fidelite : debit des points en atomique (apres creation order pour
+    // avoir order_id). Si ca echoue on ne re-crediite pas la commande (la
+    // prep est lancee, on preferera gerer manuellement que bloquer).
+    if (loyaltyUserId && loyaltyRewardId && loyaltyPointsCost > 0) {
+      const admin = createAdminClient();
+      const { data: profileRow } = await admin
+        .from("profiles")
+        .select("loyalty_points")
+        .eq("id", loyaltyUserId)
+        .single();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const balance = (profileRow as any)?.loyalty_points ?? 0;
+      await admin
+        .from("profiles")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update({ loyalty_points: Math.max(0, balance - loyaltyPointsCost) } as never)
+        .eq("id", loyaltyUserId);
+      await admin
+        .from("loyalty_transactions")
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert({
+          user_id: loyaltyUserId,
+          order_id: order.id,
+          points: -loyaltyPointsCost,
+          description: "Recompense utilisee",
+        } as never);
     }
 
     return NextResponse.json({ orderId: order.id });

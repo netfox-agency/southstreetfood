@@ -1,54 +1,52 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { createClient } from "@/lib/supabase/server";
 
 /**
- * GET /api/loyalty/balance?phone=06XXXXXXXX — public
- * Returns loyalty points balance for a phone number.
- * Balance = SUM(loyalty_points_earned) from all completed orders for that phone.
+ * GET /api/loyalty/balance — connected user only.
+ *
+ * Retourne le solde de points depuis profiles.loyalty_points (cache rapide)
+ * ainsi que les 20 dernieres transactions pour l'historique UI.
+ *
+ * Connecte = obligatoire. Les points ne se gagnent et se depensent que via
+ * un compte. Un guest voit le message "Cree un compte pour gagner des points".
  */
-export async function GET(request: NextRequest) {
-  // Rate limit: 60 requests per minute per IP
-  const ip = getClientIp(request);
-  const rl = rateLimit("loyalty.balance", ip, 60, 60_000);
-  if (!rl.ok) {
-    return NextResponse.json(
-      { error: "Trop de requêtes, réessayez dans quelques secondes" },
-      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
-    );
-  }
+export async function GET() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { searchParams } = new URL(request.url);
-  const phone = searchParams.get("phone")?.trim();
-
-  if (!phone) {
-    return NextResponse.json({ error: "phone requis" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "Non connecte" }, { status: 401 });
   }
 
   const admin = createAdminClient();
 
-  // Sum all loyalty_points_earned for this phone number on non-cancelled orders
-  const { data, error } = await admin
-    .from("orders")
-    .select("loyalty_points_earned")
-    .eq("customer_phone", phone)
-    .not("status", "eq", "cancelled");
+  const [profileRes, txRes] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("loyalty_points, full_name")
+      .eq("id", user.id)
+      .single(),
+    admin
+      .from("loyalty_transactions")
+      .select("id, points, description, created_at, order_id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (profileRes.error) {
+    return NextResponse.json({ error: profileRes.error.message }, { status: 500 });
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const orders = (data || []) as any[];
-  const totalPoints = orders.reduce(
-    (sum, o) => sum + (o.loyalty_points_earned || 0),
-    0
-  );
-  const totalOrders = orders.length;
+  const profile = profileRes.data as any;
 
   return NextResponse.json({
-    phone,
-    totalPoints,
-    totalOrders,
+    points: profile?.loyalty_points ?? 0,
+    fullName: profile?.full_name ?? null,
+    transactions: txRes.data ?? [],
   });
 }

@@ -30,6 +30,10 @@ export async function createOrder(data: {
     lng?: number;
     instructions?: string;
   } | null;
+  /** Identifiant du client connecte (lie la commande au compte fidelite). */
+  userId?: string;
+  /** Recompense fidelite appliquee (validation deja effectuee en amont). */
+  loyaltyRewardId?: string;
 }) {
   const supabase = createAdminClient();
 
@@ -47,6 +51,8 @@ export async function createOrder(data: {
       subtotal: data.subtotal,
       delivery_fee: data.deliveryFee,
       total: data.total,
+      user_id: data.userId || null,
+      loyalty_reward_id: data.loyaltyRewardId || null,
     } as never)
     .select()
     .single();

@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 
 const navLinks = [
   { href: "/menu", label: "La carte" },
-  { href: "/account/loyalty", label: "Fidélité" },
+  { href: "/fidelite", label: "Fidélité" },
 ];
 
 export function Navbar() {

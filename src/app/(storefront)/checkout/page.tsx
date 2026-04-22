@@ -16,7 +16,7 @@ export default function CheckoutPage() {
 
   const {
     items, orderType, deliveryAddress, customerNotes, subtotal, clear,
-    customerName, customerPhone, customerEmail,
+    customerName, customerPhone, customerEmail, loyaltyRewardId,
     setCustomerName, setCustomerPhone, setCustomerEmail,
   } = useCartStore();
   const { settings } = useRestaurantSettings();
@@ -120,6 +120,7 @@ export default function CheckoutPage() {
           lng: deliveryAddress.lng,
           instructions: deliveryAddress.instructions,
         } : null,
+        loyaltyRewardId: loyaltyRewardId || undefined,
       };
 
       const res = await fetch("/api/orders", {

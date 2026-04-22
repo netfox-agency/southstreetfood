@@ -61,6 +61,10 @@ export const createOrderSchema = z.object({
     })
     .optional()
     .nullable(),
+  // ID de la recompense fidelite selectionnee (optionnel, connecte uniquement).
+  // Le serveur valide que l'utilisateur est connecte, qu'il a assez de points,
+  // et ajoute la recompense comme ligne gratuite.
+  loyaltyRewardId: z.string().uuid().optional().nullable(),
 }).refine(
   (data) => data.orderType !== "delivery" || (data.deliveryAddress && data.deliveryAddress.street && data.deliveryAddress.city),
   { message: "Adresse de livraison requise", path: ["deliveryAddress"] }

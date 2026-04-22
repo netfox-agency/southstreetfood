@@ -14,6 +14,7 @@ import {
   ClosedBanner,
   useIsRestaurantOpen,
 } from "@/components/storefront/closed-banner";
+import { LoyaltyCartSection } from "@/components/storefront/loyalty-cart-section";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -304,6 +305,9 @@ export default function CartPage() {
             </div>
           ))}
         </div>
+
+        {/* Fidelite : guest banner + reward selector (connected) */}
+        <LoyaltyCartSection />
 
         {/* Notes */}
         <div className="mb-5">

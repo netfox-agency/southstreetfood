@@ -73,8 +73,12 @@ export function getDeliveryFeeForCity(city: string): number | null {
 }
 
 export const LOYALTY = {
-  pointsPerEuro: 10,
+  /** 1 euro depense = 1 point gagne (sur commande terminee uniquement). */
+  pointsPerEuro: 1,
+  /** Palier minimum pour debloquer une recompense. */
   minPointsRedeem: 100,
+  /** Bonus offert a la creation d'un compte (applique via trigger DB). */
+  welcomeBonus: 50,
 } as const;
 
 /**
