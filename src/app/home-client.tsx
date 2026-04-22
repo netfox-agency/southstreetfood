@@ -72,25 +72,23 @@ function Hero() {
 
       {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
-        {/* Hero style Apple : typographie moderne, pas d'effet chrome.
-            - Font-sans standard (pas Pricedown — la font GTA reste pour les
-              section titles "NOS INCONTOURNABLES" qui elles supportent ce
-              style). Ici on veut raffine, pas kitsch.
-            - Desktop : "Le gout du sud." tient sur UNE SEULE ligne grace a
-              un sizing calibre + whitespace-nowrap sur sm+.
-            - Mobile : wrap naturel sur 2 lignes.
-            - "sud." en italic font-light pour le contraste Apple classique
-              entre poids heavy (semibold) et light italic = signature elegante.
-            - Drop-shadow leger juste assez pour detacher du fond video, pas
-              un mur d'effets. */}
+        {/* Hero : Pricedown (GTA) mais traite avec la rigueur Apple.
+            - Font-display uniforme (pas de melange font / italic, ca ne
+              rendrait pas avec une display face genre Pricedown qui n'a
+              qu'une graisse)
+            - Une seule ligne sur desktop via whitespace-nowrap sm+, wrap
+              naturel sur mobile
+            - Blanc pur, drop-shadow leger pour la lisibilite sur la video.
+              Zero effet chrome, zero stroke, zero gradient kitsch.
+            - Tailles escaladees du mobile au xl pour garder un rythme
+              harmonieux sans jamais ecraser la video */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="text-center sm:text-left text-5xl sm:text-6xl lg:text-7xl xl:text-[5.5rem] font-semibold text-white leading-[1.02] tracking-[-0.035em] sm:whitespace-nowrap text-balance drop-shadow-[0_2px_16px_rgba(0,0,0,0.55)]"
+          className="font-display text-center sm:text-left text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl text-white leading-[0.95] tracking-wide uppercase sm:whitespace-nowrap drop-shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
         >
-          Le go&ucirc;t du{" "}
-          <span className="italic font-light">sud.</span>
+          Le go&ucirc;t du sud
         </motion.h1>
 
         <motion.p
