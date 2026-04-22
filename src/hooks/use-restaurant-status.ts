@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   computeCurrentStatus,
@@ -24,6 +24,12 @@ export function useRestaurantStatus(): {
   const [settings, setSettings] = useState<RestaurantSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState(() => new Date());
+  // useId() garantit un nom de channel unique par instance du hook.
+  // Sans ca, plusieurs composants qui useRestaurantStatus() sur la meme
+  // page (ex : ClosedBanner + useIsRestaurantOpen dans le CartPage) se
+  // marcheraient dessus : Supabase Realtime refuse 2 subscriptions au
+  // meme channel name.
+  const instanceId = useId();
 
   // Poll l'heure chaque minute pour que l'ouverture a 19:00 se propage
   // automatiquement cote UI.
@@ -50,7 +56,7 @@ export function useRestaurantStatus(): {
     fetchSettings();
 
     const channel = supabase
-      .channel("restaurant-status")
+      .channel(`restaurant-status-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "restaurant_settings" },
@@ -65,7 +71,7 @@ export function useRestaurantStatus(): {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [instanceId]);
 
   const status = settings ? computeCurrentStatus(settings, now) : null;
   return { status, loading };

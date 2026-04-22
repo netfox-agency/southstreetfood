@@ -193,6 +193,11 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
   const [search, setSearch] = useState("");
   const [activeSlug, setActiveSlug] = useState(categories[0]?.slug || "");
   const [sheetData, setSheetData] = useState<SheetPreview | null>(null);
+  // Guard hydration : Zustand persist est async donc le itemCount SSR = 0
+  // mais le client peut avoir N items. Sans le guard le badge "Voir le
+  // panier (3)" flash apres hydration → hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const tabsRef = useRef<HTMLDivElement>(null);
   const isScrollingFromClick = useRef(false);
@@ -368,7 +373,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
         )}
       </div>
 
-      {itemCount > 0 && (
+      {mounted && itemCount > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <Link href="/cart">
             <button className="flex items-center gap-3 bg-foreground text-background px-6 py-3.5 rounded-2xl shadow-lg shadow-black/20 hover:opacity-90 transition-opacity cursor-pointer">
