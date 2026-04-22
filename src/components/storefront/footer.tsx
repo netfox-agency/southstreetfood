@@ -81,18 +81,24 @@ export function Footer() {
             &copy; {new Date().getFullYear()} South Street Food. Tous droits
             reserves.
           </p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <Link
-              href="#"
+              href="/mentions-legales"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
-              Mentions legales
+              Mentions légales
             </Link>
             <Link
-              href="#"
+              href="/cgv"
               className="text-xs text-white/70 hover:text-white transition-colors"
             >
               CGV
+            </Link>
+            <Link
+              href="/confidentialite"
+              className="text-xs text-white/70 hover:text-white transition-colors"
+            >
+              Confidentialité
             </Link>
           </div>
         </div>

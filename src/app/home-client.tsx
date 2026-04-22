@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, useInView } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { motion, useInView, AnimatePresence } from "framer-motion";
+import { ArrowRight, MapPin, X } from "lucide-react";
+import { DELIVERY_ZONES } from "@/lib/constants";
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -71,14 +72,18 @@ function Hero() {
 
       {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
+        {/* Titre en Pricedown (meme font que "NOS INCONTOURNABLES" et que
+            le BURGERS chrome/GTA Vice City) — blanc, tracking large,
+            drop-shadow pour profondeur sur la video de fond. */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="text-center sm:text-left text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-semibold text-white leading-[1.05] tracking-[-0.03em] max-w-2xl"
+          className="font-display text-center sm:text-left text-6xl sm:text-7xl lg:text-8xl xl:text-9xl text-white leading-[0.9] tracking-wide uppercase max-w-3xl drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
         >
-          Le go&ucirc;t du{" "}
-          <span className="italic font-light">sud.</span>
+          Le go&ucirc;t
+          <br />
+          du sud
         </motion.h1>
 
         <motion.p
@@ -205,6 +210,8 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 
 function Delivery() {
+  const [zonesOpen, setZonesOpen] = useState(false);
+
   return (
     <Reveal className="py-24 sm:py-32 bg-white">
       <div className="max-w-6xl mx-auto px-6">
@@ -226,8 +233,8 @@ function Delivery() {
               className="text-muted-foreground text-lg leading-relaxed mb-8 max-w-md font-light"
             >
               Ouvert jusqu&apos;&agrave; 4h du matin avec livraison rapide
-              sur Bayonne, Anglet et Biarritz. En moyenne 30 minutes
-              chez vous.
+              sur Bayonne, Anglet, Biarritz et leurs alentours. En moyenne
+              40 minutes chez vous.
             </motion.p>
 
             {/* Stats */}
@@ -236,21 +243,39 @@ function Delivery() {
               custom={2}
               className="grid grid-cols-3 gap-6"
             >
-              {[
-                { value: "30", unit: "min", label: "Temps moyen" },
-                { value: "4h", unit: "", label: "Ouvert jusqu\u2019\u00e0" },
-                { value: "BAB", unit: "", label: "Zone couverte" },
-              ].map((s) => (
-                <div key={s.label}>
-                  <div className="text-3xl font-semibold text-foreground">
-                    {s.value}
-                    <span className="text-lg font-light">{s.unit}</span>
-                  </div>
-                  <div className="text-muted-foreground text-sm mt-1 font-light">
-                    {s.label}
-                  </div>
+              <div>
+                <div className="text-3xl font-semibold text-foreground">
+                  40
+                  <span className="text-lg font-light">min</span>
                 </div>
-              ))}
+                <div className="text-muted-foreground text-sm mt-1 font-light">
+                  Temps moyen
+                </div>
+              </div>
+              <div>
+                <div className="text-3xl font-semibold text-foreground">
+                  4h
+                </div>
+                <div className="text-muted-foreground text-sm mt-1 font-light">
+                  Ouvert jusqu&apos;&agrave;
+                </div>
+              </div>
+              {/* Zone couverte — cliquable, ouvre le modal des villes */}
+              <button
+                type="button"
+                onClick={() => setZonesOpen(true)}
+                className="text-left group cursor-pointer"
+                aria-label="Voir toutes les villes livrees"
+              >
+                <div className="text-3xl font-semibold text-foreground group-hover:text-brand transition-colors">
+                  BAB
+                  <span className="text-lg font-light">+</span>
+                </div>
+                <div className="text-muted-foreground text-sm mt-1 font-light group-hover:text-brand transition-colors inline-flex items-center gap-1">
+                  Et alentours
+                  <ArrowRight className="h-3 w-3 opacity-60 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </button>
             </motion.div>
           </div>
 
@@ -269,7 +294,124 @@ function Delivery() {
           </motion.div>
         </div>
       </div>
+
+      {/* Modal : liste de toutes les villes livrees, groupees par zone/prix */}
+      <DeliveryZonesModal open={zonesOpen} onClose={() => setZonesOpen(false)} />
     </Reveal>
+  );
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   DELIVERY ZONES MODAL
+   Affiche toutes les villes livrees groupees par zone tarifaire.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+function DeliveryZonesModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  // Lock body scroll + close on Escape when open
+  useEffect(() => {
+    if (!open) return;
+    document.body.style.overflow = "hidden";
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handler);
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ y: 40, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-start justify-between gap-4 px-6 pt-6 pb-4 border-b border-border">
+              <div>
+                <h3 className="font-display text-2xl sm:text-3xl uppercase tracking-wide text-foreground leading-none">
+                  Zones de livraison
+                </h3>
+                <p className="text-sm text-muted-foreground mt-2 font-light">
+                  On livre sur Bayonne, Anglet, Biarritz et les communes
+                  alentour. Frais selon la zone.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="shrink-0 h-8 w-8 rounded-full bg-muted hover:bg-muted/70 flex items-center justify-center cursor-pointer transition-colors"
+                aria-label="Fermer"
+              >
+                <X className="h-4 w-4 text-foreground" />
+              </button>
+            </div>
+
+            {/* Zones groupees par tarif */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
+              <ul className="space-y-5">
+                {DELIVERY_ZONES.map((zone) => (
+                  <li key={zone.fee}>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <span className="text-xs uppercase tracking-wider font-semibold text-muted-foreground">
+                        Zone {(zone.fee / 100).toFixed(0)} &euro;
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {zone.cities.length}{" "}
+                        {zone.cities.length > 1 ? "communes" : "commune"}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {zone.cities.map((city) => (
+                        <span
+                          key={city}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-sm text-foreground"
+                        >
+                          <MapPin className="h-3 w-3 text-brand" />
+                          {city}
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Footer CTA */}
+            <div className="px-6 pb-6 pt-4 border-t border-border">
+              <Link
+                href="/menu"
+                onClick={onClose}
+                className="flex items-center justify-center gap-2 w-full px-6 py-3 rounded-full bg-foreground text-background font-semibold text-sm hover:opacity-90 transition-opacity"
+              >
+                Commander
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
