@@ -32,10 +32,9 @@ export async function getMenuItems() {
 export async function getCategoriesWithItems() {
   const supabase = await createClient();
 
-  // Run everything in parallel: categories, items, variants (to count
-  // per item), and extra-group junctions (to know which items have
-  // required/optional selections). This lets the UI decide whether the
-  // "+" button should quick-add or open the composer page.
+  // Run everything in parallel: categories, items (via la VIEW qui calcule
+  // effective_available en prenant en compte la cascade ingredients),
+  // variants count, et extra-group junctions.
   const [categoriesRes, itemsRes, variantsRes, junctionsRes] =
     await Promise.all([
       supabase
@@ -43,7 +42,10 @@ export async function getCategoriesWithItems() {
         .select("*")
         .eq("is_active", true)
         .order("display_order"),
-      supabase.from("menu_items").select("*").order("display_order"),
+      supabase
+        .from("menu_items_with_availability")
+        .select("*")
+        .order("display_order"),
       supabase.from("menu_item_variants").select("menu_item_id"),
       supabase.from("menu_item_extra_groups").select("menu_item_id"),
     ]);
@@ -70,9 +72,11 @@ export async function getCategoriesWithItems() {
 
   const items = rawItems.map((item) => ({
     ...item,
-    // "has_options" = the item actually requires a choice screen:
-    //  - more than 1 variant to pick from, OR
-    //  - at least 1 extra group linked.
+    // Storefront affiche "Indisponible" quand effective_available=false.
+    // On force is_available a refleter le computed (pour que le code
+    // existant qui check is_available continue de marcher). L'info brute
+    // reste dispo via availability_status et blocking_ingredient.
+    is_available: !!item.effective_available,
     has_options:
       (variantCounts.get(item.id) || 0) > 1 || itemsWithExtras.has(item.id),
   }));
@@ -86,10 +90,10 @@ export async function getCategoriesWithItems() {
 export async function getMenuItemBySlug(slug: string) {
   const supabase = await createClient();
 
-  // 1. Fetch item first (needed for the ID)
+  // 1. Fetch item via la VIEW pour avoir effective_available + blocking_ingredient
   const { data, error } = await supabase
-    .from("menu_items")
-    .select("*, categories(*)")
+    .from("menu_items_with_availability")
+    .select("*")
     .eq("slug", slug)
     .single();
 
@@ -97,6 +101,13 @@ export async function getMenuItemBySlug(slug: string) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const item = data as any;
+
+  // Fetch category separement (la VIEW n'embed pas la categorie)
+  const { data: categoryRow } = await supabase
+    .from("categories")
+    .select("*")
+    .eq("id", item.category_id)
+    .maybeSingle();
 
   // 2. Fetch variants AND extra group junctions in parallel
   const [variantsRes, junctionsRes] = await Promise.all([
@@ -122,7 +133,7 @@ export async function getMenuItemBySlug(slug: string) {
       (j: { extra_group_id: string }) => j.extra_group_id
     );
 
-    // 3. Fetch extra groups AND their items in parallel
+    // 3. Fetch extra groups AND their items (via VIEW effective_available)
     const [groupsRes, extraItemsRes] = await Promise.all([
       supabase
         .from("extra_groups")
@@ -130,17 +141,23 @@ export async function getMenuItemBySlug(slug: string) {
         .in("id", groupIds)
         .order("display_order"),
       supabase
-        .from("extra_items")
+        .from("extra_items_with_availability")
         .select("*")
         .in("extra_group_id", groupIds)
-        .eq("is_available", true)
         .order("display_order"),
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groups = (groupsRes.data || []) as any[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const extraItems = (extraItemsRes.data || []) as any[];
+    const rawExtras = (extraItemsRes.data || []) as any[];
+
+    // Expose is_available comme effective_available pour que l'UI existante
+    // filtre les OOS (propages par cascade ingredients). Les vraies extras
+    // OOS sont retirees de la liste proposee au client.
+    const extraItems = rawExtras
+      .map((e) => ({ ...e, is_available: !!e.effective_available }))
+      .filter((e) => e.is_available);
 
     extraGroups = groups.map((g: Record<string, unknown>) => ({
       ...g,
@@ -150,8 +167,13 @@ export async function getMenuItemBySlug(slug: string) {
     }));
   }
 
+  // Sync is_available avec effective_available pour rester cohérent avec
+  // le comportement legacy. Le storefront check is_available pour afficher
+  // "Indisponible". Les variants heritent de leur propre statut.
   return {
     ...item,
+    is_available: !!item.effective_available,
+    categories: categoryRow,
     variants: variantsRes.data || [],
     extra_groups: extraGroups,
   };
@@ -159,11 +181,12 @@ export async function getMenuItemBySlug(slug: string) {
 
 export async function getBestSellers(limit = 4) {
   const supabase = await createClient();
+  // VIEW avec effective_available (prend en compte cascade ingredients)
   const { data, error } = await supabase
-    .from("menu_items")
-    .select("id, name, slug, base_price, description, image_url, is_featured")
+    .from("menu_items_with_availability")
+    .select("id, name, slug, base_price, description, image_url, is_featured, effective_available")
     .eq("is_featured", true)
-    .eq("is_available", true)
+    .eq("effective_available", true)
     .order("display_order")
     .limit(limit);
 

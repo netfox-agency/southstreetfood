@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   LogOut,
+  Carrot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ const sidebarItems = [
   { href: "/admin/reports", icon: ClipboardList, label: "Historique" },
   { href: "/admin/customers", icon: Users, label: "Clients" },
   { href: "/admin/menu", icon: UtensilsCrossed, label: "Menu" },
+  { href: "/admin/ingredients", icon: Carrot, label: "Ingredients" },
   { href: "/admin/settings", icon: Settings, label: "Parametres" },
 ];
 

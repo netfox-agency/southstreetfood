@@ -15,11 +15,15 @@ async function getMenu(): Promise<CategoryWithItems[]> {
       .order("display_order"),
     supabase
       .from("menu_items")
-      .select("id, category_id, name, base_price, is_available, display_order")
+      .select(
+        "id, category_id, name, base_price, is_available, display_order, availability_status, unavailable_until",
+      )
       .order("display_order"),
     supabase
       .from("menu_item_variants")
-      .select("id, menu_item_id, name, price_modifier, is_available")
+      .select(
+        "id, menu_item_id, name, price_modifier, is_available, availability_status, unavailable_until",
+      )
       .order("name"),
   ]);
 
@@ -37,6 +41,8 @@ async function getMenu(): Promise<CategoryWithItems[]> {
         name: i.name,
         basePrice: i.base_price,
         isAvailable: i.is_available,
+        status: i.availability_status || "in_stock",
+        unavailableUntil: i.unavailable_until ?? null,
         variants: variants
           .filter((v) => v.menu_item_id === i.id)
           .map((v) => ({
@@ -44,6 +50,8 @@ async function getMenu(): Promise<CategoryWithItems[]> {
             name: v.name,
             priceModifier: v.price_modifier,
             isAvailable: v.is_available,
+            status: v.availability_status || "in_stock",
+            unavailableUntil: v.unavailable_until ?? null,
           })),
       })),
   }));
@@ -58,7 +66,9 @@ async function getExtrasGrouped() {
       .order("display_order"),
     supabase
       .from("extra_items")
-      .select("id, extra_group_id, name, price, is_available")
+      .select(
+        "id, extra_group_id, name, price, is_available, availability_status, unavailable_until",
+      )
       .order("name"),
   ]);
   const groups = (groupsRes.data ?? []) as any[];
@@ -73,11 +83,38 @@ async function getExtrasGrouped() {
         name: i.name,
         price: i.price,
         isAvailable: i.is_available,
+        status: i.availability_status || "in_stock",
+        unavailableUntil: i.unavailable_until ?? null,
       })),
   }));
 }
 
+async function getIngredients() {
+  const supabase = createAdminClient() as any;
+  const { data } = await supabase
+    .from("ingredients")
+    .select("*")
+    .order("display_order")
+    .order("name");
+  return (data ?? []) as any[];
+}
+
 export default async function KitchenMenuPage() {
-  const [categories, extraGroups] = await Promise.all([getMenu(), getExtrasGrouped()]);
-  return <MenuToggleClient categories={categories} extraGroups={extraGroups} />;
+  const [categories, extraGroups, ingredients] = await Promise.all([
+    getMenu(),
+    getExtrasGrouped(),
+    getIngredients(),
+  ]);
+  return (
+    <MenuToggleClient
+      categories={categories}
+      extraGroups={extraGroups}
+      ingredients={ingredients.map((i) => ({
+        id: i.id,
+        name: i.name,
+        status: i.availability_status || "in_stock",
+        unavailableUntil: i.unavailable_until ?? null,
+      }))}
+    />
+  );
 }
