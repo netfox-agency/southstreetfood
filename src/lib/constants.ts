@@ -7,7 +7,8 @@ export const BRAND = {
   email: "contact@southstreetfood.fr",
   address: "32 Chemin de Loustaunaou, 64100 Bayonne",
   instagram: "https://www.instagram.com/southstreetfood64",
-  snapchat: "https://snapchat.com/add/southstreetfood",
+  tiktok: "https://www.tiktok.com/@south.street.food",
+  snapchat: "https://www.snapchat.com/add/southstreetfood",
 } as const;
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
