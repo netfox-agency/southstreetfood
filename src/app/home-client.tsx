@@ -72,21 +72,31 @@ function Hero() {
 
       {/* Mobile: centered — Desktop: bottom-left */}
       <div className="relative z-10 h-full flex flex-col items-center justify-center sm:items-start sm:justify-end px-6 sm:px-12 lg:px-16 pt-16 sm:pb-16 text-white">
-        {/* Hero : Pricedown (GTA) mais traite avec la rigueur Apple.
-            - Font-display uniforme (pas de melange font / italic, ca ne
-              rendrait pas avec une display face genre Pricedown qui n'a
-              qu'une graisse)
-            - Une seule ligne sur desktop via whitespace-nowrap sm+, wrap
-              naturel sur mobile
-            - Blanc pur, drop-shadow leger pour la lisibilite sur la video.
-              Zero effet chrome, zero stroke, zero gradient kitsch.
-            - Tailles escaladees du mobile au xl pour garder un rythme
-              harmonieux sans jamais ecraser la video */}
+        {/* Hero : Pricedown (GTA) avec la rigueur Apple + profondeur subtile.
+            - Font-display (Pricedown), une ligne sur desktop, uppercase
+            - Effet profondeur a la Apple "Titanium" :
+              1/ Gradient blanc -> blanc legerement dimme du haut vers le
+                 bas (82% en bas), simule une lumiere ambiante venant du
+                 haut. Quasi imperceptible mais cree la profondeur.
+              2/ Triple drop-shadow en couches :
+                 - 0px/1px : highlight close (micro-relief des contours)
+                 - 2px/4px : ombre proche pour l'ancrage (faible opacity)
+                 - 12px/32px : ombre ambiante large (detache du video)
+              Aucune ne crie, toutes contribuent ensemble a la profondeur. */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, ease, delay: 0.3 }}
-          className="font-display text-center sm:text-left text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl text-white leading-[0.95] tracking-wide uppercase sm:whitespace-nowrap drop-shadow-[0_4px_20px_rgba(0,0,0,0.55)]"
+          className="font-display text-center sm:text-left text-5xl sm:text-6xl md:text-7xl lg:text-7xl xl:text-8xl leading-[0.95] tracking-wide uppercase sm:whitespace-nowrap"
+          style={{
+            backgroundImage:
+              "linear-gradient(180deg, #ffffff 0%, #ffffff 55%, rgba(255, 255, 255, 0.82) 100%)",
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            filter:
+              "drop-shadow(0 1px 0 rgba(255, 255, 255, 0.15)) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25)) drop-shadow(0 12px 32px rgba(0, 0, 0, 0.5))",
+          }}
         >
           Le go&ucirc;t du sud
         </motion.h1>
