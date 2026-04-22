@@ -74,6 +74,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Hoiste hors du try : permet au catch de rembourser les points si
+  // une erreur inattendue survient apres le debit.
+  let loyaltyUserIdOuter: string | null = null;
+  let loyaltyPointsCostOuter = 0;
+
   try {
     const body = await request.json();
     const parsed = createOrderSchema.safeParse(body);
@@ -177,25 +182,16 @@ export async function POST(request: NextRequest) {
         );
       }
       const admin = createAdminClient();
-      const [{ data: rewardRow }, { data: profileRow }] = await Promise.all([
-        admin
-          .from("loyalty_rewards")
-          .select(
-            "id, name, points_cost, reward_type, reward_menu_item_id, bundle_menu_item_ids, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
-          )
-          .eq("id", data.loyaltyRewardId)
-          .single(),
-        admin
-          .from("profiles")
-          .select("loyalty_points")
-          .eq("id", authUser.id)
-          .single(),
-      ]);
+      const { data: rewardRow } = await admin
+        .from("loyalty_rewards")
+        .select(
+          "id, name, points_cost, reward_type, reward_menu_item_id, bundle_menu_item_ids, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
+        )
+        .eq("id", data.loyaltyRewardId)
+        .single();
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const reward = rewardRow as any;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const currentBalance = (profileRow as any)?.loyalty_points ?? 0;
 
       if (!reward || reward.is_active === false) {
         return NextResponse.json(
@@ -203,17 +199,9 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
-      if (currentBalance < reward.points_cost) {
-        return NextResponse.json(
-          { error: "Points insuffisants pour cette recompense" },
-          { status: 400 },
-        );
-      }
 
-      loyaltyRewardId = reward.id;
-      loyaltyUserId = authUser.id;
-      loyaltyPointsCost = reward.points_cost;
-
+      // Construction des lignes a AVANT de debiter (si le type est invalide,
+      // on ne touche pas au solde).
       if (reward.reward_type === "free_item" && reward.menu_items) {
         loyaltyRewardLines = [
           {
@@ -233,9 +221,7 @@ export async function POST(request: NextRequest) {
         Array.isArray(reward.bundle_menu_item_ids) &&
         reward.bundle_menu_item_ids.length > 0
       ) {
-        // Fetch les menu_items du combo pour remplir les noms/ids
-        const admin2 = createAdminClient();
-        const { data: bundleItems } = await admin2
+        const { data: bundleItems } = await admin
           .from("menu_items")
           .select("id, name")
           .in("id", reward.bundle_menu_item_ids);
@@ -264,6 +250,33 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
+
+      // DEBIT ATOMIQUE : UPDATE ... WHERE balance >= cost. Deux commandes
+      // en parallele ne peuvent pas depasser le solde. Si ca retourne -1
+      // le user n'a pas assez OU une autre commande vient de debiter.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: consumeResult, error: consumeError } = await (admin as any).rpc(
+        "consume_loyalty_points",
+        { p_user_id: authUser.id, p_cost: reward.points_cost },
+      );
+      if (consumeError) {
+        return NextResponse.json(
+          { error: "Erreur lors de l'utilisation des points" },
+          { status: 500 },
+        );
+      }
+      if (consumeResult === -1 || consumeResult === null) {
+        return NextResponse.json(
+          { error: "Points insuffisants pour cette recompense" },
+          { status: 400 },
+        );
+      }
+
+      loyaltyRewardId = reward.id;
+      loyaltyUserId = authUser.id;
+      loyaltyPointsCost = reward.points_cost;
+      loyaltyUserIdOuter = authUser.id;
+      loyaltyPointsCostOuter = reward.points_cost;
     }
 
     const finalItems = [
@@ -296,33 +309,36 @@ export async function POST(request: NextRequest) {
       loyaltyRewardId: loyaltyRewardId ?? undefined,
     });
 
+    // Helper: si le order a fail et qu'on avait debite des points, on les
+    // rend au user pour eviter une perte silencieuse. Best effort : on log
+    // une erreur si le refund lui-meme echoue (admin pourra voir en base).
+    const refundIfNeeded = async () => {
+      if (!loyaltyUserId || loyaltyPointsCost <= 0) return;
+      const admin = createAdminClient();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any).rpc("refund_loyalty_points", {
+        p_user_id: loyaltyUserId,
+        p_cost: loyaltyPointsCost,
+      });
+    };
+
     if (result.error) {
+      await refundIfNeeded();
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const order = (result as any).order;
     if (!order?.id) {
+      await refundIfNeeded();
       return NextResponse.json({ error: "No order created" }, { status: 500 });
     }
 
-    // Fidelite : debit des points en atomique (apres creation order pour
-    // avoir order_id). Si ca echoue on ne re-crediite pas la commande (la
-    // prep est lancee, on preferera gerer manuellement que bloquer).
+    // Fidelite : order cree avec succes, on log la transaction ledger
+    // (points deja debites en amont via consume_loyalty_points). Puis on
+    // flush les flags outer pour que le catch final ne rembourse pas.
     if (loyaltyUserId && loyaltyRewardId && loyaltyPointsCost > 0) {
       const admin = createAdminClient();
-      const { data: profileRow } = await admin
-        .from("profiles")
-        .select("loyalty_points")
-        .eq("id", loyaltyUserId)
-        .single();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const balance = (profileRow as any)?.loyalty_points ?? 0;
-      await admin
-        .from("profiles")
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update({ loyalty_points: Math.max(0, balance - loyaltyPointsCost) } as never)
-        .eq("id", loyaltyUserId);
       await admin
         .from("loyalty_transactions")
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -333,9 +349,27 @@ export async function POST(request: NextRequest) {
           description: "Recompense utilisee",
         } as never);
     }
+    // Succes : plus besoin de refund en cas d'erreur future
+    loyaltyUserIdOuter = null;
+    loyaltyPointsCostOuter = 0;
 
     return NextResponse.json({ orderId: order.id });
   } catch (err) {
+    // Refund best-effort : si des points ont ete consommes mais qu'on est
+    // tombe dans le catch avant le succes, on les rend au user.
+    if (loyaltyUserIdOuter && loyaltyPointsCostOuter > 0) {
+      try {
+        const admin = createAdminClient();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (admin as any).rpc("refund_loyalty_points", {
+          p_user_id: loyaltyUserIdOuter,
+          p_cost: loyaltyPointsCostOuter,
+        });
+      } catch {
+        // On ne peut rien de plus : admin verra l'anomalie en base
+        console.error("[api/orders] refund after crash FAILED");
+      }
+    }
     // Keep internal details out of client-visible responses and log locally
     // with a short marker so we can grep them without shipping stack traces
     // to production logs.
