@@ -92,6 +92,23 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
+    // AUTH : si un user est connecte, on lie TOUJOURS la commande a son
+    // compte (user_id). Sans ca, meme un client connecte qui commande sans
+    // recompense fidelite aurait user_id=null et ne gagnerait pas de points
+    // a la livraison (le guard guest de /api/loyalty/award refuse si
+    // user_id est null). Bug classique : "je me suis cree un compte mais
+    // j'ai 0 points apres ma commande".
+    let authenticatedUserId: string | null = null;
+    try {
+      const authSupabase = await createClient();
+      const {
+        data: { user: authUser },
+      } = await authSupabase.auth.getUser();
+      if (authUser) authenticatedUserId = authUser.id;
+    } catch {
+      // Anonymous order, pas grave
+    }
+
     // Check resto ouvert : on bloque les commandes hors horaires ou si
     // l'admin a mis "fermé" manuellement. Sinon un client peut commander
     // a 14h alors que le service est de 19h-4h, ou pendant une fermeture
@@ -171,16 +188,13 @@ export async function POST(request: NextRequest) {
     let loyaltyPointsCost = 0;
 
     if (data.loyaltyRewardId) {
-      const authSupabase = await createClient();
-      const {
-        data: { user: authUser },
-      } = await authSupabase.auth.getUser();
-      if (!authUser) {
+      if (!authenticatedUserId) {
         return NextResponse.json(
           { error: "Connecte-toi pour utiliser une recompense" },
           { status: 401 },
         );
       }
+      const authUser = { id: authenticatedUserId };
       const admin = createAdminClient();
       const { data: rewardRow } = await admin
         .from("loyalty_rewards")
@@ -305,7 +319,9 @@ export async function POST(request: NextRequest) {
       total: priced.total,
       items: finalItems,
       deliveryAddress: data.deliveryAddress || null,
-      userId: loyaltyUserId ?? undefined,
+      // On prefere loyaltyUserId (set si reward pris) mais sinon on retombe
+      // sur l'auth user. Les guests gardent null.
+      userId: loyaltyUserId ?? authenticatedUserId ?? undefined,
       loyaltyRewardId: loyaltyRewardId ?? undefined,
     });
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Users,
   Search,
@@ -11,13 +12,18 @@ import {
   Clock,
   TrendingUp,
   Star,
+  User,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Customer = {
+  id: string;
+  userId: string | null;
   name: string;
   phone: string;
   email: string | null;
+  hasAccount: boolean;
   orderCount: number;
   totalSpent: number;
   loyaltyPoints: number;
@@ -181,10 +187,11 @@ export default function CustomersPage() {
           </div>
         ) : (
           <div className="divide-y divide-[#f0f0f2]">
-            {customers.map((customer, idx) => (
-              <div
-                key={`${customer.phone || customer.email || idx}`}
-                className="flex items-center gap-3 px-5 py-3.5"
+            {customers.map((customer) => (
+              <Link
+                key={customer.id}
+                href={`/admin/customers/${encodeURIComponent(customer.id)}`}
+                className="flex items-center gap-3 px-5 py-3.5 hover:bg-[#fafafa] transition-colors cursor-pointer"
               >
                 {/* Avatar */}
                 <div
@@ -213,10 +220,16 @@ export default function CustomersPage() {
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-[#1d1d1f] truncate">
                       {customer.name}
                     </p>
+                    {customer.hasAccount && (
+                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-[#0a0a0a] text-white text-[10px] font-bold tracking-wider uppercase">
+                        <User className="h-2.5 w-2.5" />
+                        Compte
+                      </span>
+                    )}
                     {customer.orderCount >= 5 && (
                       <span className="px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold">
                         VIP
@@ -230,22 +243,16 @@ export default function CustomersPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                     {customer.phone && (
-                      <a
-                        href={`tel:${customer.phone}`}
-                        className="inline-flex items-center gap-1 text-xs text-[#86868b] hover:text-blue-600 transition-colors"
-                      >
+                      <span className="inline-flex items-center gap-1 text-xs text-[#86868b]">
                         <Phone className="h-3 w-3" />
                         {customer.phone}
-                      </a>
+                      </span>
                     )}
                     {customer.email && (
-                      <a
-                        href={`mailto:${customer.email}`}
-                        className="inline-flex items-center gap-1 text-xs text-[#86868b] hover:text-blue-600 transition-colors"
-                      >
+                      <span className="inline-flex items-center gap-1 text-xs text-[#86868b]">
                         <Mail className="h-3 w-3" />
                         {customer.email}
-                      </a>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -263,8 +270,8 @@ export default function CustomersPage() {
                   </p>
                   {customer.loyaltyPoints > 0 && (
                     <div className="flex items-center gap-1 justify-end mt-0.5">
-                      <Star className="h-3 w-3 text-amber-500" />
-                      <span className="text-xs font-medium text-amber-600 tabular-nums">
+                      <Star className="h-3 w-3 text-[#e8416f]" />
+                      <span className="text-xs font-medium text-[#e8416f] tabular-nums">
                         {customer.loyaltyPoints} pts
                       </span>
                     </div>
@@ -281,7 +288,9 @@ export default function CustomersPage() {
                     Depuis {formatDate(customer.firstOrderDate)}
                   </p>
                 </div>
-              </div>
+
+                <ChevronRight className="h-4 w-4 text-[#c7c7cc] shrink-0" />
+              </Link>
             ))}
           </div>
         )}
