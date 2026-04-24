@@ -233,9 +233,18 @@ export function ItemSheet({
     group.max_selections === null || group.max_selections >= 999;
 
   /**
-   * Side groups = boissons / frites / accompagnements. We split extras into
-   * two phases so the Menu switch can sit between "build your burger" and
-   * "pick your sides" — the cashier moment IRL.
+   * 3 categories so the flow reproduit le comptoir IRL :
+   *   1. burger = sauces, viandes, cheddar, gratinage → modifie le plat
+   *   2. side   = frites / boissons a la carte → accompagnement propose
+   *      seulement si le menu est OFF (sinon doublon avec les selecteurs
+   *      inline du menu)
+   *   3. upsell = "Tes sur d'etre cale ?" → partageables (nuggets, tenders,
+   *      desserts). N'entre en conflit ni avec le plat ni avec le menu,
+   *      donc TOUJOURS affiche en dernier, meme si Menu = ON.
+   *
+   * UI order : burger → [bouton Menu + inline] → sides → upsell final.
+   * Le bouton "Tu le veux en Menu ?" vient AVANT "Tes sur d'etre cale"
+   * pour respecter la logique "on finit ce qu'on a avant de proposer +".
    */
   const isSideGroup = (group: ExtraGroup) => {
     const lower = group.name.toLowerCase();
@@ -246,18 +255,31 @@ export function ItemSheet({
       lower.includes("accompagn")
     );
   };
+  const isFinalUpsellGroup = (group: ExtraGroup) => {
+    const lower = group.name.toLowerCase();
+    return lower.includes("cale") || lower.includes("calé");
+  };
 
   const burgerExtraGroups = item
-    ? item.extra_groups.filter((g) => !isSideGroup(g))
+    ? item.extra_groups.filter(
+        (g) => !isSideGroup(g) && !isFinalUpsellGroup(g),
+      )
     : [];
   const sideExtraGroupsRaw = item
     ? item.extra_groups.filter((g) => isSideGroup(g))
+    : [];
+  const finalUpsellGroups = item
+    ? item.extra_groups.filter((g) => isFinalUpsellGroup(g))
     : [];
   // Side groups disappear when Menu is ON — the menu's own fries/drink
   // selectors cover those choices, no point asking twice.
   const sideExtraGroups = isMenu ? [] : sideExtraGroupsRaw;
   // Used by validation + cart payload — must match what the customer sees.
-  const visibleExtraGroups = [...burgerExtraGroups, ...sideExtraGroups];
+  const visibleExtraGroups = [
+    ...burgerExtraGroups,
+    ...sideExtraGroups,
+    ...finalUpsellGroups,
+  ];
 
   const toggleExtra = (extraId: string, groupId: string) => {
     if (!item) return;
@@ -890,6 +912,14 @@ export function ItemSheet({
                     groupes sont déjà gérés par les sélecteurs inline
                     au-dessus, on ne demande pas deux fois. */}
                 {sideExtraGroups.map(renderExtraGroup)}
+
+                {/* ═══ FINAL UPSELL ("Tes sûr d'être calé ?") ═══
+                    Partageables (nuggets, tenders, desserts). Toujours
+                    affiché en DERNIER, même si Menu = ON : ça ne double
+                    pas les boissons/frites du menu, c'est une vraie
+                    proposition de plus. Logique IRL : "t'as fini ? tu
+                    veux ajouter un truc à partager ?" */}
+                {finalUpsellGroups.map(renderExtraGroup)}
               </>
             ) : null}
           </div>
