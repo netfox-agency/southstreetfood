@@ -51,12 +51,15 @@ const timeAgo = (dateStr: string) => {
   return `Il y a ${Math.floor(days / 30)} mois`;
 };
 
+type AccountFilter = "all" | "account" | "guest";
+
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [totalCustomers, setTotalCustomers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>("all");
 
   // Debounce search
   useEffect(() => {
@@ -85,16 +88,28 @@ export default function CustomersPage() {
     fetchData();
   }, [fetchData]);
 
-  // Stats
-  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
+  // Filtre compte/guest applique avant calcul stats + affichage
+  const visibleCustomers =
+    accountFilter === "all"
+      ? customers
+      : accountFilter === "account"
+        ? customers.filter((c) => c.hasAccount)
+        : customers.filter((c) => !c.hasAccount);
+
+  // Compteurs globaux (indépendants du filtre) pour les chips
+  const accountCount = customers.filter((c) => c.hasAccount).length;
+  const guestCount = customers.length - accountCount;
+
+  // Stats : calcul sur la liste visible (reflete le filtre)
+  const totalRevenue = visibleCustomers.reduce((sum, c) => sum + c.totalSpent, 0);
   const avgOrders =
-    customers.length > 0
+    visibleCustomers.length > 0
       ? (
-          customers.reduce((sum, c) => sum + c.orderCount, 0) /
-          customers.length
+          visibleCustomers.reduce((sum, c) => sum + c.orderCount, 0) /
+          visibleCustomers.length
         ).toFixed(1)
       : "0";
-  const loyalCustomers = customers.filter((c) => c.orderCount >= 3).length;
+  const loyalCustomers = visibleCustomers.filter((c) => c.orderCount >= 3).length;
 
   return (
     <div>
@@ -155,16 +170,38 @@ export default function CustomersPage() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4 relative">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#aeaeb2]" />
-        <input
-          type="text"
-          placeholder="Rechercher un client (nom, telephone, email)..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full h-10 pl-10 pr-4 rounded-xl bg-white border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
-        />
+      {/* Search + filter tabs */}
+      <div className="mb-4 flex flex-col sm:flex-row gap-2">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#aeaeb2]" />
+          <input
+            type="text"
+            placeholder="Rechercher (nom, telephone, email)..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full h-10 pl-10 pr-4 rounded-xl bg-white border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 transition-all"
+          />
+        </div>
+        <div className="inline-flex h-10 rounded-xl bg-[#f5f5f7] p-1 gap-1 overflow-x-auto">
+          <FilterTab
+            label="Tous"
+            count={customers.length}
+            active={accountFilter === "all"}
+            onClick={() => setAccountFilter("all")}
+          />
+          <FilterTab
+            label="Avec compte"
+            count={accountCount}
+            active={accountFilter === "account"}
+            onClick={() => setAccountFilter("account")}
+          />
+          <FilterTab
+            label="Sans compte"
+            count={guestCount}
+            active={accountFilter === "guest"}
+            onClick={() => setAccountFilter("guest")}
+          />
+        </div>
       </div>
 
       {/* Customer list */}
@@ -178,16 +215,22 @@ export default function CustomersPage() {
               />
             ))}
           </div>
-        ) : customers.length === 0 ? (
+        ) : visibleCustomers.length === 0 ? (
           <div className="p-12 text-center">
             <Users className="h-10 w-10 text-[#d1d1d6] mx-auto mb-3" />
             <p className="text-[#aeaeb2] text-sm">
-              {search ? "Aucun client trouve" : "Aucun client pour le moment"}
+              {search
+                ? "Aucun client trouve"
+                : accountFilter === "account"
+                  ? "Aucun client avec compte"
+                  : accountFilter === "guest"
+                    ? "Aucun client sans compte"
+                    : "Aucun client pour le moment"}
             </p>
           </div>
         ) : (
           <div className="divide-y divide-[#f0f0f2]">
-            {customers.map((customer) => (
+            {visibleCustomers.map((customer) => (
               <Link
                 key={customer.id}
                 href={`/admin/customers/${encodeURIComponent(customer.id)}`}
@@ -296,5 +339,42 @@ export default function CustomersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/* ───────── Filter tab ───────── */
+
+function FilterTab({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all cursor-pointer",
+        active
+          ? "bg-[#0a0a0a] text-white shadow-sm"
+          : "text-[#86868b] hover:text-[#1d1d1f]",
+      )}
+    >
+      {label}
+      <span
+        className={cn(
+          "tabular-nums text-[11px]",
+          active ? "text-white/70" : "text-[#aeaeb2]",
+        )}
+      >
+        {count}
+      </span>
+    </button>
   );
 }

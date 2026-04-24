@@ -67,10 +67,14 @@ export function MenuToggleClient({
   categories,
   extraGroups,
   ingredients,
+  hideNav = false,
 }: {
   categories: CategoryWithItems[];
   extraGroups: ExtraGroup[];
   ingredients: Ingredient[];
+  /** Masque la KitchenNav (utile quand on reutilise le composant dans
+   *  un autre shell comme /admin/stock). */
+  hideNav?: boolean;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -243,9 +247,11 @@ export function MenuToggleClient({
           </div>
         </div>
 
-        <div className="hidden md:block">
-          <KitchenNav />
-        </div>
+        {!hideNav && (
+          <div className="hidden md:block">
+            <KitchenNav />
+          </div>
+        )}
 
         <button
           onClick={() => startTransition(() => router.refresh())}
