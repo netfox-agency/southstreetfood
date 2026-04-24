@@ -96,6 +96,15 @@ function LoginInner() {
               "Se connecter"
             )}
           </button>
+
+          <div className="text-center">
+            <Link
+              href="/auth/forgot-password"
+              className="text-[12px] text-[#86868b] hover:text-[#1d1d1f] hover:underline transition-colors"
+            >
+              Mot de passe oublie ?
+            </Link>
+          </div>
         </form>
 
         <p className="mt-6 text-center text-[13px] text-[#86868b]">
