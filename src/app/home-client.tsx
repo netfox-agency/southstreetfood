@@ -6,6 +6,15 @@ import Image from "next/image";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, X } from "lucide-react";
 import { DELIVERY_ZONES } from "@/lib/constants";
+import { ItemSheet } from "@/components/storefront/item-sheet";
+
+type SheetPreview = {
+  slug: string;
+  name: string;
+  base_price: number;
+  image_url: string | null;
+  description: string | null;
+};
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -161,6 +170,11 @@ function formatPrice(cents: number) {
 }
 
 function BestSellers({ items }: { items: BestSellerItem[] }) {
+  // Sheet state ICI (pas en navigation /item/[slug] full page) pour reproduire
+  // l'experience du /menu : tap sur la card → ouverture du modal config
+  // (variants, supplements, formule menu, etc.). Continuite UI client.
+  const [sheetData, setSheetData] = useState<SheetPreview | null>(null);
+
   return (
     <Reveal id="best-sellers" className="py-24 sm:py-32 bg-[#f9f9f9]">
       <div className="max-w-6xl mx-auto px-6">
@@ -173,7 +187,20 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {items.map((item, i) => (
             <motion.div key={item.id} variants={fadeUp} custom={i + 1}>
-              <Link href={`/item/${item.slug}`} className="block group">
+              <button
+                type="button"
+                onClick={() =>
+                  setSheetData({
+                    slug: item.slug,
+                    name: item.name,
+                    base_price: item.base_price,
+                    image_url: item.image_url,
+                    description: item.description,
+                  })
+                }
+                className="block w-full text-left group"
+                aria-label={`Configurer ${item.name}`}
+              >
                 <div className="rounded-2xl overflow-hidden bg-white border border-border shadow-sm hover:border-foreground/15 hover:shadow-lg transition-all duration-300 cursor-pointer">
                   {/* Image area */}
                   <div className="aspect-square overflow-hidden bg-muted">
@@ -208,7 +235,7 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
                     </div>
                   </div>
                 </div>
-              </Link>
+              </button>
             </motion.div>
           ))}
         </div>
@@ -223,6 +250,19 @@ function BestSellers({ items }: { items: BestSellerItem[] }) {
           </Link>
         </motion.div>
       </div>
+
+      {sheetData && (
+        <ItemSheet
+          slug={sheetData.slug}
+          previewData={{
+            name: sheetData.name,
+            base_price: sheetData.base_price,
+            image_url: sheetData.image_url,
+            description: sheetData.description,
+          }}
+          onClose={() => setSheetData(null)}
+        />
+      )}
     </Reveal>
   );
 }
