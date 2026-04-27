@@ -92,19 +92,35 @@ export async function POST(request: NextRequest) {
 
     const data = parsed.data;
 
-    // AUTH : si un user est connecte, on lie TOUJOURS la commande a son
-    // compte (user_id). Sans ca, meme un client connecte qui commande sans
-    // recompense fidelite aurait user_id=null et ne gagnerait pas de points
-    // a la livraison (le guard guest de /api/loyalty/award refuse si
-    // user_id est null). Bug classique : "je me suis cree un compte mais
-    // j'ai 0 points apres ma commande".
+    // AUTH : si un client (role=customer) est connecte, on lie la commande
+    // a son compte → l'auto-award des points marche.
+    //
+    // EN REVANCHE : staff (admin/kitchen) qui place une commande de test
+    // depuis le meme browser ne doit PAS etre auto-lie. Sinon, le staff
+    // qui teste le flow gagne des points sur son propre compte (bug
+    // remonte par le client : "j'ai pas de compte mais j'ai des points").
+    // Les staff orders restent user_id=null et le trigger ne credite pas.
     let authenticatedUserId: string | null = null;
     try {
       const authSupabase = await createClient();
       const {
         data: { user: authUser },
       } = await authSupabase.auth.getUser();
-      if (authUser) authenticatedUserId = authUser.id;
+      if (authUser) {
+        // Verifier le role : SEUL un customer voit son order linke
+        const adminClient = createAdminClient();
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("role")
+          .eq("id", authUser.id)
+          .single();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const role = (profile as any)?.role;
+        if (role === "customer") {
+          authenticatedUserId = authUser.id;
+        }
+        // Staff (admin/kitchen) → on ne lie pas, order reste guest
+      }
     } catch {
       // Anonymous order, pas grave
     }

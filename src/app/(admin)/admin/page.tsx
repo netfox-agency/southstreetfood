@@ -12,6 +12,7 @@ import {
   Store,
   MapPin,
 } from "lucide-react";
+import { StatusWidget } from "@/components/kitchen/status-widget";
 
 type Order = {
   id: string;
@@ -127,7 +128,7 @@ export default function AdminDashboard() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-[#1d1d1f] tracking-tight">
           Dashboard
         </h1>
@@ -138,6 +139,11 @@ export default function AdminDashboard() {
             month: "long",
           })}
         </p>
+      </div>
+
+      {/* Statut restaurant — auto / open / temp_closed / closed */}
+      <div className="mb-6">
+        <StatusWidget />
       </div>
 
       {/* Stats */}

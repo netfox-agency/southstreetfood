@@ -95,11 +95,18 @@ export async function GET(request: NextRequest) {
       key = `name:${(order.customer_name || "inconnu").trim().toLowerCase()}`;
     }
 
+    // Guests (sans compte) ne peuvent JAMAIS avoir de points utilisables :
+    // les anciens loyalty_points_earned sur des orders guest (artefacts
+    // legacy ou tests) sont du dead data. On affiche 0 pour eviter le
+    // bug visuel "ce guest a 50 pts" alors qu'il n'a aucun compte ou
+    // aucun moyen de les depenser.
+    const ptsContribution = order.user_id ? (order.loyalty_points_earned || 0) : 0;
+
     const existing = map.get(key);
     if (existing) {
       existing.orderCount += 1;
       existing.totalSpent += order.total || 0;
-      existing.loyaltyPoints += order.loyalty_points_earned || 0;
+      existing.loyaltyPoints += ptsContribution;
       if (order.customer_name) existing.name = order.customer_name;
       if (order.customer_email) existing.email = order.customer_email;
       if (order.created_at < existing.firstOrderDate)
@@ -116,7 +123,7 @@ export async function GET(request: NextRequest) {
         hasAccount: Boolean(order.user_id),
         orderCount: 1,
         totalSpent: order.total || 0,
-        loyaltyPoints: order.loyalty_points_earned || 0,
+        loyaltyPoints: ptsContribution,
         lastOrderDate: order.created_at,
         firstOrderDate: order.created_at,
       });

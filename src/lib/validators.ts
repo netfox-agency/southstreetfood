@@ -7,6 +7,20 @@ const MAX_ITEMS_PER_ORDER = 50;
 const MAX_EXTRAS_PER_ITEM = 20;
 const MAX_NAME = 120;
 
+/**
+ * Coerce empty string -> null pour les UUID optionnels.
+ *
+ * Le client envoie parfois "" pour un champ optionnel qui n'a jamais
+ * ete set (variantId quand l'item n'a pas de variants, loyaltyRewardId
+ * stale dans le store apres reseed du catalogue, etc.). Sans coerce,
+ * z.string().uuid() rejette "" avec "Invalid uuid" et la commande
+ * casse a la validation.
+ */
+const optionalUuid = z.preprocess(
+  (v) => (v === "" ? null : v),
+  z.string().uuid().optional().nullable(),
+);
+
 export const createOrderSchema = z.object({
   orderType: z.enum(["collect", "delivery"]),
   customerName: z.string().trim().min(2, "Nom requis").max(MAX_NAME),
@@ -28,7 +42,7 @@ export const createOrderSchema = z.object({
     .array(
       z.object({
         menuItemId: z.string().uuid(),
-        variantId: z.string().uuid().optional().nullable(),
+        variantId: optionalUuid,
         quantity: z.number().int().positive().max(MAX_ITEM_QTY),
         // NOTE: server re-computes these from DB. We still validate shape
         // to reject obvious tampering and keep the old client contract.
@@ -64,7 +78,7 @@ export const createOrderSchema = z.object({
   // ID de la recompense fidelite selectionnee (optionnel, connecte uniquement).
   // Le serveur valide que l'utilisateur est connecte, qu'il a assez de points,
   // et ajoute la recompense comme ligne gratuite.
-  loyaltyRewardId: z.string().uuid().optional().nullable(),
+  loyaltyRewardId: optionalUuid,
 }).refine(
   (data) => data.orderType !== "delivery" || (data.deliveryAddress && data.deliveryAddress.street && data.deliveryAddress.city),
   { message: "Adresse de livraison requise", path: ["deliveryAddress"] }
