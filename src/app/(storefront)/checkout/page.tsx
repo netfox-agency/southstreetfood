@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Star } from "lucide-react";
+import { ArrowLeft, User, Phone, Mail, ShoppingBag, MapPin, Truck, Check, Sparkles } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { getDeliveryFeeForCity } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
 export default function CheckoutPage() {
@@ -21,32 +22,57 @@ export default function CheckoutPage() {
   } = useCartStore();
   const { settings } = useRestaurantSettings();
   const [loading, setLoading] = useState(false);
-  const [loyaltyPoints, setLoyaltyPoints] = useState<number | null>(null);
-  const [loyaltyOrders, setLoyaltyOrders] = useState(0);
+  // Etat de connexion + balance fidelite (auth-based, pas phone-based)
+  const [account, setAccount] = useState<{
+    id: string;
+    fullName: string | null;
+    email: string | null;
+    phone: string | null;
+    loyaltyPoints: number;
+  } | null>(null);
 
-  // Fetch loyalty balance when phone is valid
+  /**
+   * Prefill auto pour user connecte : on lit le profile + email Supabase
+   * et on remplit nom / phone / email du cart store SI ces champs sont
+   * vides. Si l'user a deja tape un nom different, on respecte son choix.
+   *
+   * Aussi : balance fidelite = profiles.loyalty_points (live), plus de
+   * lookup phone-based legacy.
+   */
   useEffect(() => {
-    const phone = customerPhone.replace(/\s/g, "");
-    if (phone.length < 10) {
-      setLoyaltyPoints(null);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `/api/loyalty/balance?phone=${encodeURIComponent(customerPhone.trim())}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          setLoyaltyPoints(data.totalPoints || 0);
-          setLoyaltyOrders(data.totalOrders || 0);
-        }
-      } catch {
-        // silent
+    if (!mounted) return;
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled || !user) {
+        setAccount(null);
+        return;
       }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [customerPhone]);
+      // Recuperer balance + profile via /api/loyalty/balance (auth-based)
+      const res = await fetch("/api/loyalty/balance");
+      if (cancelled) return;
+      if (res.ok) {
+        const data = await res.json();
+        const profileFullName: string = data.fullName || "";
+        const profilePhone: string =
+          (user.user_metadata as { phone?: string } | undefined)?.phone || "";
+        setAccount({
+          id: user.id,
+          fullName: profileFullName,
+          email: user.email ?? null,
+          phone: profilePhone,
+          loyaltyPoints: data.points || 0,
+        });
+        // Prefill seulement si vide pour ne pas ecraser un input en cours
+        if (!customerName.trim() && profileFullName) setCustomerName(profileFullName);
+        if (!customerPhone.trim() && profilePhone) setCustomerPhone(profilePhone);
+        if (!customerEmail.trim() && user.email) setCustomerEmail(user.email);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted]);
 
   const cityFee = deliveryAddress?.city ? getDeliveryFeeForCity(deliveryAddress.city) : null;
   const deliveryFee = orderType === "delivery" && cityFee !== null ? cityFee : 0;
@@ -161,74 +187,96 @@ export default function CheckoutPage() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Customer info */}
-          <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
-            <h2 className="font-semibold text-[15px] text-[#1d1d1f]">Vos informations</h2>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
-                <User className="h-4 w-4 text-[#86868b]" />
-                Nom complet
-              </label>
-              <input
-                type="text"
-                placeholder="Jean Dupont"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                required
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
-              />
-            </div>
-
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
-                <Phone className="h-4 w-4 text-[#86868b]" />
-                Telephone
-              </label>
-              <input
-                type="tel"
-                placeholder="06 12 34 56 78"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                required
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
-              />
-              {/* Loyalty badge */}
-              {loyaltyPoints !== null && loyaltyPoints > 0 && (
-                <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-100">
-                  <Star className="h-4 w-4 text-amber-500 shrink-0" />
-                  <div className="text-sm">
-                    <span className="font-semibold text-amber-800">
-                      {loyaltyPoints} points
-                    </span>
-                    <span className="text-amber-600">
-                      {" "}· {loyaltyOrders} commande{loyaltyOrders > 1 ? "s" : ""}
-                    </span>
-                  </div>
+          {/* Customer info — pour user connecte, on affiche un resume
+              compact + un lien "Modifier" pour ne pas avoir a re-saisir.
+              Pour guest, full form classique. */}
+          {account ? (
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-semibold tracking-wider uppercase text-[#86868b] mb-1.5">
+                    Connecte
+                  </p>
+                  <p className="text-[15px] font-semibold text-[#1d1d1f] truncate">
+                    {customerName || account.fullName || "—"}
+                  </p>
+                  <p className="text-[13px] text-[#86868b] mt-0.5">
+                    {customerPhone || account.phone || "—"}
+                  </p>
+                  {(customerEmail || account.email) && (
+                    <p className="text-[12px] text-[#86868b]">
+                      {customerEmail || account.email}
+                    </p>
+                  )}
+                  {account.loyaltyPoints > 0 && (
+                    <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#fde8ee]">
+                      <Sparkles className="h-3 w-3 text-[#e8416f]" />
+                      <span className="text-[12px] font-semibold text-[#e8416f]">
+                        {account.loyaltyPoints} points
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-              {loyaltyPoints === 0 && loyaltyOrders === 0 && customerPhone.replace(/\s/g, "").length >= 10 && (
-                <p className="mt-1.5 text-xs text-[#86868b] flex items-center gap-1">
-                  <Star className="h-3 w-3" />
-                  Premiere commande ? Gagnez des points fidelite !
-                </p>
-              )}
+                <Link
+                  href="/account"
+                  className="text-[12px] font-medium text-[#86868b] hover:text-[#1d1d1f] underline underline-offset-2 transition-colors shrink-0"
+                >
+                  Modifier
+                </Link>
+              </div>
             </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5 space-y-4">
+              <h2 className="font-semibold text-[15px] text-[#1d1d1f]">
+                Vos informations
+              </h2>
 
-            <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
-                <Mail className="h-4 w-4 text-[#86868b]" />
-                Email <span className="text-[#aeaeb2] font-normal">(optionnel)</span>
-              </label>
-              <input
-                type="email"
-                placeholder="jean@email.com"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
-              />
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                  <User className="h-4 w-4 text-[#86868b]" />
+                  Nom complet
+                </label>
+                <input
+                  type="text"
+                  placeholder="Jean Dupont"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                  required
+                  className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                  <Phone className="h-4 w-4 text-[#86868b]" />
+                  Telephone
+                </label>
+                <input
+                  type="tel"
+                  placeholder="06 12 34 56 78"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  required
+                  className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] mb-2">
+                  <Mail className="h-4 w-4 text-[#86868b]" />
+                  Email{" "}
+                  <span className="text-[#aeaeb2] font-normal">(optionnel)</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="jean@email.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  className="w-full h-11 px-4 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] text-sm text-[#1d1d1f] placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10 focus:border-[#1d1d1f]/30 transition-all"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Order summary */}
           <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5">
@@ -313,18 +361,18 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Loyalty points preview */}
-          {Math.floor(total / 100) > 0 && (
+          {/* Loyalty points preview — 1 euro = 1 point, comptes connectes uniquement */}
+          {account && Math.floor(total / 100) > 0 && (
             <div className="bg-white rounded-2xl border border-[#e5e5ea] p-4 flex items-start gap-3">
-              <div className="h-8 w-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
-                <Star className="h-4 w-4 text-amber-500" />
+              <div className="h-8 w-8 rounded-full bg-[#fde8ee] flex items-center justify-center shrink-0 mt-0.5">
+                <Sparkles className="h-4 w-4 text-[#e8416f]" />
               </div>
               <div>
                 <p className="text-sm font-medium text-[#1d1d1f]">
-                  +{Math.floor(total / 100) * 10} points fidelite
+                  +{Math.floor(total / 100)} points fidelite
                 </p>
                 <p className="text-[13px] text-[#86868b]">
-                  Credites apres validation de votre commande
+                  Credites apres recuperation de ta commande
                 </p>
               </div>
             </div>
