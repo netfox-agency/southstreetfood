@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, Info } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
-import { DELIVERY_ZONES, getDeliveryFeeForCity } from "@/lib/constants";
+import { DELIVERY_ZONES, getDeliveryFeeForCity, getMinOrderForCity } from "@/lib/constants";
 import {
   AddressAutocomplete,
   osmEmbedUrl,
@@ -45,11 +45,17 @@ export default function CartPage() {
   const { isOpen: isRestaurantOpen } = useIsRestaurantOpen();
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
+  // Minimum par zone (15\u20ac Bayonne, 20\u20ac Anglet, 25\u20ac, 30\u20ac). Fallback sur le
+  // global settings.minOrderDelivery si pas de ville selectionnee ou ville
+  // hors zone.
+  const cityMinOrder = selectedCity ? getMinOrderForCity(selectedCity) : null;
+  const effectiveMinOrder =
+    cityMinOrder !== null ? cityMinOrder : settings.minOrderDelivery;
   const belowMin =
     orderType === "delivery" &&
-    settings.minOrderDelivery > 0 &&
-    currentSubtotal < settings.minOrderDelivery;
-  const missing = belowMin ? settings.minOrderDelivery - currentSubtotal : 0;
+    effectiveMinOrder > 0 &&
+    currentSubtotal < effectiveMinOrder;
+  const missing = belowMin ? effectiveMinOrder - currentSubtotal : 0;
 
   // Hydration guard: show loading state until client-side store is hydrated
   if (!mounted) {
@@ -224,14 +230,19 @@ export default function CartPage() {
                 {DELIVERY_ZONES.map((zone) => (
                   <div
                     key={zone.fee}
-                    className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-[#f5f5f7]"
+                    className="flex items-start justify-between gap-3 text-xs py-2 px-3 rounded-lg bg-[#f5f5f7]"
                   >
-                    <span className="text-[#1d1d1f]">
+                    <span className="text-[#1d1d1f] min-w-0 flex-1">
                       {zone.cities.join(", ")}
                     </span>
-                    <span className="font-semibold text-[#1d1d1f] tabular-nums shrink-0 ml-3">
-                      {formatPrice(zone.fee)}
-                    </span>
+                    <div className="text-right shrink-0">
+                      <div className="font-semibold text-[#1d1d1f] tabular-nums">
+                        {formatPrice(zone.fee)}
+                      </div>
+                      <div className="text-[10px] text-[#86868b] tabular-nums">
+                        min {formatPrice(zone.minOrder)}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -345,11 +356,18 @@ export default function CartPage() {
           </div>
         </div>
 
-        {/* Min order warning */}
+        {/* Min order warning — par zone (15€ Bayonne, 20€ Anglet, etc.) */}
         {belowMin && (
           <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm">
-            <strong className="font-semibold">Minimum {formatPrice(settings.minOrderDelivery)}</strong> pour la livraison.
-            {" "}Ajoutez encore <strong className="font-semibold tabular-nums">{formatPrice(missing)}</strong>.
+            <strong className="font-semibold">
+              Minimum {formatPrice(effectiveMinOrder)}
+            </strong>
+            {selectedCity ? ` pour la livraison a ${selectedCity}` : " pour la livraison"}.
+            {" "}Ajoutez encore{" "}
+            <strong className="font-semibold tabular-nums">
+              {formatPrice(missing)}
+            </strong>
+            .
           </div>
         )}
 

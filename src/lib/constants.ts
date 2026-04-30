@@ -42,15 +42,15 @@ export const ORDER_STATUS_COLORS: Record<string, string> = {
  * Ordered from cheapest to most expensive for display.
  */
 export const DELIVERY_ZONES = [
-  { fee: 300, cities: ["Bayonne"] },
-  { fee: 400, cities: ["Anglet", "Tarnos", "Boucau"] },
-  { fee: 500, cities: ["Biarritz", "Ondres", "Saint-Martin-de-Seignanx"] },
-  { fee: 600, cities: ["Bassussarry", "Bidart", "Saint-André-de-Seignanx", "Labenne", "Saint-Pierre-d'Irube"] },
+  { fee: 300, minOrder: 1500, cities: ["Bayonne"] },
+  { fee: 400, minOrder: 2000, cities: ["Anglet", "Tarnos", "Boucau"] },
+  { fee: 500, minOrder: 2500, cities: ["Biarritz", "Ondres", "Saint-Martin-de-Seignanx"] },
+  { fee: 600, minOrder: 3000, cities: ["Bassussarry", "Bidart", "Saint-André-de-Seignanx", "Labenne", "Saint-Pierre-d'Irube"] },
 ] as const;
 
 /** All deliverable cities as a flat sorted list */
 export const DELIVERY_CITIES = DELIVERY_ZONES.flatMap((z) =>
-  z.cities.map((city) => ({ city, fee: z.fee }))
+  z.cities.map((city) => ({ city, fee: z.fee, minOrder: z.minOrder })),
 ).sort((a, b) => a.city.localeCompare(b.city, "fr"));
 
 /** Restaurant coordinates for map centering */
@@ -67,6 +67,21 @@ export function getDeliveryFeeForCity(city: string): number | null {
   for (const zone of DELIVERY_ZONES) {
     if (zone.cities.some((c) => stripAccents(c).toLowerCase() === normalized)) {
       return zone.fee;
+    }
+  }
+  return null;
+}
+
+/**
+ * Min order amount (cents) for a delivery city. Returns null if not deliverable.
+ * Utilise cote serveur (priceCartServerSide) ET cote client (cart UI).
+ * Plus la zone est loin, plus le minimum monte (rentabilite livreur).
+ */
+export function getMinOrderForCity(city: string): number | null {
+  const normalized = stripAccents(city.trim()).toLowerCase();
+  for (const zone of DELIVERY_ZONES) {
+    if (zone.cities.some((c) => stripAccents(c).toLowerCase() === normalized)) {
+      return zone.minOrder;
     }
   }
   return null;

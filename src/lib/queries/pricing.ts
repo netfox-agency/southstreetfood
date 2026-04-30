@@ -1,5 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getDeliveryFeeForCity } from "@/lib/constants";
+import { getDeliveryFeeForCity, getMinOrderForCity } from "@/lib/constants";
 
 /**
  * Server-authoritative pricing for an incoming cart.
@@ -300,7 +300,9 @@ export async function priceCartServerSide(
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const settings = (settingsRes.data ?? null) as any;
-  const minOrderDelivery =
+  // Fallback global si la zone n'a pas de min defini (ne devrait pas arriver
+  // avec la nouvelle config, mais defensive).
+  const globalMinOrderDelivery =
     settings && typeof settings.min_order_delivery === "number"
       ? settings.min_order_delivery
       : 0;
@@ -313,8 +315,9 @@ export async function priceCartServerSide(
     throw new PricingError("La livraison est indisponible", "ITEM_UNAVAILABLE");
   }
 
-  // Zone-based delivery fee — look up city in DELIVERY_ZONES
+  // Zone-based delivery fee + min order — look up city in DELIVERY_ZONES
   let deliveryFee = 0;
+  let minOrderForZone = globalMinOrderDelivery;
   if (input.orderType === "delivery") {
     if (!input.deliveryCity) {
       throw new PricingError(
@@ -330,13 +333,19 @@ export async function priceCartServerSide(
       );
     }
     deliveryFee = zoneFee;
+    // Min specifique a la zone (15€ Bayonne, 20€ Anglet, 25€, 30€)
+    const zoneMin = getMinOrderForCity(input.deliveryCity);
+    if (zoneMin !== null) {
+      minOrderForZone = zoneMin;
+    }
   }
 
-  if (input.orderType === "delivery" && subtotal < minOrderDelivery) {
-    const euros = (minOrderDelivery / 100).toFixed(2).replace(".", ",");
+  if (input.orderType === "delivery" && subtotal < minOrderForZone) {
+    const euros = (minOrderForZone / 100).toFixed(2).replace(".", ",");
+    const cityLabel = input.deliveryCity ? ` a ${input.deliveryCity}` : "";
     throw new PricingError(
-      `Minimum de commande pour la livraison : ${euros} €`,
-      "ITEM_UNAVAILABLE"
+      `Minimum de commande pour la livraison${cityLabel} : ${euros} €`,
+      "ITEM_UNAVAILABLE",
     );
   }
 
