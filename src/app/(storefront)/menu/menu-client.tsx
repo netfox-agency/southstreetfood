@@ -103,72 +103,87 @@ function MenuItemRow({
     <div
       onClick={openSheet}
       className={cn(
-        "flex items-stretch border border-border rounded-2xl overflow-hidden transition-all duration-300 group cursor-pointer",
-        "hover:border-foreground/15 hover:shadow-sm",
-        !item.is_available && "opacity-50 pointer-events-none"
+        // Card flotte legerement, halo brand subtil au hover, image qui scale.
+        // Garde la vibe "Vice City" sur la card mais avec polish Apple.
+        "relative flex items-stretch border border-border rounded-2xl overflow-hidden group cursor-pointer",
+        "transition-[transform,box-shadow,border-color] duration-300 ease-out",
+        "hover:border-[#e8416f]/30 hover:shadow-[0_12px_28px_-12px_rgba(232,65,111,0.25)] hover:-translate-y-0.5",
+        !item.is_available && "opacity-50 pointer-events-none",
       )}
     >
-        <div className="flex-1 p-5 flex flex-col justify-center min-w-0">
-          <h3 className="font-semibold text-[15px] text-foreground truncate">
-            {item.name}
-          </h3>
-          <p className="text-sm font-medium text-foreground mt-0.5">
-            {formatPrice(item.base_price)}
+      <div className="flex-1 p-5 flex flex-col justify-center min-w-0">
+        <h3 className="font-semibold text-[15px] text-foreground truncate">
+          {item.name}
+        </h3>
+        <p className="text-sm font-medium text-foreground mt-0.5">
+          {formatPrice(item.base_price)}
+        </p>
+        {/* "En Menu +3€" hint — only on items eligible for the formule menu
+            (burgers, wraps, tacos/bowl). Tells the customer the upgrade
+            exists before they even open the sheet. */}
+        {MENU_ELIGIBLE_SLUGS.includes(item.slug) && (
+          <p className="text-[12px] font-semibold text-brand mt-1">
+            + Menu (frites + boisson) +3€
           </p>
-          {/* "En Menu +3€" hint — only on items eligible for the formule menu
-              (burgers, wraps, tacos/bowl). Tells the customer the upgrade
-              exists before they even open the sheet. */}
-          {MENU_ELIGIBLE_SLUGS.includes(item.slug) && (
-            <p className="text-[12px] font-semibold text-brand mt-1">
-              + Menu (frites + boisson) +3€
-            </p>
-          )}
-          {item.description && (
-            <p className="text-[13px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
-              {item.description}
-            </p>
-          )}
-          {!item.is_available && (
-            <p className="text-xs text-red-500 font-medium mt-1">
-              Indisponible
-            </p>
-          )}
-        </div>
+        )}
+        {item.description && (
+          <p className="text-[13px] text-muted-foreground mt-1.5 line-clamp-2 leading-relaxed">
+            {item.description}
+          </p>
+        )}
+        {!item.is_available && (
+          <p className="text-xs text-red-500 font-medium mt-1">
+            Indisponible
+          </p>
+        )}
+      </div>
 
-        <div className="relative w-[140px] shrink-0 bg-muted">
-          {item.image_url ? (
-            <Image
-              src={item.image_url}
-              alt={item.name}
-              fill
-              sizes="140px"
-              className="object-cover"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-muted to-background flex items-center justify-center text-3xl">
-              {ITEM_FALLBACK_EMOJIS[categorySlug] || "🍽️"}
+      <div className="relative w-[140px] shrink-0 bg-muted overflow-hidden">
+        {item.image_url ? (
+          <Image
+            src={item.image_url}
+            alt={item.name}
+            fill
+            sizes="140px"
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-muted to-background flex items-center justify-center text-3xl">
+            {ITEM_FALLBACK_EMOJIS[categorySlug] || "🍽️"}
+          </div>
+        )}
+        {item.is_available &&
+          (item.has_options ? (
+            <div
+              aria-hidden="true"
+              className={cn(
+                "absolute bottom-2 right-2 h-9 w-9 rounded-full flex items-center justify-center",
+                "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-border/40",
+                "transition-[transform,box-shadow] duration-300",
+                "group-hover:scale-110 group-hover:bg-[#e8416f] group-hover:border-transparent group-hover:shadow-[0_6px_16px_rgba(232,65,111,0.4)]",
+              )}
+            >
+              <Plus className="h-4 w-4 text-foreground transition-colors duration-300 group-hover:text-white" />
             </div>
-          )}
-          {item.is_available &&
-            (item.has_options ? (
-              <div
-                aria-hidden="true"
-                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center border border-border group-hover:scale-110 transition-transform"
-              >
-                <Plus className="h-4 w-4 text-foreground" />
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleQuickAdd}
-                aria-label={`Ajouter ${item.name} au panier`}
-                className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 active:scale-95 transition-transform cursor-pointer border border-border"
-              >
-                <Plus className="h-4 w-4 text-foreground" />
-              </button>
-            ))}
-        </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleQuickAdd}
+              aria-label={`Ajouter ${item.name} au panier`}
+              className={cn(
+                "absolute bottom-2 right-2 h-9 w-9 rounded-full flex items-center justify-center cursor-pointer",
+                "bg-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] border border-border/40",
+                "transition-[transform,background-color,box-shadow] duration-300",
+                "hover:scale-110 hover:bg-[#e8416f] hover:border-transparent hover:shadow-[0_6px_16px_rgba(232,65,111,0.4)]",
+                "active:scale-95",
+                "[&:hover>svg]:text-white",
+              )}
+            >
+              <Plus className="h-4 w-4 text-foreground transition-colors duration-200" />
+            </button>
+          ))}
+      </div>
     </div>
   );
 }
