@@ -1,115 +1,173 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 import { ArrowRight, Clock, MapPin, Truck } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 // Video hebergee sur Supabase Storage (bucket public site-assets) pour
-// garder le repo git leger. Cache-control immutable cote Supabase, donc
-// un hash dans l'URL suffirait pour forcer un refresh si besoin.
+// garder le repo git leger.
 const HERO_VIDEO =
   "https://exwfddsyavnlntnogpoz.supabase.co/storage/v1/object/public/site-assets/hero-video.mp4";
 
+/**
+ * Hero refonte — Pricedown reveal + parallax subtil au scroll.
+ *
+ * Design intent :
+ *   - Title Pricedown (DA client) avec brand pink en accent → identite forte
+ *   - Parallax doux du contenu (translate Y -80px max) → "premium" feel
+ *   - Fade-out du contenu pendant le scroll → laisse respirer le contenu en dessous
+ *   - CTA rounded-full glassy qui parle le meme langage que la navbar
+ *   - Pills features en bas avec stagger reveal
+ */
 export function HeroSection() {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  // Parallax : contenu monte plus vite que la video → effet profondeur
+  const contentY = useTransform(scrollYProgress, [0, 1], [0, -120]);
+  const contentOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0]);
+  const videoScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
+
   return (
-    <section className="relative overflow-hidden min-h-[90vh] flex items-center bg-black">
-      {/* ── Video de fond ──
-          - muted + autoPlay + playsInline : passe la policy iOS / Chrome mobile
-          - loop : joue en boucle sans interaction
-          - preload="metadata" : recupere juste dimensions + premiere frame,
-            pas les 34 MB entiers tant que le player n'a pas decide de jouer
-          - object-cover : remplit tout le cadre sans deformer */}
-      <video
-        className="absolute inset-0 h-full w-full object-cover"
-        src={HERO_VIDEO}
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        aria-hidden="true"
-      />
+    <section
+      ref={ref}
+      className="relative overflow-hidden min-h-[92vh] flex items-center bg-black"
+    >
+      {/* ── Video de fond avec subtle scale on scroll (parallax inverse) ── */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ scale: videoScale }}
+      >
+        <video
+          className="absolute inset-0 h-full w-full object-cover"
+          src={HERO_VIDEO}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-hidden="true"
+        />
+      </motion.div>
 
-      {/* ── Dark overlay gradient ──
-          Plus dense a gauche (sous le texte) et plus transparent a droite
-          (on voit mieux la video). Deuxieme gradient bottom → top pour
-          garantir la lisibilite des pills features en bas. */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/55 to-black/20" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+      {/* ── Dark overlay gradient ── */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/55 to-black/15" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-      {/* ── Contenu ── */}
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 w-full">
+      {/* ── Halo brand pink en bas a droite, tres subtil ── */}
+      <div className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-[#e8416f]/20 blur-[120px] pointer-events-none" />
+
+      {/* ── Contenu avec parallax + fade-out ── */}
+      <motion.div
+        style={{ y: contentY, opacity: contentOpacity }}
+        className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 w-full"
+      >
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="max-w-2xl"
+          className="max-w-3xl"
         >
+          {/* Pill "Ouvert maintenant" — glassy, brand pink dot */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-sm mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-2xl border border-white/15 text-white/90 text-[13px] font-medium mb-7 shadow-[0_8px_24px_-8px_rgba(0,0,0,0.4)]"
           >
-            <span className="h-2 w-2 rounded-full bg-brand-green animate-pulse" />
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[#e8416f] opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#e8416f]" />
+            </span>
             Ouvert maintenant
           </motion.div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white leading-[0.95] tracking-tight drop-shadow-lg">
+          {/* Title Pricedown — DA client. Brand pink accent. */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="font-display text-[64px] sm:text-[88px] lg:text-[120px] leading-[0.92] tracking-tight text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+          >
             Le street food
             <br />
-            <span className="text-brand-yellow">de Bayonne</span>
-          </h1>
+            <span className="text-[#e8416f]">de Bayonne</span>
+          </motion.h1>
 
-          <p className="mt-6 text-lg text-white/85 max-w-md leading-relaxed drop-shadow-md">
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.6 }}
+            className="mt-7 text-base sm:text-lg text-white/85 max-w-md leading-relaxed drop-shadow-md"
+          >
             Burgers, tacos et wraps artisanaux. Commandez en ligne et
             recuperez au restaurant ou faites-vous livrer sur
             Bayonne-Anglet-Biarritz.
-          </p>
+          </motion.p>
 
-          <div className="mt-8 flex flex-col sm:flex-row gap-3">
-            <Link href="/menu">
-              <Button
-                size="lg"
-                className="bg-white text-brand-purple-dark hover:bg-white/90 shadow-xl shadow-black/30 w-full sm:w-auto"
-              >
-                Commander maintenant
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+          {/* CTAs — meme langage que la navbar (rounded-full, hauteur 12) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.6 }}
+            className="mt-9 flex flex-col sm:flex-row gap-3"
+          >
+            <Link
+              href="/menu"
+              className="group inline-flex items-center justify-center gap-2 h-12 px-7 rounded-full bg-white text-[#0a0a0a] text-[14px] font-semibold shadow-[0_12px_32px_-8px_rgba(255,255,255,0.4)] hover:shadow-[0_16px_40px_-8px_rgba(255,255,255,0.5)] active:scale-[0.97] transition-all duration-300"
+            >
+              Commander maintenant
+              <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
-            <Link href="/menu">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white/40 text-white bg-white/5 backdrop-blur-sm hover:bg-white/15 w-full sm:w-auto"
-              >
-                Voir le menu
-              </Button>
+            <Link
+              href="/menu"
+              className="inline-flex items-center justify-center h-12 px-7 rounded-full bg-white/10 backdrop-blur-2xl border border-white/20 text-white text-[14px] font-semibold hover:bg-white/15 active:scale-[0.97] transition-all duration-300"
+            >
+              Voir le menu
             </Link>
-          </div>
+          </motion.div>
 
-          {/* Features pills */}
-          <div className="mt-10 flex flex-wrap gap-3">
+          {/* Features pills — stagger */}
+          <div className="mt-10 flex flex-wrap gap-2.5">
             {[
               { icon: Clock, text: "Jusqu'a 4h du matin" },
               { icon: Truck, text: "Livraison BAB" },
               { icon: MapPin, text: "Click & Collect" },
-            ].map((feature) => (
+            ].map((feature, i) => (
               <motion.div
                 key={feature.text}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.4 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/30 backdrop-blur-md border border-white/15 text-white/90 text-sm"
+                transition={{ delay: 0.6 + i * 0.08, duration: 0.4 }}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 backdrop-blur-2xl border border-white/15 text-white/90 text-[12.5px] font-medium"
               >
-                <feature.icon className="h-3.5 w-3.5 text-brand-yellow" />
+                <feature.icon className="h-3.5 w-3.5 text-[#e8416f]" />
                 {feature.text}
               </motion.div>
             ))}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
+
+      {/* Scroll indicator subtle, en bas */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2, duration: 0.6 }}
+        style={{ opacity: contentOpacity }}
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10"
+      >
+        <div className="h-9 w-5 rounded-full border border-white/30 flex items-start justify-center p-1.5">
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+            className="h-1.5 w-1 rounded-full bg-white/70"
+          />
+        </div>
+      </motion.div>
     </section>
   );
 }

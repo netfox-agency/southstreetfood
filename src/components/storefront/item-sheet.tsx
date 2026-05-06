@@ -598,7 +598,7 @@ export function ItemSheet({
         {/* ── Close button ── */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 z-10 h-8 w-8 rounded-full bg-black/5 backdrop-blur-sm flex items-center justify-center hover:bg-black/10 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 z-20 h-9 w-9 rounded-full bg-white/80 backdrop-blur-2xl border border-black/5 shadow-[0_4px_12px_-4px_rgba(0,0,0,0.2)] flex items-center justify-center hover:bg-white transition-all duration-200 active:scale-90 cursor-pointer"
           aria-label="Fermer"
         >
           <X className="h-4 w-4 text-foreground" />
@@ -609,17 +609,23 @@ export function ItemSheet({
           ref={scrollRef}
           className="flex-1 overflow-y-auto overscroll-contain"
         >
-          {/* Image — always visible instantly from preview data */}
+          {/* Image hero — gradient overlay subtle + halo brand */}
           <div className="relative aspect-[16/10] w-full bg-muted overflow-hidden rounded-t-3xl">
             {previewData.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={previewData.image_url}
-                alt={previewData.name}
-                className="w-full h-full object-cover"
-              />
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={previewData.image_url}
+                  alt={previewData.name}
+                  className="w-full h-full object-cover"
+                />
+                {/* Bottom gradient pour la lisibilite si on overlay du texte plus tard */}
+                <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/30 to-transparent pointer-events-none" />
+                {/* Halo brand pink subtle en haut a gauche */}
+                <div className="absolute -top-20 -left-20 h-40 w-40 rounded-full bg-[#e8416f]/15 blur-3xl pointer-events-none" />
+              </>
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-7xl bg-gradient-to-br from-muted to-background">
+              <div className="w-full h-full flex items-center justify-center text-7xl bg-gradient-to-br from-[#fff5f8] via-muted to-background">
                 🌮
               </div>
             )}

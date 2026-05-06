@@ -15,6 +15,7 @@ import {
   useIsRestaurantOpen,
 } from "@/components/storefront/closed-banner";
 import { LoyaltyCartSection } from "@/components/storefront/loyalty-cart-section";
+import { CartSkeleton } from "@/components/ui/skeleton";
 
 export default function CartPage() {
   const [mounted, setMounted] = useState(false);
@@ -59,11 +60,7 @@ export default function CartPage() {
 
   // Hydration guard: show loading state until client-side store is hydrated
   if (!mounted) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="h-6 w-6 border-2 border-[#1d1d1f]/20 border-t-[#1d1d1f] rounded-full animate-spin" />
-      </div>
-    );
+    return <CartSkeleton />;
   }
 
   if (items.length === 0) {
@@ -119,15 +116,15 @@ export default function CartPage() {
                 key={type.key}
                 onClick={() => type.enabled && setOrderType(type.key)}
                 disabled={!type.enabled}
-                className={`flex flex-col items-start gap-2 p-4 rounded-xl border-2 transition-all text-left ${
+                className={`flex flex-col items-start gap-2 p-4 rounded-2xl border transition-all duration-300 text-left ${
                   !type.enabled
                     ? "border-[#e5e5ea] opacity-40 cursor-not-allowed"
                     : orderType === type.key
-                    ? "border-[#1d1d1f] bg-[#1d1d1f]/[0.03] cursor-pointer"
-                    : "border-[#e5e5ea] hover:border-[#c7c7cc] cursor-pointer"
+                    ? "border-[#e8416f]/40 bg-white shadow-[0_8px_24px_-12px_rgba(232,65,111,0.35)] cursor-pointer -translate-y-0.5"
+                    : "border-[#e5e5ea] bg-white/60 hover:border-[#c7c7cc] hover:bg-white cursor-pointer"
                 }`}
               >
-                <type.icon className={`h-5 w-5 shrink-0 ${orderType === type.key ? "text-[#1d1d1f]" : "text-[#86868b]"}`} />
+                <type.icon className={`h-5 w-5 shrink-0 transition-colors ${orderType === type.key ? "text-[#e8416f]" : "text-[#86868b]"}`} />
                 <div>
                   <div className="font-medium text-sm text-[#1d1d1f] leading-tight">
                     {type.label}

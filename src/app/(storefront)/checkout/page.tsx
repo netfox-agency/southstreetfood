@@ -9,6 +9,7 @@ import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import { getDeliveryFeeForCity } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
+import { CheckoutSkeleton } from "@/components/ui/skeleton";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -81,11 +82,7 @@ export default function CheckoutPage() {
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
 
   if (!mounted) {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="h-6 w-6 border-2 border-[#1d1d1f]/20 border-t-[#1d1d1f] rounded-full animate-spin" />
-      </div>
-    );
+    return <CheckoutSkeleton />;
   }
 
   if (items.length === 0 || !orderType) {

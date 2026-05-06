@@ -102,8 +102,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-md px-5 pt-6">
+    <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+      <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/15 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-md px-5 pt-6">
         <Link
           href="/auth/login"
           className="inline-flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors"
@@ -113,8 +116,8 @@ export default function ResetPasswordPage() {
         </Link>
       </div>
 
-      <div className="mx-auto max-w-md px-5 py-10">
-        <div className="h-14 w-14 rounded-2xl bg-[#0a0a0a] flex items-center justify-center mb-6">
+      <div className="relative mx-auto max-w-md px-5 py-10">
+        <div className="h-14 w-14 rounded-2xl bg-[#0a0a0a] flex items-center justify-center mb-6 shadow-[0_8px_24px_-8px_rgba(232,65,111,0.4)]">
           <ShieldCheck className="h-7 w-7 text-white" />
         </div>
 
@@ -125,7 +128,7 @@ export default function ResetPasswordPage() {
           Choisis un mot de passe solide de 6 caracteres minimum.
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 p-6 rounded-3xl bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.15)]">
           <label className="block">
             <span className="text-[12px] font-medium text-[#86868b] mb-1.5 block">
               Nouveau mot de passe
