@@ -38,8 +38,11 @@ export default async function AccountPage() {
   const points: number = profile?.loyalty_points ?? 0;
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-2xl px-5 pt-6">
+    <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+      <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-2xl px-5 pt-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors"
@@ -49,7 +52,7 @@ export default async function AccountPage() {
         </Link>
       </div>
 
-      <div className="mx-auto max-w-2xl px-5 py-10">
+      <div className="relative mx-auto max-w-2xl px-5 py-10">
         <div className="mb-8">
           <p className="text-[11px] font-semibold tracking-[0.2em] uppercase text-[#86868b] mb-2">
             Mon compte
@@ -106,7 +109,7 @@ export default async function AccountPage() {
           />
         </nav>
 
-        <div className="rounded-2xl border border-[#e5e5ea] bg-white p-5 mb-6">
+        <div className="rounded-2xl border border-white/60 bg-white/70 backdrop-blur-2xl shadow-[0_8px_24px_-12px_rgba(0,0,0,0.08)] p-5 mb-6">
           <p className="text-[11px] font-semibold tracking-wider uppercase text-[#86868b] mb-3">
             Informations
           </p>
@@ -152,10 +155,10 @@ function AccountLink({
   return (
     <Link
       href={href}
-      className="flex items-center gap-3.5 p-4 rounded-2xl border border-[#e5e5ea] bg-white hover:border-[#0a0a0a]/20 hover:shadow-[0_4px_12px_-6px_rgba(0,0,0,0.08)] transition-all"
+      className="group flex items-center gap-3.5 p-4 rounded-2xl border border-white/60 bg-white/70 backdrop-blur-2xl shadow-[0_4px_16px_-8px_rgba(0,0,0,0.06)] hover:border-[#e8416f]/30 hover:shadow-[0_12px_28px_-12px_rgba(232,65,111,0.25)] hover:-translate-y-0.5 transition-all duration-300"
     >
-      <div className="h-10 w-10 rounded-xl bg-[#f5f5f7] flex items-center justify-center shrink-0">
-        <Icon className="h-5 w-5 text-[#1d1d1f]" />
+      <div className="h-10 w-10 rounded-xl bg-[#fff5f8] group-hover:bg-[#e8416f] flex items-center justify-center shrink-0 transition-colors duration-300">
+        <Icon className="h-5 w-5 text-[#e8416f] group-hover:text-white transition-colors duration-300" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-[14px] font-semibold text-[#1d1d1f]">{title}</p>

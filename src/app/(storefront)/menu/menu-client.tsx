@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { Search, Plus, ArrowLeft, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
@@ -276,29 +277,34 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
           ou fermeture temporaire). Realtime : change instantanément si l'admin
           toggle le statut côté cuisine. */}
       <ClosedBanner />
-      <div className="max-w-4xl mx-auto px-5 pt-8 pb-4">
+      <div className="relative max-w-4xl mx-auto px-5 pt-8 pb-4">
+        {/* Halo brand subtle en haut a droite — anime la page */}
+        <div className="absolute -top-20 right-0 h-72 w-72 rounded-full bg-[#e8416f]/10 blur-[100px] pointer-events-none" />
+
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+          className="relative inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           Accueil
         </Link>
-        <div className="flex items-end justify-between gap-4">
+        <div className="relative flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Menu</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              19:00 – 4:00
+            <h1 className="font-display text-5xl sm:text-6xl text-foreground tracking-tight leading-[0.95]">
+              La carte.
+            </h1>
+            <p className="text-sm text-muted-foreground mt-2 font-medium">
+              19:00 – 4:00 · Bayonne
             </p>
           </div>
           <div className="relative w-64 hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Rechercher..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full h-11 pl-11 pr-4 rounded-full bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.08)] text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#e8416f]/30 focus:border-[#e8416f]/30 transition-all"
             />
           </div>
         </div>
@@ -307,22 +313,23 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
       {/* Mobile search */}
       <div className="sm:hidden max-w-4xl mx-auto px-5 pb-3">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Rechercher dans South Street Food"
+            placeholder="Rechercher dans la carte"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-10 pr-4 rounded-full bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full h-11 pl-11 pr-4 rounded-full bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.08)] text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#e8416f]/30 focus:border-[#e8416f]/30 transition-all"
           />
         </div>
       </div>
 
-      <div className="sticky top-16 z-30 bg-background border-b border-border">
+      {/* Sticky tabs — glassy avec active pill rose anime */}
+      <div className="sticky top-16 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/60">
         <div className="max-w-4xl mx-auto px-5">
           <div
             ref={tabsRef}
-            className="flex gap-0 overflow-x-auto scrollbar-none -mx-1"
+            className="flex gap-1 overflow-x-auto scrollbar-none -mx-1 py-2"
           >
             {filteredMenu.map((cat) => (
               <button
@@ -330,13 +337,21 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
                 data-slug={cat.slug}
                 onClick={() => scrollToSection(cat.slug)}
                 className={cn(
-                  "shrink-0 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-[3px] transition-colors cursor-pointer",
+                  "relative shrink-0 px-4 py-2 text-sm font-medium whitespace-nowrap rounded-full transition-all duration-300 cursor-pointer",
                   activeSlug === cat.slug
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "text-white"
+                    : "text-muted-foreground hover:text-foreground hover:bg-black/5"
                 )}
               >
-                {cat.name}
+                {activeSlug === cat.slug && (
+                  <motion.span
+                    layoutId="menu-tab-active"
+                    className="absolute inset-0 rounded-full bg-[#e8416f]"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                    aria-hidden
+                  />
+                )}
+                <span className="relative z-10">{cat.name}</span>
               </button>
             ))}
           </div>
@@ -353,7 +368,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
             }}
             className="mb-12"
           >
-            <h2 className="text-xl font-bold text-foreground mb-5">
+            <h2 className="font-display text-3xl sm:text-4xl text-foreground tracking-tight mb-5">
               {cat.name}
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
@@ -370,27 +385,42 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
         ))}
 
         {filteredMenu.length === 0 && (
-          <div className="text-center py-20 text-muted-foreground">
-            <p className="text-lg mb-2">Aucun resultat</p>
-            <p className="text-sm">Essayez un autre terme de recherche</p>
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">🌮</div>
+            <p className="text-lg font-semibold text-foreground mb-2">Aucun résultat</p>
+            <p className="text-sm text-muted-foreground mb-5">Essayez un autre terme de recherche</p>
+            <button
+              onClick={() => setSearch("")}
+              className="inline-flex items-center px-5 h-10 rounded-full bg-[#e8416f] text-white text-sm font-semibold hover:bg-[#d63862] transition-colors active:scale-[0.97]"
+            >
+              Effacer la recherche
+            </button>
           </div>
         )}
       </div>
 
+      {/* FAB cart — bottom on desktop, au dessus de la bottom-nav sur mobile (b-24) */}
       {mounted && itemCount > 0 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+        <motion.div
+          initial={{ y: 80, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+          className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-50"
+        >
           <Link href="/cart">
-            <button className="flex items-center gap-3 bg-foreground text-background px-6 py-3.5 rounded-2xl shadow-lg shadow-black/20 hover:opacity-90 transition-opacity cursor-pointer">
-              <ShoppingBag className="h-5 w-5" />
+            <button className="flex items-center gap-3 bg-[#0a0a0a] text-white pl-5 pr-6 py-3.5 rounded-full shadow-[0_16px_40px_-8px_rgba(232,65,111,0.5)] hover:shadow-[0_20px_48px_-8px_rgba(232,65,111,0.6)] transition-all duration-300 active:scale-[0.97] cursor-pointer border border-white/10">
+              <span className="relative flex h-7 w-7 items-center justify-center rounded-full bg-[#e8416f]">
+                <ShoppingBag className="h-3.5 w-3.5" />
+              </span>
               <span className="font-semibold text-sm">
                 Voir le panier ({itemCount})
               </span>
-              <span className="text-sm font-semibold ml-1">
+              <span className="text-sm font-bold tabular-nums">
                 {formatPrice(subtotal)}
               </span>
             </button>
           </Link>
-        </div>
+        </motion.div>
       )}
 
       {sheetData && (

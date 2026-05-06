@@ -179,13 +179,15 @@ export default function ReservationPage() {
   /* ── Success screen ── */
   if (success) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center px-5">
-        <div className="text-center max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="h-16 w-16 rounded-full bg-[#34c759]/10 flex items-center justify-center mx-auto mb-5">
+      <div className="relative min-h-[80vh] flex items-center justify-center px-5 overflow-hidden">
+        <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+        <div className="absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#34c759]/10 blur-[120px] pointer-events-none" />
+        <div className="relative text-center max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="h-16 w-16 rounded-full bg-[#34c759]/15 flex items-center justify-center mx-auto mb-5 shadow-[0_8px_24px_-8px_rgba(52,199,89,0.4)]">
             <Check className="h-8 w-8 text-[#34c759]" />
           </div>
-          <h1 className="text-2xl font-bold text-[#1d1d1f] mb-2">
-            Demande envoyee !
+          <h1 className="font-display text-4xl text-[#1d1d1f] tracking-tight leading-[0.95] mb-3">
+            C&apos;est parti.
           </h1>
           <p className="text-[#86868b] text-[15px] mb-1">
             {form.party_size}{" "}
@@ -208,7 +210,7 @@ export default function ReservationPage() {
           <div>
             <Link
               href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#1d1d1f] text-white rounded-xl text-sm font-semibold hover:bg-[#1d1d1f]/90 transition-colors"
+              className="inline-flex items-center gap-2 px-6 h-11 rounded-full bg-[#0a0a0a] text-white text-sm font-semibold hover:bg-[#1d1d1f] active:scale-[0.97] transition-all duration-200"
             >
               Retour a l&apos;accueil
             </Link>
@@ -220,7 +222,10 @@ export default function ReservationPage() {
 
   /* ── Form ── */
   return (
-    <div ref={containerRef} className="min-h-[80vh] max-w-lg mx-auto px-5 py-10">
+    <div className="relative min-h-[80vh] overflow-hidden">
+      <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+      <div ref={containerRef} className="relative max-w-lg mx-auto px-5 py-10">
       {/* Header */}
       <div className="mb-8">
         <Link
@@ -230,10 +235,10 @@ export default function ReservationPage() {
           <ArrowLeft className="h-4 w-4" />
           Retour
         </Link>
-        <h1 className="text-3xl font-bold text-[#1d1d1f] tracking-tight">
-          Reserver une table
+        <h1 className="font-display text-5xl sm:text-6xl text-[#1d1d1f] tracking-tight leading-[0.95]">
+          Réserver.
         </h1>
-        <p className="text-[#86868b] mt-1">
+        <p className="text-[#86868b] mt-3 text-[15px]">
           Choisissez votre creneau et on s&apos;occupe du reste.
         </p>
       </div>
@@ -611,7 +616,7 @@ export default function ReservationPage() {
                 disabled={
                   loading || !form.customer_name.trim() || form.customer_phone.replace(/\D/g, "").length < 10
                 }
-                className="flex-1 h-12 rounded-xl bg-[#1d1d1f] text-white font-semibold text-sm hover:bg-[#1d1d1f]/90 transition-all disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 h-12 rounded-full bg-[#0a0a0a] text-white font-semibold text-sm shadow-[0_8px_24px_-8px_rgba(232,65,111,0.4)] hover:bg-[#1d1d1f] hover:shadow-[0_12px_32px_-8px_rgba(232,65,111,0.5)] active:scale-[0.97] transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <div className="h-4 w-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
@@ -622,6 +627,7 @@ export default function ReservationPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

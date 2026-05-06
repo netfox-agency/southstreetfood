@@ -4,8 +4,12 @@ import { BRAND } from "@/lib/constants";
 
 export function Footer() {
   return (
-    <footer className="bg-brand text-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <footer className="relative bg-[#0a0a0a] text-white overflow-hidden">
+      {/* Halos brand subtils — meme langage que le hero */}
+      <div className="absolute -top-32 -left-32 h-[400px] w-[400px] rounded-full bg-[#e8416f]/15 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-40 -right-32 h-[420px] w-[420px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="md:col-span-2">
@@ -95,7 +99,11 @@ export function Footer() {
               <li className="text-sm text-white/70">
                 Livraison BAB
               </li>
-              <li className="text-sm text-white font-medium">
+              <li className="inline-flex items-center gap-2 text-sm text-white font-medium px-3 py-1 rounded-full bg-white/5 backdrop-blur-2xl border border-white/10">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#e8416f] opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-[#e8416f]" />
+                </span>
                 Ouvert jusqu&apos;a 4h
               </li>
             </ul>

@@ -133,18 +133,36 @@ export default function TrackingPage({
 
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-muted-foreground">Chargement...</div>
+      <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+        <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+        <div className="relative max-w-lg mx-auto px-5 py-8 space-y-6">
+          <div className="h-4 w-24 bg-black/5 rounded animate-pulse" />
+          <div className="text-center space-y-3 mt-6">
+            <div className="h-12 w-32 bg-black/5 rounded mx-auto animate-pulse" />
+            <div className="h-7 w-20 bg-black/5 rounded-full mx-auto animate-pulse" />
+          </div>
+          <div className="space-y-3 mt-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-16 bg-white/70 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
   if (notFound || !order) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg font-bold mb-2">Commande introuvable</p>
-          <Link href="/menu" className="text-brand text-sm">
+      <div className="relative min-h-screen bg-[#fafafa] overflow-hidden flex items-center justify-center">
+        <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+        <div className="relative text-center px-5">
+          <div className="text-6xl mb-4">🤷</div>
+          <p className="text-lg font-bold text-foreground mb-2">Commande introuvable</p>
+          <p className="text-sm text-muted-foreground mb-6">Vérifiez le lien ou contactez le restaurant</p>
+          <Link
+            href="/menu"
+            className="inline-flex items-center px-5 h-10 rounded-full bg-[#e8416f] text-white text-sm font-semibold hover:bg-[#d63862] transition-colors active:scale-[0.97]"
+          >
             Retour au menu
           </Link>
         </div>
@@ -159,8 +177,11 @@ export default function TrackingPage({
   const isDone = TERMINAL_STATUSES.includes(currentStatus);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-lg mx-auto px-5 py-8">
+    <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+      <div className="absolute -top-40 -right-32 h-[480px] w-[480px] rounded-full bg-[#e8416f]/10 blur-[120px] pointer-events-none" />
+      <div className="absolute -bottom-40 -left-32 h-[420px] w-[420px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+
+      <div className="relative max-w-lg mx-auto px-5 py-8">
         <Link
           href="/menu"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -170,10 +191,10 @@ export default function TrackingPage({
         </Link>
 
         <div className="text-center mb-10">
-          <h1 className="text-2xl font-black text-foreground">
-            Suivi commande
+          <h1 className="font-display text-5xl text-foreground tracking-tight leading-[0.95]">
+            Suivi.
           </h1>
-          <p className="text-brand font-bold text-lg mt-1">
+          <p className="inline-flex items-center mt-3 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_4px_16px_-6px_rgba(0,0,0,0.08)] text-[#e8416f] font-bold text-sm tabular-nums">
             #{String(orderNumber).padStart(4, "0")}
           </p>
         </div>
@@ -217,9 +238,10 @@ export default function TrackingPage({
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="h-7 w-7 rounded-full bg-brand flex items-center justify-center"
+                        className="relative h-7 w-7 rounded-full bg-[#e8416f] flex items-center justify-center shadow-[0_4px_12px_-2px_rgba(232,65,111,0.5)]"
                       >
-                        <div className="h-2.5 w-2.5 rounded-full bg-white animate-pulse" />
+                        <span className="absolute inline-flex h-full w-full rounded-full bg-[#e8416f] opacity-60 animate-ping" />
+                        <div className="relative h-2.5 w-2.5 rounded-full bg-white" />
                       </motion.div>
                     ) : (
                       <Circle className="h-7 w-7 text-border" />
@@ -256,11 +278,11 @@ export default function TrackingPage({
           </div>
         )}
 
-        <div className="card-premium p-5 text-center">
-          <p className="text-sm text-muted-foreground mb-3">Un probleme ?</p>
+        <div className="p-6 rounded-3xl bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_20px_60px_-20px_rgba(0,0,0,0.12)] text-center">
+          <p className="text-sm text-muted-foreground mb-3">Un problème ?</p>
           <a
             href="tel:"
-            className="btn-outline inline-flex items-center gap-2 !py-2.5 !px-5 text-sm"
+            className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-[#0a0a0a] text-white text-sm font-semibold hover:bg-[#1d1d1f] transition-colors active:scale-[0.97]"
           >
             <Phone className="h-4 w-4" />
             Appeler le restaurant

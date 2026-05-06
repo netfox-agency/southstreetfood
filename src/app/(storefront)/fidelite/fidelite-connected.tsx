@@ -56,9 +56,12 @@ export function FideliteConnected({
   const nextTierPts = nextTier ? nextTier.pointsCost - points : 0;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+      <div className="absolute -top-20 -right-20 h-[400px] w-[400px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[60vh] -left-32 h-[360px] w-[360px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+
       {/* Back */}
-      <div className="mx-auto max-w-5xl px-5 pt-6">
+      <div className="relative mx-auto max-w-5xl px-5 pt-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors"
@@ -69,7 +72,7 @@ export function FideliteConnected({
       </div>
 
       {/* ═════════ HERO ═════════ */}
-      <section className="mx-auto max-w-5xl px-5 mt-6">
+      <section className="relative mx-auto max-w-5xl px-5 mt-6">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0a] text-white">
           {/* Brand accent glow */}
           <div
@@ -135,7 +138,7 @@ export function FideliteConnected({
       </section>
 
       {/* ═════════ TIERS ═════════ */}
-      <section className="mx-auto max-w-5xl px-5 mt-10 sm:mt-14">
+      <section className="relative mx-auto max-w-5xl px-5 mt-10 sm:mt-14">
         <div className="flex items-end justify-between mb-5">
           <div>
             <h2 className="text-[22px] sm:text-[26px] font-bold text-[#1d1d1f] tracking-tight">
@@ -155,12 +158,13 @@ export function FideliteConnected({
       </section>
 
       {/* ═════════ HISTORIQUE ═════════ */}
-      <section className="mx-auto max-w-5xl px-5 mt-12 mb-20">
+      <section className="relative mx-auto max-w-5xl px-5 mt-12 mb-20">
         <h2 className="text-[18px] sm:text-[20px] font-bold text-[#1d1d1f] tracking-tight mb-4">
           Historique
         </h2>
         {transactions.length === 0 ? (
-          <div className="rounded-2xl bg-[#f5f5f7] p-6 sm:p-8 text-center">
+          <div className="rounded-2xl bg-white/70 backdrop-blur-2xl border border-white/60 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.08)] p-6 sm:p-8 text-center">
+            <div className="text-4xl mb-3">✨</div>
             <p className="text-[14px] text-[#1d1d1f] font-medium">
               Aucune transaction pour l&apos;instant.
             </p>
@@ -176,7 +180,7 @@ export function FideliteConnected({
             </Link>
           </div>
         ) : (
-          <ul className="divide-y divide-[#e5e5ea] rounded-2xl bg-white border border-[#e5e5ea] overflow-hidden">
+          <ul className="divide-y divide-[#e5e5ea] rounded-2xl bg-white/80 backdrop-blur-2xl border border-white/60 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.08)] overflow-hidden">
             {transactions.map((t) => {
               const isEarn = t.points > 0;
               return (

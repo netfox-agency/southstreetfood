@@ -18,8 +18,11 @@ export function FideliteGuest({ catalog }: Props) {
   const tiers = groupByTier(catalog);
 
   return (
-    <div className="min-h-screen bg-white">
-      <div className="mx-auto max-w-5xl px-5 pt-6">
+    <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
+      <div className="absolute -top-20 -right-20 h-[400px] w-[400px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[60vh] -left-32 h-[360px] w-[360px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-5xl px-5 pt-6">
         <Link
           href="/"
           className="inline-flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors"
@@ -30,7 +33,7 @@ export function FideliteGuest({ catalog }: Props) {
       </div>
 
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-5 mt-6">
+      <section className="relative mx-auto max-w-5xl px-5 mt-6">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0a] text-white">
           <div
             aria-hidden
@@ -82,7 +85,7 @@ export function FideliteGuest({ catalog }: Props) {
       </section>
 
       {/* 3 steps */}
-      <section className="mx-auto max-w-5xl px-5 mt-12">
+      <section className="relative mx-auto max-w-5xl px-5 mt-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Step
             num="01"
@@ -103,7 +106,7 @@ export function FideliteGuest({ catalog }: Props) {
       </section>
 
       {/* Tiers preview */}
-      <section className="mx-auto max-w-5xl px-5 mt-14 mb-10">
+      <section className="relative mx-auto max-w-5xl px-5 mt-14 mb-10">
         <h2 className="text-[22px] sm:text-[26px] font-bold text-[#1d1d1f] tracking-tight">
           Les paliers
         </h2>
@@ -119,7 +122,7 @@ export function FideliteGuest({ catalog }: Props) {
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-5xl px-5 pb-20">
+      <section className="relative mx-auto max-w-5xl px-5 pb-20">
         <div className="rounded-2xl bg-[#0a0a0a] text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 sm:justify-between">
           <div>
             <p className="text-[15px] sm:text-base font-semibold">
@@ -179,7 +182,7 @@ function Step({
   body: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#f5f5f7] p-5 sm:p-6">
+    <div className="rounded-2xl bg-white/70 backdrop-blur-2xl border border-white/60 p-5 sm:p-6 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.08)] hover:shadow-[0_12px_32px_-12px_rgba(232,65,111,0.2)] hover:-translate-y-0.5 transition-all duration-300">
       <span className="font-display text-3xl text-[#e8416f] tabular-nums">
         {num}
       </span>
