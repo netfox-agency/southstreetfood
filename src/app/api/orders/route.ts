@@ -203,110 +203,103 @@ export async function POST(request: NextRequest) {
     let loyaltyUserId: string | null = null;
     let loyaltyPointsCost = 0;
 
-    if (data.loyaltyRewardId) {
+    // Loyalty v3 : tier-based system avec selections par slot.
+    // Le serveur fait TOUT via la PG function consume_loyalty_v3 qui valide
+    // atomiquement : balance + categorie + exclusions + items dispos +
+    // debite + log la transaction. Le client n'a aucune confiance accordee.
+    if (data.loyaltySelection) {
       if (!authenticatedUserId) {
         return NextResponse.json(
           { error: "Connecte-toi pour utiliser une recompense" },
           { status: 401 },
         );
       }
-      const authUser = { id: authenticatedUserId };
       const admin = createAdminClient();
-      const { data: rewardRow } = await admin
-        .from("loyalty_rewards")
-        .select(
-          "id, name, points_cost, reward_type, reward_menu_item_id, bundle_menu_item_ids, is_active, menu_items:reward_menu_item_id(id, name, base_price)",
-        )
-        .eq("id", data.loyaltyRewardId)
-        .single();
+      const sel = data.loyaltySelection;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const reward = rewardRow as any;
-
-      if (!reward || reward.is_active === false) {
-        return NextResponse.json(
-          { error: "Recompense indisponible" },
-          { status: 400 },
-        );
-      }
-
-      // Construction des lignes a AVANT de debiter (si le type est invalide,
-      // on ne touche pas au solde).
-      if (reward.reward_type === "free_item" && reward.menu_items) {
-        loyaltyRewardLines = [
-          {
-            menuItemId: reward.menu_items.id,
-            variantId: null,
-            quantity: 1,
-            unitPrice: 0,
-            extrasPrice: 0,
-            itemName: `${reward.menu_items.name} (recompense fidelite)`,
-            variantName: null,
-            extrasJson: [],
-            specialInstructions: `Offert · -${reward.points_cost} pts`,
-          },
-        ];
-      } else if (
-        reward.reward_type === "combo_menu" &&
-        Array.isArray(reward.bundle_menu_item_ids) &&
-        reward.bundle_menu_item_ids.length > 0
-      ) {
-        const { data: bundleItems } = await admin
-          .from("menu_items")
-          .select("id, name")
-          .in("id", reward.bundle_menu_item_ids);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const items = (bundleItems ?? []) as any[];
-        if (items.length === 0) {
-          return NextResponse.json(
-            { error: "Combo fidelite invalide" },
-            { status: 400 },
-          );
-        }
-        loyaltyRewardLines = items.map((mi) => ({
-          menuItemId: mi.id,
-          variantId: null,
-          quantity: 1,
-          unitPrice: 0,
-          extrasPrice: 0,
-          itemName: `${mi.name} (menu fidelite)`,
-          variantName: null,
-          extrasJson: [],
-          specialInstructions: `Offert · Menu ${reward.points_cost} pts`,
-        }));
-      } else {
-        return NextResponse.json(
-          { error: "Type de recompense non supporte" },
-          { status: 400 },
-        );
-      }
-
-      // DEBIT ATOMIQUE : UPDATE ... WHERE balance >= cost. Deux commandes
-      // en parallele ne peuvent pas depasser le solde. Si ca retourne -1
-      // le user n'a pas assez OU une autre commande vient de debiter.
+      // Appel atomique : valide + debite + log
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: consumeResult, error: consumeError } = await (admin as any).rpc(
-        "consume_loyalty_points",
-        { p_user_id: authUser.id, p_cost: reward.points_cost },
+        "consume_loyalty_v3",
+        {
+          p_user_id: authenticatedUserId,
+          p_reward_id: sel.rewardId,
+          p_main_id: sel.mainId ?? null,
+          p_fries_id: sel.friesId ?? null,
+          p_drink_id: sel.drinkId ?? null,
+          p_dessert_id: sel.dessertId ?? null,
+        },
       );
+
       if (consumeError) {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("[api/orders] consume_loyalty_v3 RPC error:", consumeError);
+        }
         return NextResponse.json(
           { error: "Erreur lors de l'utilisation des points" },
           { status: 500 },
         );
       }
-      if (consumeResult === -1 || consumeResult === null) {
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cr = consumeResult as any;
+      if (!cr || cr.success !== true) {
+        const errCode = cr?.error || "unknown";
+        const msgMap: Record<string, string> = {
+          profile_not_found: "Compte introuvable",
+          reward_not_found_or_inactive: "Palier indisponible",
+          insufficient_points: "Points insuffisants",
+          main_required: "Sandwich requis",
+          main_not_available: "Sandwich indisponible",
+          main_category_not_eligible: "Sandwich non eligible a ce palier",
+          main_excluded: "Cet item est exclu de ce palier",
+          fries_required: "Frites requises",
+          fries_invalid: "Frites invalides",
+          drink_required: "Boisson requise",
+          drink_invalid: "Boisson invalide",
+          dessert_required: "Dessert requis",
+          dessert_invalid: "Dessert invalide",
+        };
         return NextResponse.json(
-          { error: "Points insuffisants pour cette recompense" },
+          { error: msgMap[errCode] || "Recompense invalide" },
           { status: 400 },
         );
       }
 
-      loyaltyRewardId = reward.id;
-      loyaltyUserId = authUser.id;
-      loyaltyPointsCost = reward.points_cost;
-      loyaltyUserIdOuter = authUser.id;
-      loyaltyPointsCostOuter = reward.points_cost;
+      // La PG function nous renvoie la liste des menu_item_ids a mettre
+      // a 0€ dans la commande. On va chercher leurs noms pour des lignes
+      // proprement nommees dans le ticket cuisine.
+      const freeItemIds: string[] = Array.isArray(cr.free_item_ids)
+        ? cr.free_item_ids
+        : [];
+      const pointsSpent: number = cr.points_cost || 0;
+
+      if (freeItemIds.length > 0) {
+        const { data: itemsRows } = await admin
+          .from("menu_items")
+          .select("id, name")
+          .in("id", freeItemIds);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rows = (itemsRows ?? []) as any[];
+
+        loyaltyRewardLines = rows.map((mi) => ({
+          menuItemId: mi.id,
+          variantId: null,
+          quantity: 1,
+          unitPrice: 0,
+          extrasPrice: 0,
+          itemName: `${mi.name} (fidelite)`,
+          variantName: null,
+          extrasJson: [],
+          specialInstructions: `Offert · ${pointsSpent} pts`,
+        }));
+      }
+
+      loyaltyRewardId = sel.rewardId;
+      loyaltyUserId = authenticatedUserId;
+      loyaltyPointsCost = pointsSpent;
+      loyaltyUserIdOuter = authenticatedUserId;
+      loyaltyPointsCostOuter = pointsSpent;
     }
 
     const finalItems = [
@@ -366,20 +359,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No order created" }, { status: 500 });
     }
 
-    // Fidelite : order cree avec succes, on log la transaction ledger
-    // (points deja debites en amont via consume_loyalty_points). Puis on
-    // flush les flags outer pour que le catch final ne rembourse pas.
+    // Fidelite v3 : la PG function consume_loyalty_v3 a deja log la transaction
+    // avec points + description. On link juste l'order_id apres coup pour le
+    // tracking. (Best effort, pas critique si echec.)
     if (loyaltyUserId && loyaltyRewardId && loyaltyPointsCost > 0) {
       const admin = createAdminClient();
-      await admin
+      // Update la derniere transaction redemption sans order_id de ce user
+      const { data: lastTxRaw } = await admin
         .from("loyalty_transactions")
+        .select("id")
+        .eq("user_id", loyaltyUserId)
+        .eq("points", -loyaltyPointsCost)
+        .is("order_id", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lastTx = lastTxRaw as any;
+      if (lastTx?.id) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .insert({
-          user_id: loyaltyUserId,
-          order_id: order.id,
-          points: -loyaltyPointsCost,
-          description: "Recompense utilisee",
-        } as never);
+        await (admin as any)
+          .from("loyalty_transactions")
+          .update({ order_id: order.id })
+          .eq("id", lastTx.id);
+      }
     }
     // Succes : plus besoin de refund en cas d'erreur future
     loyaltyUserIdOuter = null;

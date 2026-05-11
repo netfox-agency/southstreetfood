@@ -1,21 +1,20 @@
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft, ArrowRight, Lock, Sparkles } from "lucide-react";
-import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
+import { ArrowLeft, ArrowRight, Sparkles, Lock } from "lucide-react";
+import type { LoyaltyTier } from "@/app/api/loyalty/catalog/route";
 
 interface Props {
-  catalog: LoyaltyCatalogItem[];
+  catalog: LoyaltyTier[];
 }
 
 /**
  * Landing fidelite pour les non-connectes.
  *
- * Meme grammaire visuelle que l'etat connecte : hero noir avec progress
- * path (tous lockes), tiers groupes avec lock/unlock, combo menu en
- * featured. On pousse l'inscription avec la promesse +50 pts bienvenue.
+ * Loyalty v3 : affiche les 6 paliers (tous lockes en guest).
+ * Hero noir avec brand pink halos + CTAs auth. Pricedown sur la promesse
+ * "1€ = 1 point".
  */
 export function FideliteGuest({ catalog }: Props) {
-  const tiers = groupByTier(catalog);
+  const tiers = [...catalog].sort((a, b) => a.tierLevel - b.tierLevel);
 
   return (
     <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
@@ -32,7 +31,7 @@ export function FideliteGuest({ catalog }: Props) {
         </Link>
       </div>
 
-      {/* Hero */}
+      {/* ── Hero ── */}
       <section className="relative mx-auto max-w-5xl px-5 mt-6">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0a] text-white">
           <div
@@ -55,9 +54,9 @@ export function FideliteGuest({ catalog }: Props) {
               1 euro<br />= 1 point.
             </h1>
             <p className="text-[14px] sm:text-base text-white/70 max-w-lg leading-relaxed">
-              Chaque commande compte. Cumule tes points, debloque des
-              paliers, echange contre tes plats preferes. Cree ton compte
-              pour commencer.
+              Chaque commande compte. Cumule tes points, debloque 6 paliers,
+              echange contre tes plats preferes. Cree ton compte pour
+              commencer.
             </p>
 
             <div className="mt-7 flex flex-col sm:flex-row gap-3">
@@ -75,16 +74,11 @@ export function FideliteGuest({ catalog }: Props) {
                 J&apos;ai deja un compte
               </Link>
             </div>
-
-            {/* Preview path (tous lockes, teaser) */}
-            <div className="mt-10">
-              <GuestProgressPath tiers={tiers} />
-            </div>
           </div>
         </div>
       </section>
 
-      {/* 3 steps */}
+      {/* ── 3 steps ── */}
       <section className="relative mx-auto max-w-5xl px-5 mt-12">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Step
@@ -100,28 +94,29 @@ export function FideliteGuest({ catalog }: Props) {
           <Step
             num="03"
             title="Tu te fais plaisir"
-            body="Des 100 pts, echange contre frites, boisson, dessert ou burger."
+            body="Des 50 pts, echange contre boisson, dessert, sandwich ou menu complet."
           />
         </div>
       </section>
 
-      {/* Tiers preview */}
+      {/* ── Les 6 paliers ── */}
       <section className="relative mx-auto max-w-5xl px-5 mt-14 mb-10">
-        <h2 className="text-[22px] sm:text-[26px] font-bold text-[#1d1d1f] tracking-tight">
-          Les paliers
+        <h2 className="font-display text-3xl sm:text-4xl text-[#1d1d1f] tracking-tight">
+          Les 6 paliers
         </h2>
         <p className="text-sm text-[#86868b] mt-1 mb-8">
-          Plus tu commandes, plus tu montes.
+          Plus tu cumules, plus tu debloques. Tes points sont a toi pour la
+          vie, pas d&apos;expiration.
         </p>
 
-        <div className="space-y-10 sm:space-y-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {tiers.map((tier) => (
-            <GuestTierSection key={tier.pointsCost} tier={tier} />
+            <TierCard key={tier.id} tier={tier} locked />
           ))}
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* ── Final CTA ── */}
       <section className="relative mx-auto max-w-5xl px-5 pb-20">
         <div className="rounded-2xl bg-[#0a0a0a] text-white p-6 sm:p-8 flex flex-col sm:flex-row items-center gap-5 sm:justify-between">
           <div>
@@ -129,7 +124,7 @@ export function FideliteGuest({ catalog }: Props) {
               Pret a cumuler ?
             </p>
             <p className="text-[12px] sm:text-sm text-white/60 mt-0.5">
-              1 euro depense = 1 point.
+              1 euro depense = 1 point. Premiere recompense des 50 pts.
             </p>
           </div>
           <Link
@@ -141,33 +136,6 @@ export function FideliteGuest({ catalog }: Props) {
           </Link>
         </div>
       </section>
-    </div>
-  );
-}
-
-function GuestProgressPath({ tiers }: { tiers: Tier[] }) {
-  return (
-    <div className="relative">
-      <div className="absolute left-0 right-0 top-[10px] h-[3px] bg-white/10 rounded-full" />
-      <div className="relative flex justify-between">
-        {tiers.map((tier) => (
-          <div
-            key={tier.pointsCost}
-            className="flex flex-col items-center"
-            style={{ width: `${100 / tiers.length}%` }}
-          >
-            <div className="h-[22px] w-[22px] rounded-full flex items-center justify-center border-2 bg-[#0a0a0a] border-white/30">
-              <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
-            </div>
-            <span className="font-display text-[15px] mt-2 tabular-nums text-white/40">
-              {tier.pointsCost}
-            </span>
-            <span className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5 hidden sm:block">
-              {tier.label}
-            </span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
@@ -192,133 +160,49 @@ function Step({
   );
 }
 
-function GuestTierSection({ tier }: { tier: Tier }) {
-  const isCombo = tier.rewards.some((r) => r.rewardType === "combo_menu");
-
+function TierCard({
+  tier,
+  locked,
+  available,
+}: {
+  tier: LoyaltyTier;
+  locked?: boolean;
+  available?: boolean;
+}) {
   return (
-    <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="flex items-center gap-2 rounded-full px-3.5 py-1.5 bg-[#f5f5f7] text-[#86868b]">
-          <Lock className="h-3 w-3" />
-          <span className="font-display text-[15px] tabular-nums leading-none">
-            {tier.pointsCost}
+    <div
+      className={`relative rounded-2xl border p-5 transition-all duration-300 ${
+        available
+          ? "bg-white border-[#e8416f]/40 shadow-[0_12px_32px_-12px_rgba(232,65,111,0.35)]"
+          : locked
+            ? "bg-white/60 backdrop-blur-2xl border-[#e5e5ea] opacity-90"
+            : "bg-white border-[#e5e5ea]"
+      }`}
+    >
+      <div className="flex items-start gap-4">
+        <div
+          className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 ${
+            available
+              ? "bg-[#e8416f] text-white shadow-[0_4px_12px_-4px_rgba(232,65,111,0.5)]"
+              : "bg-[#f5f5f7] text-[#c7c7cc]"
+          }`}
+        >
+          <span className="font-display text-lg tabular-nums">
+            {tier.tierLevel}
           </span>
-          <span className="text-[10px] font-semibold tracking-wider uppercase opacity-70">
-            pts
-          </span>
         </div>
-        <div className="flex-1 h-px bg-[#e5e5ea]" />
-        <span className="text-[11px] font-medium uppercase tracking-wider text-[#86868b]">
-          {tier.label}
-        </span>
-      </div>
-
-      {isCombo ? (
-        <div className="relative overflow-hidden rounded-3xl border border-[#e5e5ea]">
-          <div className="bg-[#f5f5f7] flex flex-col sm:flex-row items-stretch">
-            <div className="relative w-full sm:w-1/2 aspect-[16/10] sm:aspect-auto sm:min-h-[240px]">
-              {tier.rewards[0].imageUrl && (
-                <Image
-                  src={tier.rewards[0].imageUrl}
-                  alt={tier.rewards[0].name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                  className="object-contain p-6 sm:p-10 grayscale opacity-70"
-                />
-              )}
-            </div>
-            <div className="p-6 sm:p-10 flex-1 flex flex-col justify-center">
-              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#aeaeb2] mb-2">
-                Le gros lot
-              </span>
-              <h3 className="font-display text-4xl sm:text-5xl text-[#1d1d1f] leading-none tracking-tight mb-2">
-                {tier.rewards[0].name}
-              </h3>
-              <p className="text-[13px] sm:text-sm text-[#86868b] max-w-md">
-                {tier.rewards[0].description ??
-                  "Un menu complet offert quand tu atteins le dernier palier."}
-              </p>
-              <div className="mt-5">
-                <div className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 bg-white text-[#1d1d1f] border border-[#e5e5ea] font-display text-[15px] tabular-nums">
-                  {tier.rewards[0].pointsCost} PTS
-                </div>
-              </div>
-            </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-bold text-[#1d1d1f] tabular-nums">
+              {tier.pointsCost} pts
+            </p>
+            {locked && <Lock className="h-3 w-3 text-[#aeaeb2]" />}
           </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {tier.rewards.map((r) => (
-            <GuestRewardCard key={r.id} reward={r} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function GuestRewardCard({ reward }: { reward: LoyaltyCatalogItem }) {
-  return (
-    <div className="relative rounded-2xl bg-white border border-[#e5e5ea] overflow-hidden aspect-[4/5] flex flex-col">
-      <div className="relative flex-1 bg-gradient-to-b from-white to-[#f0f0f2]">
-        {reward.imageUrl ? (
-          <Image
-            src={reward.imageUrl}
-            alt={reward.name}
-            fill
-            sizes="(max-width: 640px) 50vw, 33vw"
-            className="object-contain p-5 sm:p-7 grayscale opacity-80"
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center text-[#c7c7cc] text-xs">
-            Photo a venir
-          </div>
-        )}
-      </div>
-      <div className="p-3 sm:p-4 border-t border-[#e5e5ea]">
-        <p className="text-[13px] sm:text-sm font-semibold text-[#1d1d1f] leading-tight truncate">
-          {reward.name}
-        </p>
-        {reward.menuItemPrice !== null && (
-          <p className="text-[11px] text-[#86868b] mt-0.5 tabular-nums">
-            ~{(reward.menuItemPrice / 100).toFixed(2).replace(".", ",")} &euro;
+          <p className="text-[13px] text-[#1d1d1f] mt-0.5 leading-snug">
+            {tier.description}
           </p>
-        )}
+        </div>
       </div>
     </div>
   );
 }
-
-/* ───────── helpers ───────── */
-
-interface Tier {
-  pointsCost: number;
-  label: string;
-  rewards: LoyaltyCatalogItem[];
-}
-
-function groupByTier(catalog: LoyaltyCatalogItem[]): Tier[] {
-  const byCost = new Map<number, LoyaltyCatalogItem[]>();
-  for (const r of catalog) {
-    const arr = byCost.get(r.pointsCost) ?? [];
-    arr.push(r);
-    byCost.set(r.pointsCost, arr);
-  }
-  const sortedCosts = [...byCost.keys()].sort((a, b) => a - b);
-  return sortedCosts.map((pointsCost) => {
-    const rewards = byCost.get(pointsCost)!;
-    return {
-      pointsCost,
-      label: tierLabelFor(pointsCost, rewards),
-      rewards,
-    };
-  });
-}
-
-function tierLabelFor(cost: number, rewards: LoyaltyCatalogItem[]): string {
-  if (rewards.some((r) => r.rewardType === "combo_menu")) return "Menu";
-  if (cost >= 175) return "Premium";
-  if (cost >= 150) return "Burger";
-  return "Snack";
-}
-

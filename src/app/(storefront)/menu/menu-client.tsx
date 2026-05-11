@@ -272,7 +272,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
   }, [activeSlug]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Banner fermé — visible uniquement si resto fermé (horaires, override,
           ou fermeture temporaire). Realtime : change instantanément si l'admin
           toggle le statut côté cuisine. */}

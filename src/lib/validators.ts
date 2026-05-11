@@ -76,9 +76,21 @@ export const createOrderSchema = z.object({
     .optional()
     .nullable(),
   // ID de la recompense fidelite selectionnee (optionnel, connecte uniquement).
-  // Le serveur valide que l'utilisateur est connecte, qu'il a assez de points,
-  // et ajoute la recompense comme ligne gratuite.
+  // Loyalty v3 : structure tier + selections par slot. Le serveur valide
+  // que l'utilisateur est connecte, qu'il a assez de points, que les items
+  // choisis correspondent aux regles du palier, puis applique 0€ dessus.
+  // @deprecated mais garde pour compat lors du deploy progressif.
   loyaltyRewardId: optionalUuid,
+  loyaltySelection: z
+    .object({
+      rewardId: z.string().uuid(),
+      mainId: optionalUuid,
+      friesId: optionalUuid,
+      drinkId: optionalUuid,
+      dessertId: optionalUuid,
+    })
+    .optional()
+    .nullable(),
 }).refine(
   (data) => data.orderType !== "delivery" || (data.deliveryAddress && data.deliveryAddress.street && data.deliveryAddress.city),
   { message: "Adresse de livraison requise", path: ["deliveryAddress"] }

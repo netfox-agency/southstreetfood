@@ -1,18 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useMemo } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Lock,
-  Plus,
-  Minus,
-  Sparkles,
-} from "lucide-react";
-import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
+import { ArrowLeft, ArrowRight, Check, Lock, Plus, Minus, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import type { LoyaltyTier } from "@/app/api/loyalty/catalog/route";
 
 interface Transaction {
   id: string;
@@ -25,20 +17,16 @@ interface Transaction {
 interface Props {
   points: number;
   firstName: string;
-  catalog: LoyaltyCatalogItem[];
+  catalog: LoyaltyTier[];
   transactions: Transaction[];
 }
 
 /**
- * Etat connecte — design gamifie tier-by-tier.
+ * Etat connecte — Loyalty v3.
  *
- * Hero noir : brand kicker + balance Pricedown huge + progress path
- * horizontal avec 4 milestones (100 / 150 / 175 / 200). Current pos
- * materialisee par un dot brand rose qui avance sur la ligne.
- *
- * Sous le hero : sections groupees par tier. Chaque section a un
- * header avec lock/unlock state et un compteur "X / Y debloques".
- * Le dernier tier (Menu complet) est mis en avant (featured card).
+ * Hero noir avec balance Pricedown XXL + progress bar visuelle vers
+ * le prochain palier. Sous le hero : grille des 6 paliers avec etat
+ * (locked / available / unlocked). Section historique en bas.
  */
 export function FideliteConnected({
   points,
@@ -46,21 +34,23 @@ export function FideliteConnected({
   catalog,
   transactions,
 }: Props) {
-  /* ───────── Group by tier ───────── */
-  const tiers = useMemo(() => groupByTier(catalog), [catalog]);
-
-  /* ───────── Progress path (hero) ───────── */
-  const path = useMemo(() => buildPath(tiers, points), [tiers, points]);
+  const tiers = useMemo(
+    () => [...catalog].sort((a, b) => a.tierLevel - b.tierLevel),
+    [catalog],
+  );
 
   const nextTier = tiers.find((t) => t.pointsCost > points) ?? null;
-  const nextTierPts = nextTier ? nextTier.pointsCost - points : 0;
+  const pointsToNext = nextTier ? nextTier.pointsCost - points : 0;
+  const lastTier = tiers[tiers.length - 1];
+  const progressPct = lastTier
+    ? Math.min(100, Math.round((points / lastTier.pointsCost) * 100))
+    : 0;
 
   return (
     <div className="relative min-h-screen bg-[#fafafa] overflow-hidden">
       <div className="absolute -top-20 -right-20 h-[400px] w-[400px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
       <div className="absolute top-[60vh] -left-32 h-[360px] w-[360px] rounded-full bg-[#e8416f]/8 blur-[120px] pointer-events-none" />
 
-      {/* Back */}
       <div className="relative mx-auto max-w-5xl px-5 pt-6">
         <Link
           href="/"
@@ -74,7 +64,6 @@ export function FideliteConnected({
       {/* ═════════ HERO ═════════ */}
       <section className="relative mx-auto max-w-5xl px-5 mt-6">
         <div className="relative overflow-hidden rounded-[28px] bg-[#0a0a0a] text-white">
-          {/* Brand accent glow */}
           <div
             aria-hidden
             className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-[#e8416f]/15 blur-3xl"
@@ -92,7 +81,6 @@ export function FideliteConnected({
               </span>
             </div>
 
-            {/* Balance */}
             <div className="flex items-end gap-3 flex-wrap">
               <span className="font-display text-[88px] sm:text-[128px] leading-[0.85] tabular-nums">
                 {points}
@@ -102,64 +90,68 @@ export function FideliteConnected({
               </span>
             </div>
             <p className="mt-3 text-[13px] sm:text-sm text-white/60">
-              Salut {firstName}. 1 euro = 1 point.
+              Salut {firstName}. 1 euro depense = 1 point.
             </p>
 
-            {/* Progress path gamifie */}
-            <div className="mt-8 sm:mt-10">
-              <ProgressPath path={path} />
-            </div>
-
-            {/* Caption under path */}
-            <div className="mt-5 flex items-center gap-2">
-              {nextTier ? (
-                <>
-                  <div className="h-1.5 w-1.5 rounded-full bg-[#e8416f] animate-pulse" />
-                  <p className="text-[12px] sm:text-[13px] text-white/70">
-                    Encore{" "}
-                    <span className="font-bold text-white tabular-nums">
-                      {nextTierPts} pts
-                    </span>{" "}
-                    pour debloquer le palier{" "}
-                    <span className="font-semibold text-white">
-                      {nextTier.pointsCost} pts
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold">
-                  <Check className="h-3 w-3 text-[#e8416f]" />
-                  Tous les paliers sont debloques. Go chercher ton menu.
+            {/* Progress bar globale */}
+            {lastTier && (
+              <div className="mt-8 sm:mt-10">
+                <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progressPct}%` }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="h-full bg-[#e8416f]"
+                  />
                 </div>
-              )}
-            </div>
+                <div className="mt-3 flex items-center gap-2">
+                  {nextTier ? (
+                    <>
+                      <div className="h-1.5 w-1.5 rounded-full bg-[#e8416f] animate-pulse" />
+                      <p className="text-[12px] sm:text-[13px] text-white/70">
+                        Encore{" "}
+                        <span className="font-bold text-white tabular-nums">
+                          {pointsToNext} pts
+                        </span>{" "}
+                        pour debloquer le palier {nextTier.tierLevel} (
+                        {nextTier.description})
+                      </p>
+                    </>
+                  ) : (
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[11px] font-semibold">
+                      <Check className="h-3 w-3 text-[#e8416f]" />
+                      Tous les paliers sont debloques.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
-      {/* ═════════ TIERS ═════════ */}
+      {/* ═════════ LES 6 PALIERS ═════════ */}
       <section className="relative mx-auto max-w-5xl px-5 mt-10 sm:mt-14">
-        <div className="flex items-end justify-between mb-5">
-          <div>
-            <h2 className="text-[22px] sm:text-[26px] font-bold text-[#1d1d1f] tracking-tight">
-              Mes recompenses
-            </h2>
-            <p className="text-sm text-[#86868b] mt-1">
-              Selectionne ta recompense dans le panier au moment de commander.
-            </p>
-          </div>
+        <div className="mb-5">
+          <h2 className="font-display text-3xl sm:text-4xl text-[#1d1d1f] tracking-tight">
+            Mes paliers
+          </h2>
+          <p className="text-sm text-[#86868b] mt-1">
+            Choisis ta recompense au moment de commander, dans le panier.
+          </p>
         </div>
 
-        <div className="space-y-10 sm:space-y-12">
-          {tiers.map((tier) => (
-            <TierSection key={tier.pointsCost} tier={tier} balance={points} />
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {tiers.map((tier) => {
+            const isUnlocked = points >= tier.pointsCost;
+            return <TierCard key={tier.id} tier={tier} unlocked={isUnlocked} />;
+          })}
         </div>
       </section>
 
       {/* ═════════ HISTORIQUE ═════════ */}
       <section className="relative mx-auto max-w-5xl px-5 mt-12 mb-20">
-        <h2 className="text-[18px] sm:text-[20px] font-bold text-[#1d1d1f] tracking-tight mb-4">
+        <h2 className="font-display text-2xl sm:text-3xl text-[#1d1d1f] tracking-tight mb-4">
           Historique
         </h2>
         {transactions.length === 0 ? (
@@ -197,16 +189,20 @@ export function FideliteConnected({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[14px] font-medium text-[#1d1d1f] truncate">
-                      {t.description ||
-                        (isEarn ? "Points gagnes" : "Points utilises")}
+                    <p className="text-[13px] font-medium text-[#1d1d1f] truncate">
+                      {t.description || (isEarn ? "Points cumules" : "Points utilises")}
                     </p>
-                    <p className="text-[12px] text-[#86868b]">
-                      {formatDate(t.createdAt)}
+                    <p className="text-[11px] text-[#86868b]">
+                      {new Date(t.createdAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </p>
                   </div>
                   <span
-                    className={`tabular-nums text-[14px] font-bold ${
+                    className={`text-[14px] font-bold tabular-nums shrink-0 ${
                       isEarn ? "text-emerald-600" : "text-[#e8416f]"
                     }`}
                   >
@@ -223,334 +219,54 @@ export function FideliteConnected({
   );
 }
 
-/* ──────────────── Progress Path ──────────────── */
-
-interface PathNode {
-  pointsCost: number;
-  reached: boolean;
-  isCurrent: boolean;
-  rewardLabel: string;
-}
-
-function buildPath(
-  tiers: Tier[],
-  balance: number,
-): { nodes: PathNode[]; fillPct: number } {
-  const nodes: PathNode[] = tiers.map((t) => ({
-    pointsCost: t.pointsCost,
-    reached: balance >= t.pointsCost,
-    isCurrent: false,
-    rewardLabel: t.label,
-  }));
-
-  // Calcul du fill (0-100%) : position relative de balance sur l'echelle
-  // de 0 au dernier milestone. Plafonne a 100%.
-  const last = nodes[nodes.length - 1]?.pointsCost ?? 100;
-  const fillPct = Math.max(0, Math.min(100, (balance / last) * 100));
-
-  return { nodes, fillPct };
-}
-
-function ProgressPath({
-  path,
+function TierCard({
+  tier,
+  unlocked,
 }: {
-  path: { nodes: PathNode[]; fillPct: number };
+  tier: LoyaltyTier;
+  unlocked: boolean;
 }) {
   return (
-    <div className="relative">
-      {/* Track line (base + fill) */}
-      <div className="absolute left-0 right-0 top-[10px] h-[3px] bg-white/10 rounded-full" />
-      <div
-        className="absolute left-0 top-[10px] h-[3px] bg-[#e8416f] rounded-full transition-all duration-700"
-        style={{ width: `${path.fillPct}%` }}
-      />
-
-      {/* Milestones */}
-      <div className="relative flex justify-between">
-        {path.nodes.map((node) => (
-          <div
-            key={node.pointsCost}
-            className="flex flex-col items-center"
-            style={{ width: `${100 / path.nodes.length}%` }}
-          >
-            <div
-              className={`h-[22px] w-[22px] rounded-full flex items-center justify-center border-2 transition-all ${
-                node.reached
-                  ? "bg-[#e8416f] border-[#e8416f]"
-                  : "bg-[#0a0a0a] border-white/30"
-              }`}
-            >
-              {node.reached ? (
-                <Check className="h-3 w-3 text-white" strokeWidth={3} />
-              ) : (
-                <div className="h-1.5 w-1.5 rounded-full bg-white/40" />
-              )}
-            </div>
-            <span
-              className={`font-display text-[15px] mt-2 tabular-nums ${
-                node.reached ? "text-white" : "text-white/40"
-              }`}
-            >
-              {node.pointsCost}
-            </span>
-            <span className="text-[10px] text-white/40 uppercase tracking-wider mt-0.5 hidden sm:block">
-              {node.rewardLabel}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ──────────────── Tier Section ──────────────── */
-
-interface Tier {
-  pointsCost: number;
-  label: string;
-  rewards: LoyaltyCatalogItem[];
-}
-
-function groupByTier(catalog: LoyaltyCatalogItem[]): Tier[] {
-  const byCost = new Map<number, LoyaltyCatalogItem[]>();
-  for (const r of catalog) {
-    const arr = byCost.get(r.pointsCost) ?? [];
-    arr.push(r);
-    byCost.set(r.pointsCost, arr);
-  }
-  const sortedCosts = [...byCost.keys()].sort((a, b) => a - b);
-  return sortedCosts.map((pointsCost) => {
-    const rewards = byCost.get(pointsCost)!;
-    return {
-      pointsCost,
-      label: tierLabelFor(pointsCost, rewards),
-      rewards,
-    };
-  });
-}
-
-function tierLabelFor(cost: number, rewards: LoyaltyCatalogItem[]): string {
-  if (rewards.some((r) => r.rewardType === "combo_menu")) return "Menu";
-  if (cost >= 175) return "Premium";
-  if (cost >= 150) return "Burger";
-  return "Snack";
-}
-
-function TierSection({ tier, balance }: { tier: Tier; balance: number }) {
-  const unlocked = balance >= tier.pointsCost;
-  const ptsLeft = Math.max(0, tier.pointsCost - balance);
-  const isCombo = tier.rewards.some((r) => r.rewardType === "combo_menu");
-
-  return (
-    <div>
-      {/* Section header */}
-      <div className="flex items-center gap-3 mb-4">
+    <motion.div
+      whileHover={unlocked ? { y: -2 } : undefined}
+      transition={{ duration: 0.2 }}
+      className={`relative rounded-2xl border p-5 transition-all duration-300 ${
+        unlocked
+          ? "bg-white border-[#e8416f]/40 shadow-[0_12px_32px_-12px_rgba(232,65,111,0.35)]"
+          : "bg-white/70 backdrop-blur-2xl border-[#e5e5ea]"
+      }`}
+    >
+      <div className="flex items-start gap-4">
         <div
-          className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 ${
+          className={`h-12 w-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-300 ${
             unlocked
-              ? "bg-[#0a0a0a] text-white"
-              : "bg-[#f5f5f7] text-[#86868b]"
+              ? "bg-[#e8416f] text-white shadow-[0_4px_12px_-4px_rgba(232,65,111,0.5)]"
+              : "bg-[#f5f5f7] text-[#c7c7cc]"
           }`}
         >
-          {unlocked ? (
-            <Check className="h-3.5 w-3.5 text-[#e8416f]" strokeWidth={3} />
-          ) : (
-            <Lock className="h-3 w-3" />
-          )}
-          <span className="font-display text-[15px] tabular-nums leading-none">
-            {tier.pointsCost}
-          </span>
-          <span className="text-[10px] font-semibold tracking-wider uppercase opacity-70">
-            pts
+          <span className="font-display text-lg tabular-nums">
+            {tier.tierLevel}
           </span>
         </div>
-        <div className="flex-1 h-px bg-[#e5e5ea]" />
-        <span className="text-[11px] font-medium uppercase tracking-wider text-[#86868b]">
-          {unlocked ? "Debloque" : `Encore ${ptsLeft} pts`}
-        </span>
-      </div>
-
-      {/* Cards layout : combo = featured full-width, free_item = grid */}
-      {isCombo ? (
-        <ComboFeaturedCard reward={tier.rewards[0]} unlocked={unlocked} />
-      ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-          {tier.rewards.map((r) => (
-            <RewardCard key={r.id} reward={r} unlocked={unlocked} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ──────────────── Reward Cards ──────────────── */
-
-function RewardCard({
-  reward,
-  unlocked,
-}: {
-  reward: LoyaltyCatalogItem;
-  unlocked: boolean;
-}) {
-  return (
-    <Link
-      href="/menu"
-      className={`group relative rounded-2xl overflow-hidden aspect-[4/5] flex flex-col border transition-all ${
-        unlocked
-          ? "border-[#e5e5ea] hover:border-[#0a0a0a]/30 hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.15)] bg-white"
-          : "border-[#e5e5ea] bg-white"
-      }`}
-    >
-      <div className="relative flex-1 bg-gradient-to-b from-white to-[#f0f0f2]">
-        {reward.imageUrl ? (
-          <Image
-            src={reward.imageUrl}
-            alt={reward.name}
-            fill
-            sizes="(max-width: 640px) 50vw, 33vw"
-            className={`object-contain p-5 sm:p-7 transition-transform ${
-              unlocked ? "group-hover:scale-[1.05]" : "grayscale opacity-80"
-            }`}
-          />
-        ) : (
-          <div className="h-full w-full flex items-center justify-center text-[#c7c7cc] text-xs">
-            Photo a venir
-          </div>
-        )}
-        {!unlocked && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-10 w-10 rounded-full bg-[#0a0a0a]/80 backdrop-blur flex items-center justify-center">
-              <Lock className="h-4 w-4 text-white" />
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="p-3 sm:p-4 border-t border-[#e5e5ea]">
-        <p className="text-[13px] sm:text-sm font-semibold text-[#1d1d1f] leading-tight truncate">
-          {reward.name}
-        </p>
-        <div className="flex items-center justify-between mt-1 gap-2">
-          <span
-            className={`text-[11px] ${unlocked ? "text-emerald-600 font-semibold" : "text-[#86868b]"}`}
-          >
-            {unlocked ? "Disponible" : "Bientot"}
-          </span>
-          {reward.menuItemPrice !== null && (
-            <span className="text-[11px] text-[#86868b] tabular-nums">
-              ~{(reward.menuItemPrice / 100).toFixed(2).replace(".", ",")}{" "}
-              &euro;
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function ComboFeaturedCard({
-  reward,
-  unlocked,
-}: {
-  reward: LoyaltyCatalogItem;
-  unlocked: boolean;
-}) {
-  return (
-    <Link
-      href="/menu"
-      className={`group block relative overflow-hidden rounded-3xl border transition-all ${
-        unlocked
-          ? "border-[#0a0a0a] hover:shadow-[0_12px_32px_-12px_rgba(0,0,0,0.25)]"
-          : "border-[#e5e5ea]"
-      }`}
-    >
-      <div
-        className={`relative flex flex-col sm:flex-row items-stretch ${
-          unlocked ? "bg-[#0a0a0a] text-white" : "bg-[#f5f5f7] text-[#86868b]"
-        }`}
-      >
-        {/* Image side */}
-        <div className="relative w-full sm:w-1/2 aspect-[16/10] sm:aspect-auto sm:min-h-[280px] bg-gradient-to-br from-white/5 to-transparent">
-          {reward.imageUrl && (
-            <Image
-              src={reward.imageUrl}
-              alt={reward.name}
-              fill
-              sizes="(max-width: 640px) 100vw, 50vw"
-              className={`object-contain p-6 sm:p-10 ${unlocked ? "" : "grayscale opacity-70"}`}
-            />
-          )}
-          {/* Glow brand accent (seulement si unlocked) */}
-          {unlocked && (
-            <div
-              aria-hidden
-              className="absolute -right-16 -top-16 h-56 w-56 rounded-full bg-[#e8416f]/20 blur-3xl"
-            />
-          )}
-        </div>
-
-        {/* Content side */}
-        <div className="relative p-6 sm:p-10 flex-1 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-3">
-            <span
-              className={`text-[10px] font-bold tracking-[0.2em] uppercase ${
-                unlocked ? "text-[#e8416f]" : "text-[#aeaeb2]"
-              }`}
-            >
-              Le gros lot
-            </span>
-            {!unlocked && (
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-[13px] font-bold text-[#1d1d1f] tabular-nums">
+              {tier.pointsCost} pts
+            </p>
+            {unlocked ? (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#fff5f8] border border-[#e8416f]/30 text-[10px] font-bold text-[#e8416f]">
+                <Check className="h-2.5 w-2.5" />
+                Dispo
+              </span>
+            ) : (
               <Lock className="h-3 w-3 text-[#aeaeb2]" />
             )}
           </div>
-          <h3
-            className={`font-display text-4xl sm:text-5xl leading-none tracking-tight mb-3 ${
-              unlocked ? "text-white" : "text-[#1d1d1f]"
-            }`}
-          >
-            {reward.name}
-          </h3>
-          <p
-            className={`text-[13px] sm:text-sm max-w-md ${
-              unlocked ? "text-white/70" : "text-[#86868b]"
-            }`}
-          >
-            {reward.description ??
-              "Un menu complet offert quand tu atteins le dernier palier."}
+          <p className="text-[13px] text-[#1d1d1f] mt-0.5 leading-snug">
+            {tier.description}
           </p>
-
-          <div className="mt-5 inline-flex items-center gap-3">
-            <div
-              className={`rounded-full px-3.5 py-1.5 font-display text-[15px] tabular-nums ${
-                unlocked
-                  ? "bg-[#e8416f] text-white"
-                  : "bg-white text-[#1d1d1f] border border-[#e5e5ea]"
-              }`}
-            >
-              {reward.pointsCost} PTS
-            </div>
-            {unlocked ? (
-              <span className="text-[12px] text-emerald-400 font-semibold inline-flex items-center gap-1">
-                <Check className="h-3.5 w-3.5" /> Disponible
-              </span>
-            ) : (
-              <span className="text-[12px] text-[#86868b]">
-                Le plus gros choix
-              </span>
-            )}
-          </div>
         </div>
       </div>
-    </Link>
+    </motion.div>
   );
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 }

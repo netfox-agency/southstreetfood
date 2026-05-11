@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { FideliteGuest } from "./fidelite-guest";
 import { FideliteConnected } from "./fidelite-connected";
-import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
+import type { LoyaltyTier } from "@/app/api/loyalty/catalog/route";
 
 export const dynamic = "force-dynamic";
 
@@ -30,22 +30,27 @@ export default async function FidelitePage() {
   const { data: catalogData } = await admin
     .from("loyalty_rewards")
     .select(
-      "id, name, description, points_cost, reward_type, image_url, reward_menu_item_id, bundle_menu_item_ids, menu_items:reward_menu_item_id(base_price, image_url)",
+      "id, tier_level, name, description, points_cost, slot_main, slot_fries, slot_drink, slot_dessert, main_categories, excluded_slugs",
     )
     .eq("is_active", true)
-    .order("points_cost", { ascending: true });
+    .eq("reward_type", "tier")
+    .order("tier_level", { ascending: true });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const catalog: LoyaltyCatalogItem[] = (catalogData ?? []).map((r: any) => ({
+  const catalog: LoyaltyTier[] = (catalogData ?? []).map((r: any) => ({
     id: r.id,
+    tierLevel: r.tier_level,
     name: r.name,
     description: r.description,
     pointsCost: r.points_cost,
-    imageUrl: r.image_url ?? r.menu_items?.image_url ?? null,
-    menuItemId: r.reward_menu_item_id,
-    menuItemPrice: r.menu_items?.base_price ?? null,
-    rewardType: r.reward_type,
-    bundleMenuItemIds: r.bundle_menu_item_ids ?? null,
+    slots: {
+      main: !!r.slot_main,
+      fries: !!r.slot_fries,
+      drink: !!r.slot_drink,
+      dessert: !!r.slot_dessert,
+    },
+    mainCategories: r.main_categories ?? [],
+    excludedSlugs: r.excluded_slugs ?? [],
   }));
 
   if (!user) {

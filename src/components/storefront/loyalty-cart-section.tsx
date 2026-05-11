@@ -2,31 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Gift, Lock, Check, Sparkles, ArrowRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { useCartStore } from "@/stores/cart-store";
-import type { LoyaltyCatalogItem } from "@/app/api/loyalty/catalog/route";
+import { useCartStore, type LoyaltySelection } from "@/stores/cart-store";
+import type { LoyaltyTier } from "@/app/api/loyalty/catalog/route";
+import {
+  LoyaltyTierPicker,
+  type LoyaltyPickerSelection,
+} from "@/components/storefront/loyalty-tier-picker";
 
 /**
- * Section fidelite dans le panier.
+ * Section fidelite v3 dans le panier — tier-based.
  *
  * 3 etats :
- *  1. Guest → banner "Crée un compte, gagne X pts + bonus 50"
- *  2. Connecte sans assez de points → encouragement + progress
- *  3. Connecte avec au moins 100 pts → selecteur de recompense (radio)
+ *  1. Guest → banner "Crée un compte pour cumuler"
+ *  2. Connecte → liste les 6 paliers avec leur statut (locked/available/picked)
+ *     Click sur palier accessible → ouvre le picker (modal multi-step)
+ *  3. Recompense engagee → recap inline + bouton "Modifier" / "Retirer"
  *
- * Realtime : rafraichit balance au mount. Pas besoin de subscription
- * live car les points sont credites apres livraison, pas en temps reel
- * dans le cart.
+ * Securite : le client ne voit JAMAIS d'item au-dela des regles du palier
+ * (verifie par /api/loyalty/eligible-items). Le serveur revalide a la
+ * creation de commande via consume_loyalty_v3.
  */
 export function LoyaltyCartSection() {
   const [userId, setUserId] = useState<string | null>(null);
   const [checking, setChecking] = useState(true);
   const [balance, setBalance] = useState<number>(0);
-  const [catalog, setCatalog] = useState<LoyaltyCatalogItem[]>([]);
-  const loyaltyRewardId = useCartStore((s) => s.loyaltyRewardId);
-  const setLoyaltyRewardId = useCartStore((s) => s.setLoyaltyRewardId);
+  const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
+  const [pickerTier, setPickerTier] = useState<LoyaltyTier | null>(null);
+
+  const loyaltySelection = useCartStore((s) => s.loyaltySelection);
+  const setLoyaltySelection = useCartStore((s) => s.setLoyaltySelection);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,25 +42,21 @@ export function LoyaltyCartSection() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-
       if (cancelled) return;
-
       if (!user) {
-        // Guest : on affiche juste le banner, inutile de fetch catalogue
         setUserId(null);
         setChecking(false);
         return;
       }
       setUserId(user.id);
 
-      // Fetch balance + catalog en parallele
       const [balanceRes, catalogRes] = await Promise.all([
         fetch("/api/loyalty/balance").then((r) => r.json()),
         fetch("/api/loyalty/catalog").then((r) => r.json()),
       ]);
       if (cancelled) return;
       setBalance(balanceRes.points ?? 0);
-      setCatalog(catalogRes.rewards ?? []);
+      setTiers(catalogRes.tiers ?? []);
       setChecking(false);
     })();
     return () => {
@@ -61,21 +64,35 @@ export function LoyaltyCartSection() {
     };
   }, []);
 
-  // Clean up: si la recompense selectionnee n'est plus accessible (user a
-  // switche de compte, balance a change), on deselectionne.
+  // Cleanup : si la selection persistee n'est plus accessible (balance change,
+  // user deconnecte), on la retire.
   useEffect(() => {
-    if (!loyaltyRewardId) return;
+    if (!loyaltySelection) return;
     if (!userId) {
-      setLoyaltyRewardId(null);
+      setLoyaltySelection(null);
       return;
     }
-    const r = catalog.find((c) => c.id === loyaltyRewardId);
-    if (r && balance < r.pointsCost) setLoyaltyRewardId(null);
-  }, [userId, balance, catalog, loyaltyRewardId, setLoyaltyRewardId]);
+    const tier = tiers.find((t) => t.id === loyaltySelection.rewardId);
+    if (!tier || balance < tier.pointsCost) {
+      setLoyaltySelection(null);
+    }
+  }, [userId, balance, tiers, loyaltySelection, setLoyaltySelection]);
+
+  const handlePickerConfirm = (sel: LoyaltyPickerSelection) => {
+    const newSelection: LoyaltySelection = {
+      rewardId: sel.rewardId,
+      mainId: sel.mainId,
+      friesId: sel.friesId,
+      drinkId: sel.drinkId,
+      dessertId: sel.dessertId,
+    };
+    setLoyaltySelection(newSelection);
+    setPickerTier(null);
+  };
 
   if (checking) {
     return (
-      <div className="mb-5 h-20 rounded-2xl bg-white border border-[#e5e5ea] animate-pulse" />
+      <div className="mb-5 h-32 rounded-2xl bg-white/70 backdrop-blur-2xl border border-white/60 animate-pulse" />
     );
   }
 
@@ -84,7 +101,7 @@ export function LoyaltyCartSection() {
     return (
       <div className="mb-5 rounded-2xl border border-[#e5e5ea] bg-white p-5">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#0a0a0a] flex items-center justify-center shrink-0">
+          <div className="h-10 w-10 rounded-xl bg-[#0a0a0a] flex items-center justify-center shrink-0 shadow-[0_4px_12px_-4px_rgba(232,65,111,0.4)]">
             <Sparkles className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0 flex-1">
@@ -118,141 +135,195 @@ export function LoyaltyCartSection() {
     );
   }
 
-  /* ─── Etat 2 : connecte sans recompense accessible ─── */
-  const affordable = catalog.filter((r) => r.pointsCost <= balance);
-  const nextReward = catalog.find((r) => r.pointsCost > balance);
+  /* ─── Etat connecte ─── */
+  const selectedTier = loyaltySelection
+    ? tiers.find((t) => t.id === loyaltySelection.rewardId) ?? null
+    : null;
+  const affordableCount = tiers.filter((t) => t.pointsCost <= balance).length;
+  const nextTier = tiers.find((t) => t.pointsCost > balance) ?? null;
 
-  if (affordable.length === 0) {
-    return (
-      <div className="mb-5 rounded-2xl border border-[#e5e5ea] bg-white p-5">
-        <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-xl bg-[#f5f5f7] border border-[#e5e5ea] flex items-center justify-center shrink-0">
-            <Gift className="h-5 w-5 text-[#86868b]" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline gap-1.5">
-              <p className="text-[14px] font-semibold text-[#1d1d1f]">
-                Solde : {balance} pts
-              </p>
-            </div>
-            {nextReward ? (
-              <p className="text-[12px] text-[#86868b] mt-0.5 leading-relaxed">
-                Encore{" "}
-                <span className="font-semibold text-[#1d1d1f]">
-                  {nextReward.pointsCost - balance} pts
-                </span>{" "}
-                pour debloquer &laquo; {nextReward.name} &raquo;.
-              </p>
-            ) : (
-              <p className="text-[12px] text-[#86868b] mt-0.5">
-                Commence a cumuler des points sur cette commande.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  /* ─── Etat 3 : connecte avec au moins une recompense ─── */
   return (
-    <div className="mb-5 rounded-2xl border border-[#e5e5ea] bg-white p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <p className="text-[14px] font-semibold text-[#1d1d1f]">
-            Utiliser mes points
-          </p>
-          <p className="text-[11px] text-[#86868b] mt-0.5">
-            Solde : {balance} pts &middot; 1 recompense par commande
-          </p>
+    <>
+      <div className="mb-5 rounded-2xl border border-[#e5e5ea] bg-white p-5">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <p className="text-[14px] font-semibold text-[#1d1d1f]">
+              {selectedTier ? "Recompense engagee" : "Mes points"}
+            </p>
+            <p className="text-[11px] text-[#86868b] mt-0.5">
+              Solde : <span className="font-semibold text-[#1d1d1f] tabular-nums">{balance} pts</span>
+              {!selectedTier && affordableCount > 0 && (
+                <> &middot; {affordableCount} palier{affordableCount > 1 ? "s" : ""} dispo</>
+              )}
+            </p>
+          </div>
+          {selectedTier && (
+            <button
+              type="button"
+              onClick={() => setLoyaltySelection(null)}
+              className="text-[12px] font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
+            >
+              Retirer
+            </button>
+          )}
         </div>
-        {loyaltyRewardId && (
-          <button
-            type="button"
-            onClick={() => setLoyaltyRewardId(null)}
-            className="text-[12px] font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors cursor-pointer"
-          >
-            Retirer
-          </button>
+
+        {selectedTier ? (
+          <SelectedRecap
+            tier={selectedTier}
+            onChange={() => setPickerTier(selectedTier)}
+          />
+        ) : affordableCount === 0 ? (
+          <NoTierYet balance={balance} nextTier={nextTier} />
+        ) : (
+          <TiersList
+            tiers={tiers}
+            balance={balance}
+            onPick={(tier) => setPickerTier(tier)}
+          />
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
-        {catalog.map((r) => {
-          const canAfford = balance >= r.pointsCost;
-          const selected = loyaltyRewardId === r.id;
-          return (
-            <button
-              type="button"
-              key={r.id}
-              disabled={!canAfford}
-              onClick={() => setLoyaltyRewardId(selected ? null : r.id)}
-              className={`text-left flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                selected
-                  ? "border-[#0a0a0a] bg-[#0a0a0a]/[0.02] cursor-pointer"
-                  : canAfford
-                    ? "border-[#e5e5ea] hover:border-[#0a0a0a]/30 cursor-pointer"
-                    : "border-[#e5e5ea] opacity-60 cursor-not-allowed"
-              }`}
-              aria-pressed={selected}
-            >
-              <div className="relative h-14 w-14 shrink-0 rounded-lg bg-[#f5f5f7] overflow-hidden">
-                {r.imageUrl ? (
-                  <Image
-                    src={r.imageUrl}
-                    alt={r.name}
-                    fill
-                    sizes="56px"
-                    className={`object-contain p-1.5 ${canAfford ? "" : "grayscale"}`}
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <Gift className="h-5 w-5 text-[#c7c7cc]" />
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-[#1d1d1f] truncate">
-                  {r.name}
-                </p>
-                <p className="text-[11px] text-[#86868b]">
-                  {r.pointsCost} pts
-                  {r.menuItemPrice !== null && (
-                    <>
-                      {" "}
-                      &middot; Valeur{" "}
-                      {(r.menuItemPrice / 100).toFixed(2).replace(".", ",")}{" "}
-                      &euro;
-                    </>
-                  )}
-                </p>
-              </div>
-              <div
-                className={`h-6 w-6 rounded-full border flex items-center justify-center shrink-0 ${
-                  selected
-                    ? "bg-[#0a0a0a] border-[#0a0a0a]"
-                    : canAfford
-                      ? "bg-white border-[#c7c7cc]"
-                      : "bg-[#f5f5f7] border-[#e5e5ea]"
-                }`}
-              >
-                {selected ? (
-                  <Check className="h-3.5 w-3.5 text-white" />
-                ) : !canAfford ? (
-                  <Lock className="h-3 w-3 text-[#aeaeb2]" />
-                ) : null}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+      {/* Picker modal */}
+      <AnimatePresence>
+        {pickerTier && (
+          <LoyaltyTierPicker
+            tier={pickerTier}
+            onClose={() => setPickerTier(null)}
+            onConfirm={handlePickerConfirm}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
 
-      {loyaltyRewardId && (
-        <p className="mt-3 text-[11px] text-[#86868b] leading-relaxed">
-          Ta recompense sera ajoutee gratuitement a la commande. Les points
-          seront debites apres validation.
-        </p>
-      )}
+/* ───────── Sub-components ───────── */
+
+function NoTierYet({
+  balance,
+  nextTier,
+}: {
+  balance: number;
+  nextTier: LoyaltyTier | null;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f5f5f7]">
+      <div className="h-10 w-10 rounded-xl bg-white border border-[#e5e5ea] flex items-center justify-center shrink-0">
+        <Gift className="h-5 w-5 text-[#86868b]" />
+      </div>
+      <div className="min-w-0 flex-1">
+        {nextTier ? (
+          <>
+            <p className="text-[13px] font-semibold text-[#1d1d1f]">
+              Encore{" "}
+              <span className="tabular-nums">
+                {nextTier.pointsCost - balance} pts
+              </span>{" "}
+              pour debloquer
+            </p>
+            <p className="text-[11px] text-[#86868b] mt-0.5">
+              {nextTier.name} : {nextTier.description}
+            </p>
+          </>
+        ) : (
+          <p className="text-[13px] text-[#86868b]">
+            Cumule sur cette commande pour debloquer ton premier palier.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TiersList({
+  tiers,
+  balance,
+  onPick,
+}: {
+  tiers: LoyaltyTier[];
+  balance: number;
+  onPick: (tier: LoyaltyTier) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 gap-2">
+      {tiers.map((tier) => {
+        const canAfford = balance >= tier.pointsCost;
+        return (
+          <motion.button
+            type="button"
+            key={tier.id}
+            disabled={!canAfford}
+            onClick={() => canAfford && onPick(tier)}
+            whileTap={canAfford ? { scale: 0.98 } : undefined}
+            className={`text-left flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${
+              canAfford
+                ? "border-[#e5e5ea] hover:border-[#e8416f]/40 hover:shadow-[0_8px_24px_-12px_rgba(232,65,111,0.2)] hover:-translate-y-px cursor-pointer bg-white"
+                : "border-[#e5e5ea] opacity-50 cursor-not-allowed bg-[#fafafa]"
+            }`}
+          >
+            <div
+              className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
+                canAfford
+                  ? "bg-[#e8416f] text-white shadow-[0_4px_12px_-4px_rgba(232,65,111,0.5)]"
+                  : "bg-[#f5f5f7] text-[#c7c7cc]"
+              }`}
+            >
+              <span className="font-display text-base tabular-nums">
+                {tier.tierLevel}
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-semibold text-[#1d1d1f]">
+                {tier.description}
+              </p>
+              <p className="text-[11px] text-[#86868b] mt-0.5 tabular-nums">
+                {tier.pointsCost} pts
+              </p>
+            </div>
+            <div className="shrink-0">
+              {canAfford ? (
+                <ArrowRight className="h-4 w-4 text-[#e8416f]" />
+              ) : (
+                <Lock className="h-3.5 w-3.5 text-[#aeaeb2]" />
+              )}
+            </div>
+          </motion.button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SelectedRecap({
+  tier,
+  onChange,
+}: {
+  tier: LoyaltyTier;
+  onChange: () => void;
+}) {
+  return (
+    <div className="rounded-xl bg-[#fff5f8] border border-[#e8416f]/30 p-4">
+      <div className="flex items-start gap-3">
+        <div className="h-10 w-10 rounded-xl bg-[#e8416f] flex items-center justify-center shrink-0 shadow-[0_4px_12px_-4px_rgba(232,65,111,0.5)]">
+          <Check className="h-5 w-5 text-white" strokeWidth={3} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] font-semibold text-[#1d1d1f]">
+            {tier.description}
+          </p>
+          <p className="text-[11px] text-[#86868b] mt-0.5 tabular-nums">
+            {tier.pointsCost} pts seront debites apres validation
+          </p>
+          <button
+            type="button"
+            onClick={onChange}
+            className="mt-2 text-[11px] font-semibold text-[#e8416f] hover:underline cursor-pointer"
+          >
+            Modifier ma selection
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
