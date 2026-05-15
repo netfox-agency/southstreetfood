@@ -46,6 +46,9 @@ interface CustomerDetail {
     deliveryFee: number | null;
     loyaltyPointsEarned: number | null;
     loyaltyRewardId: string | null;
+    loyaltyTierLevel: number | null;
+    loyaltyTierDescription: string | null;
+    loyaltyTierPointsCost: number | null;
     createdAt: string;
     notes: string | null;
   }>;
@@ -506,9 +509,19 @@ function OrderRow({
             {ORDER_STATUS_LABELS[order.status] ?? order.status}
           </span>
           {order.loyaltyRewardId && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-[#fde8ee] text-[#e8416f]">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase bg-[#fde8ee] text-[#e8416f]"
+              title={order.loyaltyTierDescription ?? undefined}
+            >
               <Sparkles className="h-2.5 w-2.5" />
-              Recompense
+              {order.loyaltyTierLevel !== null
+                ? `Palier ${order.loyaltyTierLevel}`
+                : "Recompense"}
+              {order.loyaltyTierPointsCost !== null && (
+                <span className="font-medium normal-case tabular-nums opacity-80">
+                  · -{order.loyaltyTierPointsCost}pts
+                </span>
+              )}
             </span>
           )}
         </div>

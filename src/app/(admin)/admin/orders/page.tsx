@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store, Navigation } from "lucide-react";
+import { X, Phone, MapPin, Undo2, Inbox, Truck, ShoppingBag, Store, Navigation, Sparkles } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { PrintTicketButton } from "@/components/print-ticket-button";
 import { cn, formatPrice } from "@/lib/utils";
@@ -112,13 +112,19 @@ function OrderCard({
       )}
     >
       <div className="flex items-start justify-between mb-2.5">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-wrap">
           <span className="text-xl font-bold text-[#1d1d1f] tabular-nums">
             #{String(order.order_number).padStart(4, "0")}
           </span>
           {isPriority && (
             <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#1d1d1f] text-white shrink-0">
               À faire
+            </span>
+          )}
+          {order.loyalty_reward_id && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-[#fde8ee] text-[#e8416f] shrink-0">
+              <Sparkles className="h-2.5 w-2.5" />
+              Fidelite
             </span>
           )}
         </div>
@@ -230,7 +236,7 @@ function OrderDetail({
         transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
       >
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-[#e5e5ea] px-6 py-4 flex items-center justify-between rounded-t-3xl z-10">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-3 min-w-0 flex-wrap">
             <span className="text-2xl font-bold text-[#1d1d1f] tabular-nums">
               #{String(order.order_number).padStart(4, "0")}
             </span>
@@ -243,6 +249,12 @@ function OrderDetail({
               <typeInfo.icon className="h-3 w-3" />
               {typeInfo.label}
             </span>
+            {order.loyalty_reward_id && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#fde8ee] text-[#e8416f] shrink-0">
+                <Sparkles className="h-3 w-3" />
+                Fidelite
+              </span>
+            )}
             <span className="text-xs text-[#86868b] tabular-nums">
               · {minutes} min
             </span>

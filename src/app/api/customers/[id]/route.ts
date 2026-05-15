@@ -46,10 +46,11 @@ export async function GET(
   }
 
   // Fetch orders qui matchent le critere
+  // Join loyalty_rewards pour afficher le nom du palier au lieu de l'UUID brut
   const orderQuery = admin
     .from("orders")
     .select(
-      "id, order_number, order_type, status, total, subtotal, delivery_fee, customer_name, customer_phone, customer_email, notes, loyalty_points_earned, loyalty_reward_id, created_at, user_id",
+      "id, order_number, order_type, status, total, subtotal, delivery_fee, customer_name, customer_phone, customer_email, notes, loyalty_points_earned, loyalty_reward_id, created_at, user_id, loyalty_rewards:loyalty_reward_id(tier_level, description, points_cost)",
     )
     .order("created_at", { ascending: false });
 
@@ -161,6 +162,15 @@ export async function GET(
       deliveryFee: o.delivery_fee,
       loyaltyPointsEarned: o.loyalty_points_earned,
       loyaltyRewardId: o.loyalty_reward_id,
+      loyaltyTierLevel:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((o as any).loyalty_rewards?.tier_level as number | undefined) ?? null,
+      loyaltyTierDescription:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((o as any).loyalty_rewards?.description as string | undefined) ?? null,
+      loyaltyTierPointsCost:
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ((o as any).loyalty_rewards?.points_cost as number | undefined) ?? null,
       createdAt: o.created_at,
       notes: o.notes,
     })),
