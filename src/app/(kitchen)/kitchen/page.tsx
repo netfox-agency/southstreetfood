@@ -45,6 +45,16 @@ function getMinutes(dateStr: string): number {
   return Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
 }
 
+/**
+ * Formate l'age d'une commande de maniere lisible :
+ *  < 60 min → "X min" | < 24h → "Xh" | sinon → "Xj"
+ */
+function formatAge(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 1440) return `${Math.floor(minutes / 60)}h`;
+  return `${Math.floor(minutes / 1440)}j`;
+}
+
 type OrderTypeInfo = {
   label: string;
   icon: typeof Truck;
@@ -154,7 +164,7 @@ function OrderCard({
               isLate ? "text-red-500" : "text-[#86868b]"
             )}
           >
-            {minutes} min
+            {formatAge(minutes)}
           </span>
         </div>
       </div>
@@ -276,7 +286,7 @@ function OrderDetail({
               {typeInfo.label}
             </span>
             <span className="text-xs text-[#86868b] tabular-nums">
-              · {minutes} min
+              · {formatAge(minutes)}
             </span>
           </div>
           <button

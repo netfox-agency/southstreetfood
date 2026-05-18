@@ -187,7 +187,7 @@ function TierCard({
               : "bg-[#f5f5f7] text-[#c7c7cc]"
           }`}
         >
-          <span className="font-display text-lg tabular-nums">
+          <span className="font-bold text-base tabular-nums">
             {tier.tierLevel}
           </span>
         </div>

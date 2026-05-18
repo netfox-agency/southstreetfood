@@ -163,7 +163,7 @@ export function LoyaltyAdminClient({
                       : "bg-[#f5f5f7] text-[#86868b]",
                   )}
                 >
-                  <span className="text-lg font-bold tabular-nums">
+                  <span className="text-base font-bold tabular-nums">
                     {tier.tierLevel}
                   </span>
                 </div>
