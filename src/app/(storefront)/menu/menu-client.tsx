@@ -259,16 +259,29 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
 
   useEffect(() => {
     if (!tabsRef.current) return;
-    const activeTab = tabsRef.current.querySelector(
+    const container = tabsRef.current;
+    const activeTab = container.querySelector<HTMLElement>(
       `[data-slug="${activeSlug}"]`
     );
-    if (activeTab) {
-      activeTab.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
-      });
-    }
+    if (!activeTab) return;
+
+    // Scroll HORIZONTAL uniquement du container, pas la page entiere.
+    // L'ancienne version utilisait activeTab.scrollIntoView() qui peut
+    // declencher un scroll vertical de la page meme avec block:nearest
+    // dans certains browsers/scenarios → ressentait comme "la page
+    // remonte toute seule" quand on scroll dans le menu. Bug critique
+    // UX. Fix : on calcule le scrollLeft cible manuellement, on touche
+    // jamais au scroll vertical.
+    const containerRect = container.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+    const offsetLeft = tabRect.left - containerRect.left + container.scrollLeft;
+    const targetScrollLeft =
+      offsetLeft - container.clientWidth / 2 + tabRect.width / 2;
+
+    container.scrollTo({
+      left: targetScrollLeft,
+      behavior: "smooth",
+    });
   }, [activeSlug]);
 
   return (
