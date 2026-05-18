@@ -7,6 +7,7 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import { ArrowRight, MapPin, X } from "lucide-react";
 import { DELIVERY_ZONES } from "@/lib/constants";
 import { ItemSheet } from "@/components/storefront/item-sheet";
+import { FAQSection } from "@/components/storefront/faq-section";
 
 type SheetPreview = {
   slug: string;
@@ -536,6 +537,7 @@ export function HomeClient({ bestSellers }: { bestSellers: BestSellerItem[] }) {
       <Hero />
       <BestSellers items={bestSellers} />
       <Delivery />
+      <FAQSection />
       <CTA />
     </>
   );
