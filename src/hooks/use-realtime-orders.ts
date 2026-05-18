@@ -78,13 +78,23 @@ export function useRealtimeOrders() {
 
   useEffect(() => {
     let cancelled = false;
-    // Initial snapshot — the setState calls happen inside the .then()
-    // callback, i.e. asynchronously from the effect body.
+
+    // Initial snapshot
     refetch().then((snapshot) => {
       if (cancelled) return;
       setOrders(snapshot);
       setLoading(false);
     });
+
+    const refetchSafe = async () => {
+      if (cancelled) return;
+      try {
+        const snap = await refetch();
+        if (!cancelled) setOrders(snap);
+      } catch {
+        // best-effort; next poll/event will catch up
+      }
+    };
 
     const channel = supabase
       .channel("kitchen-orders")
@@ -96,7 +106,7 @@ export function useRealtimeOrders() {
           const row = payload.new as any;
           if (!row?.id || !ACTIVE_SET.has(row.status as OrderStatus)) return;
           const full = await fetchOne(row.id as string);
-          if (!full) return;
+          if (!full || cancelled) return;
           setOrders((prev) => {
             if (prev.some((o) => o.id === full.id)) return prev;
             return [full, ...prev];
@@ -113,28 +123,23 @@ export function useRealtimeOrders() {
           const nextStatus = row.status as OrderStatus;
           setOrders((prev) => {
             const exists = prev.some((o) => o.id === row.id);
-            // Transition out of the active set → drop the card
             if (!ACTIVE_SET.has(nextStatus)) {
               return exists ? prev.filter((o) => o.id !== row.id) : prev;
             }
-            // Transition INTO active (e.g. pending_payment -> paid) —
-            // we need the full row with items. Fire and forget.
             if (!exists) {
               fetchOne(row.id as string).then((full) => {
-                if (!full) return;
+                if (!full || cancelled) return;
                 setOrders((curr) =>
                   curr.some((o) => o.id === full.id) ? curr : [full, ...curr]
                 );
               });
               return prev;
             }
-            // In-place patch — preserve order_items already in memory
             return prev.map((o) =>
               o.id === row.id
                 ? {
                     ...o,
                     ...row,
-                    // Keep nested children intact
                     order_items: o.order_items,
                   }
                 : o
@@ -142,10 +147,47 @@ export function useRealtimeOrders() {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // Status possibles : SUBSCRIBED, CHANNEL_ERROR, TIMED_OUT, CLOSED.
+        // Si on tombe en erreur, on log + on refetch (le polling fallback
+        // prendra le relais de toute facon, mais c'est plus reactif).
+        if (process.env.NODE_ENV !== "production") {
+          console.log(`[kitchen-orders] channel: ${status}`);
+        }
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          refetchSafe();
+        }
+      });
+
+    // Fallback polling — defense en profondeur. Si la connexion WS Realtime
+    // drop silencieusement (token JWT expire au bout d'1h sur Supabase, WiFi
+    // resto qui bug, etc.), on garantit que le board se met a jour au max
+    // toutes les 10s. C'est largement assez pour la cuisine.
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        refetchSafe();
+      }
+    }, 10_000);
+
+    // Quand l'utilisateur revient sur l'onglet (alt-tab, switch app sur tablette),
+    // on refetch immediatement pour rattraper les commandes ratees pendant
+    // l'absence.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refetchSafe();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    // Re-sync sur reconnect reseau (e.g. WiFi resto qui re-up apres une coupure)
+    const onOnline = () => refetchSafe();
+    window.addEventListener("online", onOnline);
 
     return () => {
       cancelled = true;
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("online", onOnline);
       supabase.removeChannel(channel);
     };
   }, [supabase, refetch, fetchOne]);
