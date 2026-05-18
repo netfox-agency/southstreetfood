@@ -52,18 +52,51 @@ export function PrintTicketButton({
         iframeRef.current = iframe;
       }
 
+      // Flag pour eviter de fire print() 2x (signal + fallback timeout)
+      let printed = false;
+      const doPrint = () => {
+        if (printed) return;
+        printed = true;
+        try {
+          iframe!.contentWindow?.print();
+        } catch {
+          window.open(`/ticket/${orderId}`, "_blank");
+        }
+        setState("done");
+        setTimeout(() => setState("idle"), 2000);
+      };
+
+      // Le ticket nous envoie un postMessage quand il est rendu (fetch fini).
+      // C'est plus fiable qu'un setTimeout magique : on print exactement quand
+      // c'est pret, peu importe la latence reseau.
+      const onMessage = (ev: MessageEvent) => {
+        if (ev.origin !== window.location.origin) return;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = ev.data as any;
+        if (
+          data?.type === "ssf-ticket-ready" &&
+          data?.orderId === orderId
+        ) {
+          window.removeEventListener("message", onMessage);
+          // Petit delai pour laisser le browser apply les styles @media print
+          setTimeout(doPrint, 100);
+        }
+      };
+      window.addEventListener("message", onMessage);
+
+      // Fallback : si le message n'arrive pas dans 5s (vieux navigateur,
+      // cross-origin issue, etc.), on print quand meme — mieux qu'un user
+      // qui attend pour rien.
+      const fallback = setTimeout(() => {
+        window.removeEventListener("message", onMessage);
+        doPrint();
+      }, 5000);
+
       iframe.onload = () => {
-        // Small delay to let styles render
-        setTimeout(() => {
-          try {
-            iframe!.contentWindow?.print();
-          } catch {
-            // Fallback: open in new tab
-            window.open(`/ticket/${orderId}`, "_blank");
-          }
-          setState("done");
-          setTimeout(() => setState("idle"), 2000);
-        }, 300);
+        // onload tire des que le HTML est parse, mais le client component a
+        // pas encore fini son fetch. On laisse le postMessage piloter le
+        // print. Le fallback timeout est notre filet de secours.
+        void fallback; // referenced pour eviter "unused" lint
       };
 
       iframe.src = `/ticket/${orderId}`;

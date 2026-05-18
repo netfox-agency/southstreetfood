@@ -78,6 +78,23 @@ export default function TicketPage({
       .finally(() => setLoading(false));
   }, [id]);
 
+  // Signale au parent (PrintTicketButton iframe) que le ticket est rendu.
+  // Le parent attendait avant un timeout magique de 300ms, qui marchait pas
+  // toujours en conditions reelles (fetch lent, cold start). Maintenant on
+  // poste un message des qu'on est pret a etre imprime.
+  useEffect(() => {
+    if (loading) return;
+    if (window.parent === window) return; // pas dans un iframe → noop
+    try {
+      window.parent.postMessage(
+        { type: "ssf-ticket-ready", orderId: id },
+        window.location.origin,
+      );
+    } catch {
+      // postMessage failed (cross-origin?), parent retombera sur son timeout
+    }
+  }, [loading, id]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#f5f5f7]">
