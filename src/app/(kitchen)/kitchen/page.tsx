@@ -678,14 +678,23 @@ export default function KitchenPage() {
         </div>
 
         <button
-          onClick={() => setSoundEnabled(!soundEnabled)}
+          onClick={() => {
+            const next = !soundEnabled;
+            setSoundEnabled(next);
+            // Premier clic = debloque AudioContext (Chrome/Safari policy).
+            // On joue le ding immediat pour confirmer auditivement que le
+            // son marche + initialiser le ctx. Si on active = ding. Si on
+            // desactive = pas de ding (logique).
+            if (next) playNewOrder();
+          }}
           className={cn(
             "h-10 w-10 rounded-xl flex items-center justify-center cursor-pointer transition-colors shrink-0",
             soundEnabled
               ? "bg-[#1d1d1f] text-white"
               : "bg-[#f5f5f7] text-[#86868b] hover:bg-[#e5e5ea]"
           )}
-          aria-label="Son"
+          aria-label={soundEnabled ? "Couper le son" : "Activer le son (test)"}
+          title={soundEnabled ? "Couper le son" : "Activer le son (test)"}
         >
           {soundEnabled ? (
             <Volume2 className="h-4 w-4" />
