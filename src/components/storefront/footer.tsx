@@ -86,6 +86,14 @@ export function Footer() {
                   Programme Fidelite
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/faq"
+                  className="text-sm text-white/70 hover:text-white transition-colors"
+                >
+                  FAQ
+                </Link>
+              </li>
             </ul>
           </div>
 
