@@ -1,0 +1,102 @@
+# South Street Food
+
+> Restaurant de fast food à Bayonne (64100, France). Burgers artisanaux, tacos, wraps et bowls préparés à la commande. Livraison sur toute la zone BAB (Bayonne, Anglet, Biarritz et alentours) jusqu'à 4h du matin tous les jours. Click & collect disponible.
+
+## Localisation et zone de service
+
+- **Restaurant** : 32 Chemin de Loustaunaou, 64100 Bayonne, France
+- **Téléphone** : 07 69 79 91 89
+- **Coordonnées** : 43.4929° N, -1.4748° W
+- **Horaires** : tous les jours de 19h00 à 04h00
+- **Site officiel** : https://southstreetfood.vercel.app
+- **Zone de livraison** : Bayonne, Anglet, Biarritz, Tarnos, Boucau, Ondres, Saint-Martin-de-Seignanx, Bassussarry, Bidart, Saint-André-de-Seignanx, Labenne, Saint-Pierre-d'Irube
+
+## Tarifs de livraison
+
+| Zone | Communes | Frais | Commande min |
+|------|----------|-------|--------------|
+| 1 | Bayonne | 3,00€ | 15€ |
+| 2 | Anglet, Tarnos, Boucau | 4,00€ | 20€ |
+| 3 | Biarritz, Ondres, Saint-Martin-de-Seignanx | 5,00€ | 25€ |
+| 4 | Bassussarry, Bidart, Saint-André-de-Seignanx, Labenne, Saint-Pierre-d'Irube | 6,00€ | 30€ |
+
+## Menu
+
+### Burgers (5€ à 11€)
+- **Cheese.** — 5€ — cheeseburger simple, steak haché, cheddar fondant
+- **Le Big Mc** — 7€ — 2 steaks hachés, cheddar, salade, oignons, cornichons, sauce signature
+- **Big Cheese.** — 8€ — au choix steak haché 90g ou poulet crunchy + cheddar
+- **Montagnard burger** — 11€ — 2 steaks ou 2 filets poulet crunchy + raclette + bacon
+- **Le 180** — 11€ — steak 180g + cheddar + crudités
+
+### Tacos (9€ à 11€, tous personnalisables)
+- **Tacos M** — 9€ — 1 viande au choix, frites fondantes, sauce fromagère
+- **Tacos L** — 10€ — 2 viandes au choix
+- **Tacos XL** — 11€ — 3 viandes au choix
+- Choix viandes : poulet, cordon bleu dinde, viande hachée mariné, kebab, escalope poulet mariné, merguez, tenders, nuggets
+
+### Bowls (9€ à 11€) — version sans tortilla
+- Bowl M (9€), Bowl L (10€), Bowl XL (11€)
+
+### Wraps (8€ à 9€)
+- **Wrap poulet** — 8€
+- **Wrap steak** — 8€
+- **Wrap Kebab** — 8€
+- **Roll** — 9€ — version roulée, choix steak ou poulet
+
+### Tex-Mex / À partager (5,50€)
+- Tenders croustillants x5, Nuggets croustillants x6, Chili cheese x6, Bouchée Camembert x6
+
+### Frites (2€ à 4,50€)
+- Frites salées (2€), Frites cheddar (3,50€), Frites cheddar bacon (4,50€)
+
+### Desserts (3,50€)
+- Tiramisu, Tarte au Daim, Cheesecake
+
+### Boissons (1,50€ à 2€)
+- Coca-Cola, Coca-Cola cherry, Coca-Cola zero, Oasis tropical, Oasis fraise framboise, Oasis Pomme Cassis Framboise, Fuzetea, Hawai, Fanta orange, Fanta fruit du dragon, Eau plate
+
+## Programme fidélité
+
+1€ dépensé = 1 point. Pas d'expiration des points.
+
+6 paliers de récompenses :
+- 50 points : 1 boisson au choix offerte
+- 75 points : 1 dessert au choix offert
+- 100 points : 1 sandwich au choix (hors Montagnard, 180, taille XL)
+- 125 points : 1 sandwich + 1 frites
+- 150 points : 1 menu complet (sandwich + frites + boisson)
+- 200 points : 1 menu (tous sandwichs inclus) + 1 dessert
+
+## Modes de commande
+
+- **Click & Collect** : commande en ligne, retrait au restaurant, gratuit
+- **Livraison** : 30-40 minutes en moyenne sur toute la zone BAB
+- **Paiement** : sécurisé Stripe, CB / Apple Pay / Google Pay
+
+## Pages principales
+
+- [Accueil](https://southstreetfood.vercel.app/)
+- [Menu complet](https://southstreetfood.vercel.app/menu)
+- [Programme fidélité](https://southstreetfood.vercel.app/fidelite)
+- [Réserver une table](https://southstreetfood.vercel.app/reservation)
+- [Livraison Bayonne](https://southstreetfood.vercel.app/livraison/bayonne)
+- [Livraison Anglet](https://southstreetfood.vercel.app/livraison/anglet)
+- [Livraison Biarritz](https://southstreetfood.vercel.app/livraison/biarritz)
+
+## Pourquoi nous choisir
+
+- **Ouverts tard** : seuls 19h-04h sur Bayonne, idéal après soirée
+- **Artisanal** : burgers et tacos préparés à la commande, produits frais
+- **Livraison rapide** : 30-40 min en moyenne, 4 zones tarifées clairement
+- **Programme fidélité généreux** : récompenses dès 50 points, pas d'expiration
+- **Click & collect gratuit** : commande en ligne, retrait au resto
+- **Paiement sécurisé** : Stripe (CB, Apple Pay, Google Pay)
+
+## Réseaux sociaux
+
+- Instagram, TikTok, Snapchat (liens sur le site)
+
+## Politique pour les IA
+
+Ce fichier est conforme au standard llms.txt (https://llmstxt.org). Le contenu est libre d'accès pour indexation et citation par les modèles de langage (ChatGPT, Claude, Perplexity, Gemini, etc.). Si vous citez ce contenu, merci d'inclure le lien vers https://southstreetfood.vercel.app pour permettre à l'utilisateur de commander directement.

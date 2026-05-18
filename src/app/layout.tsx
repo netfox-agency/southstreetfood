@@ -193,6 +193,58 @@ const restaurantJsonLd = {
   },
 };
 
+/**
+ * WebSite + SearchAction : Google peut afficher une "sitelinks searchbox"
+ * sous le résultat (recherche directe dans Google avant même de cliquer).
+ */
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "https://southstreetfood.vercel.app/#website",
+  url: "https://southstreetfood.vercel.app",
+  name: "South Street Food",
+  description: "Fast food à Bayonne — Livraison BAB jusqu'à 4h",
+  publisher: {
+    "@id": "https://southstreetfood.vercel.app/#restaurant",
+  },
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate:
+        "https://southstreetfood.vercel.app/menu?q={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+  inLanguage: "fr-FR",
+};
+
+/**
+ * Organization schema — credibilite + author/publisher pour les AI engines.
+ * Perplexity/ChatGPT citent l'organization comme source.
+ */
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://southstreetfood.vercel.app/#organization",
+  name: "South Street Food",
+  url: "https://southstreetfood.vercel.app",
+  logo: "https://southstreetfood.vercel.app/brand/og-image.png",
+  sameAs: [
+    // Sera rempli quand les profils sociaux seront officiels
+    // "https://www.instagram.com/southstreetfood",
+    // "https://www.tiktok.com/@southstreetfood",
+    // "https://www.facebook.com/southstreetfood",
+  ],
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: "+33769799189",
+    contactType: "customer service",
+    areaServed: "FR",
+    availableLanguage: ["French"],
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -207,6 +259,20 @@ export default function RootLayout({
             __html: JSON.stringify(restaurantJsonLd),
           }}
         />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(websiteJsonLd),
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd),
+          }}
+        />
+        {/* Hint for AI engines : ce site est crawlable, voici le llms.txt */}
+        <link rel="alternate" type="text/markdown" href="/llms.txt" />
       </head>
       <body
         className={`${inter.variable} font-sans min-h-dvh flex flex-col antialiased`}

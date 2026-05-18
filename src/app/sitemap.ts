@@ -4,6 +4,18 @@ import { DELIVERY_CITIES } from "@/lib/constants";
 
 const BASE_URL = "https://southstreetfood.vercel.app";
 
+// Categories qui ont leur propre page /livraison/[ville]/[categorie]
+// Doit matcher CATEGORIES dans /livraison/[ville]/[categorie]/page.tsx
+const CATEGORIES_FOR_SEO = [
+  "burgers",
+  "tacos",
+  "bowls",
+  "wraps",
+  "frites",
+  "tex-mex",
+  "desserts",
+] as const;
+
 function slugifyCity(city: string): string {
   return city
     .toLowerCase()
@@ -105,6 +117,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
+  // 84 pages ville × catégorie — surface SEO ultra-ciblée
+  const cityCategoryPages: MetadataRoute.Sitemap = DELIVERY_CITIES.flatMap(
+    (c) =>
+      CATEGORIES_FOR_SEO.map((cat) => ({
+        url: `${BASE_URL}/livraison/${slugifyCity(c.city)}/${cat}`,
+        lastModified: now,
+        changeFrequency: "weekly" as const,
+        priority: 0.85,
+      })),
+  );
+
   // Menu items
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const itemPages: MetadataRoute.Sitemap = ((items ?? []) as any[]).map(
@@ -116,5 +139,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
-  return [...staticPages, ...cityPages, ...itemPages];
+  return [...staticPages, ...cityPages, ...cityCategoryPages, ...itemPages];
 }
