@@ -309,7 +309,7 @@ function LoyaltySection({
             </span>
           </div>
           <div className="flex items-baseline gap-1.5">
-            <span className="font-display text-3xl leading-none tabular-nums">
+            <span className="text-3xl font-extrabold leading-none tabular-nums">
               {data.stats.loyaltyBalance}
             </span>
             <span className="text-[11px] text-white/60 font-semibold">pts</span>

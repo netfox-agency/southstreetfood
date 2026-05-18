@@ -16,12 +16,14 @@ import {
   LogOut,
   Package,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/admin/orders", icon: ShoppingBag, label: "Commandes" },
+  { href: "/admin/reservations", icon: Calendar, label: "Reservations" },
   { href: "/admin/reports", icon: ClipboardList, label: "Historique" },
   { href: "/admin/customers", icon: Users, label: "Clients" },
   { href: "/admin/loyalty", icon: Sparkles, label: "Fidelite" },
