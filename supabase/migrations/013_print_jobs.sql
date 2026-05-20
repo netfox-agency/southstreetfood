@@ -62,18 +62,19 @@ CREATE POLICY "Admin can manage print jobs"
     )
   );
 
--- ─── Trigger : nouvelle commande "paid" → ajoute auto un job ────────────
-CREATE OR REPLACE FUNCTION enqueue_print_job_on_paid()
+-- ─── Trigger : commande passe a 'ready' → ajoute auto un job ────────────
+-- Le ticket sort quand la cuisine clique "Prete" sur le board, pas
+-- quand la commande arrive. Ca permet au staff de gerer la prep
+-- tranquille via l'iPad, et au moment ou c'est pret, le ticket sort
+-- pour etre colle sur le sac de livraison / donne au client.
+CREATE OR REPLACE FUNCTION enqueue_print_job_on_ready()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  -- Seulement quand le status passe a 'paid' (transition, pas re-update)
-  IF NEW.status = 'paid' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'paid') THEN
-    -- Verifie qu'on a pas deja un job pour cette commande
-    -- (au cas ou le trigger fire 2x pour une raison ou une autre)
+  IF NEW.status = 'ready' AND (TG_OP = 'INSERT' OR OLD.status IS DISTINCT FROM 'ready') THEN
     IF NOT EXISTS (
       SELECT 1 FROM print_jobs
       WHERE order_id = NEW.id
@@ -89,7 +90,7 @@ $$;
 
 CREATE TRIGGER enqueue_print_job_trigger
 AFTER INSERT OR UPDATE OF status ON orders
-FOR EACH ROW EXECUTE FUNCTION enqueue_print_job_on_paid();
+FOR EACH ROW EXECUTE FUNCTION enqueue_print_job_on_ready();
 
 COMMENT ON TABLE print_jobs IS
   'Server Direct Print queue. L imprimante cuisine polle /api/printer/poll pour recuperer le prochain job pending et imprime.';
