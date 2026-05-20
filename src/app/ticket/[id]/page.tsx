@@ -125,15 +125,68 @@ export default function TicketPage({
   return (
     <>
       <style>{`
+        /* Format thermique 80mm — bulletproof iOS Safari + Chrome desktop.
+
+           Strategie : on force le ticket en 72mm largeur (80mm de papier
+           - 4mm de marge totale = 72mm de zone imprimable safe). Tous les
+           paddings/marges/colors print sont neutralises pour s'adapter
+           au driver thermique (qui rendra le HTML noir sur blanc en raster).
+
+           iOS Safari respecte @page size mais a des bugs avec width:auto :
+           on force explicitement la largeur du wrapper .ticket-print en mm. */
         @media print {
-          @page { size: 80mm auto; margin: 2mm; }
-          body { margin: 0; padding: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           .no-print { display: none !important; }
-          .ticket-wrap { padding: 0 !important; background: white !important; }
+          .ticket-wrap {
+            padding: 0 !important;
+            margin: 0 !important;
+            background: white !important;
+            min-height: 0 !important;
+            display: block !important;
+          }
           .ticket {
-            width: 100% !important; max-width: none !important;
-            margin: 0 !important; box-shadow: none !important;
-            border: none !important; border-radius: 0 !important;
+            width: 72mm !important;
+            max-width: 72mm !important;
+            margin: 2mm !important;
+            padding: 0 !important;
+            background: white !important;
+            color: black !important;
+            box-shadow: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            font-size: 12pt !important;
+            line-height: 1.35 !important;
+          }
+          /* Toutes les nuances de gris → noir pur (thermique = monochrome) */
+          .ticket * {
+            color: black !important;
+            border-color: black !important;
+          }
+          .ticket .text-gray-400,
+          .ticket .text-gray-500,
+          .ticket .text-gray-600,
+          .ticket .text-gray-700 {
+            color: black !important;
+          }
+          .ticket .bg-gray-100 {
+            background: white !important;
+            border: 1px solid black !important;
+          }
+          /* Force les separateurs en lignes pleines pour thermique */
+          .ticket .border-dashed {
+            border-style: dashed !important;
+            border-color: black !important;
           }
         }
         @media screen {
@@ -154,9 +207,9 @@ export default function TicketPage({
           <span className="text-sm font-semibold text-gray-900">{num}</span>
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1d1d1f] text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-5 py-3 sm:py-2.5 bg-[#1d1d1f] text-white rounded-xl font-semibold text-[15px] sm:text-sm hover:opacity-90 active:scale-[0.97] transition-all cursor-pointer min-h-[44px]"
           >
-            <Printer className="h-4 w-4" />
+            <Printer className="h-5 w-5 sm:h-4 sm:w-4" />
             Imprimer
           </button>
         </div>

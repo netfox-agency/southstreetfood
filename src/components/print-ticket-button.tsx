@@ -5,17 +5,44 @@ import { Printer, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * One-click ticket printing via hidden iframe.
+ * Bouton d'impression du ticket.
  *
- * Flow:
- *  1. User clicks the button
- *  2. Hidden iframe loads /ticket/{orderId}
- *  3. Once loaded, iframe.contentWindow.print() fires
- *  4. User sees the native print dialog (browser → select printer → print)
- *  5. Button shows ✓ feedback, then resets
+ * 2 strategies selon le device :
  *
- * The kitchen page is never navigated away from.
+ * 1. **Desktop / Mac / Windows (Chrome, Edge, Firefox, Safari Mac)** :
+ *    Iframe cachée qui charge /ticket/[id] → contentWindow.print().
+ *    Le staff reste sur la page kitchen, le dialog d'impression apparaît,
+ *    il imprime, dialog se ferme, retour direct au board. C'est le flow
+ *    le plus fluide en cuisine quand on a un PC ou Mac.
+ *
+ * 2. **iPad / iPhone (iOS Safari + Chrome iOS)** :
+ *    L'iframe + contentWindow.print() est buggé sur iOS Safari (le
+ *    moteur Webkit interdit print() dans certains contextes iframe).
+ *    Solution propre : on ouvre /ticket/[id] dans la même fenêtre.
+ *    La page ticket a son propre bouton "Imprimer" qui appelle
+ *    window.print() sur l'onglet principal → dialog AirPrint natif iOS
+ *    → l'imprimante Epson TM-m30 apparait → impression.
+ *
+ *    Sur iPad cuisine, le staff fait :
+ *      a) Clic icône imprimante sur la card commande
+ *      b) Le ticket s'affiche en plein écran
+ *      c) Clic gros bouton "Imprimer" en haut
+ *      d) Dialog iOS → "Imprimer" → ticket sort
+ *      e) Clic "Retour" pour revenir au board cuisine
+ *
+ *    1 clic de plus que le desktop, mais c'est le seul flow fiable
+ *    sur iPad (Webkit ne laisse pas le choix).
  */
+function isIOS(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  // iPad iOS 13+ se déclare en "MacIntel" avec touch — détection moderne
+  return (
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+  );
+}
+
 export function PrintTicketButton({
   orderId,
   size = "md",
@@ -34,9 +61,21 @@ export function PrintTicketButton({
       e.preventDefault();
 
       if (state === "loading") return;
+
+      // 📱 iPad / iPhone : iframe + print() est buggué sur iOS Webkit.
+      // On ouvre la page ticket directement, le staff tap "Imprimer" sur la
+      // page → dialog AirPrint iOS natif → imprimante détectée. Marche à
+      // 100% avec l'Epson TM-m30 qui est déjà appairée en AirPrint.
+      if (isIOS()) {
+        // Use window.location pour rester dans le même onglet (iOS Safari
+        // bloque souvent window.open en popup, surtout en kiosk mode).
+        window.location.href = `/ticket/${orderId}`;
+        return;
+      }
+
+      // 💻 Desktop : iframe cachée + print() direct, staff reste sur kitchen.
       setState("loading");
 
-      // Create or reuse hidden iframe
       let iframe = iframeRef.current;
       if (!iframe) {
         iframe = document.createElement("iframe");
@@ -52,7 +91,6 @@ export function PrintTicketButton({
         iframeRef.current = iframe;
       }
 
-      // Flag pour eviter de fire print() 2x (signal + fallback timeout)
       let printed = false;
       const doPrint = () => {
         if (printed) return;
@@ -66,37 +104,24 @@ export function PrintTicketButton({
         setTimeout(() => setState("idle"), 2000);
       };
 
-      // Le ticket nous envoie un postMessage quand il est rendu (fetch fini).
-      // C'est plus fiable qu'un setTimeout magique : on print exactement quand
-      // c'est pret, peu importe la latence reseau.
       const onMessage = (ev: MessageEvent) => {
         if (ev.origin !== window.location.origin) return;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = ev.data as any;
-        if (
-          data?.type === "ssf-ticket-ready" &&
-          data?.orderId === orderId
-        ) {
+        if (data?.type === "ssf-ticket-ready" && data?.orderId === orderId) {
           window.removeEventListener("message", onMessage);
-          // Petit delai pour laisser le browser apply les styles @media print
           setTimeout(doPrint, 100);
         }
       };
       window.addEventListener("message", onMessage);
 
-      // Fallback : si le message n'arrive pas dans 5s (vieux navigateur,
-      // cross-origin issue, etc.), on print quand meme — mieux qu'un user
-      // qui attend pour rien.
       const fallback = setTimeout(() => {
         window.removeEventListener("message", onMessage);
         doPrint();
       }, 5000);
 
       iframe.onload = () => {
-        // onload tire des que le HTML est parse, mais le client component a
-        // pas encore fini son fetch. On laisse le postMessage piloter le
-        // print. Le fallback timeout est notre filet de secours.
-        void fallback; // referenced pour eviter "unused" lint
+        void fallback;
       };
 
       iframe.src = `/ticket/${orderId}`;
