@@ -17,6 +17,7 @@ import {
   Package,
   Sparkles,
   Calendar,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +30,7 @@ const sidebarItems = [
   { href: "/admin/loyalty", icon: Sparkles, label: "Fidelite" },
   { href: "/admin/menu", icon: UtensilsCrossed, label: "Menu" },
   { href: "/admin/stock", icon: Package, label: "Gestion stock" },
+  { href: "/admin/printer", icon: Printer, label: "Impression" },
   { href: "/admin/settings", icon: Settings, label: "Parametres" },
 ];
 
