@@ -959,10 +959,10 @@ export function ItemSheet({
             {emergency.active ? (
               <a
                 href={`tel:${BRAND.phone.replace(/\s/g, "")}`}
-                className="flex-1 h-11 rounded-full bg-red-600 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-700 active:scale-[0.98] transition-all"
+                className="flex-1 h-11 rounded-full bg-foreground text-background font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all"
               >
                 <Phone className="h-4 w-4" />
-                Appeler pour commander
+                Commander par telephone
               </a>
             ) : (
               <button

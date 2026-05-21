@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
             {
               error:
                 settings.emergency_mode_message?.trim() ||
-                "Systeme de commande en ligne temporairement indisponible. Appelez-nous pour commander.",
+                "Commande au telephone uniquement aujourd'hui. Appelez-nous pour passer commande.",
               reason: "emergency_mode",
             },
             { status: 423 },

@@ -79,7 +79,9 @@ function MenuItemRow({
     e.preventDefault();
     e.stopPropagation();
     if (emergencyActive) {
-      toast.error("Commande en ligne desactivee. Appelez le restaurant.");
+      toast("Commande au telephone aujourd'hui", {
+        description: "Appelez-nous pour passer commande",
+      });
       return;
     }
     addItem({

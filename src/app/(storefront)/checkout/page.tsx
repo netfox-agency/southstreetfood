@@ -31,9 +31,9 @@ export default function CheckoutPage() {
   // renvoie sur /menu avec un toast. La page /menu affichera le banner rouge.
   useEffect(() => {
     if (emergency.active) {
-      toast.error(
-        "Commande en ligne desactivee. Appelez le restaurant pour commander.",
-      );
+      toast("Commande au telephone aujourd'hui", {
+        description: "Appelez-nous pour passer commande, votre panier est garde.",
+      });
       router.replace("/menu");
     }
   }, [emergency.active, router]);

@@ -1,18 +1,21 @@
 "use client";
 
-import { AlertTriangle, Phone } from "lucide-react";
+import { Phone } from "lucide-react";
 import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 import { BRAND } from "@/lib/constants";
 
-const DEFAULT_MESSAGE = `Systeme de commande en ligne temporairement indisponible. Appelez-nous pour commander.`;
+const DEFAULT_MESSAGE = `Aujourd'hui, commande par telephone uniquement.`;
 
 /**
- * Banner mode urgence — affiche en haut de toutes les pages storefront
- * quand l'admin (ou la cuisine) a active le kill-switch. La carte reste
- * visible derriere, mais commander en ligne est bloque. CTA telephone
- * tap-to-call gros et clair.
+ * Banner mode urgence — version "calme" cote client.
  *
- * Retourne null si mode urgence inactif (pas d'espace reserve).
+ * On ne veut PAS communiquer "URGENCE PROBLEME PANIQUE" au client. Juste
+ * une indication neutre : aujourd'hui les commandes online sont pas dispo,
+ * passez par tel. La carte reste consultable normalement.
+ *
+ * Visuel = dark brand (noir/blanc), gros bouton tel, ton positif.
+ * Le "mode urgence" est un terme INTERNE : cote client c'est "commandes
+ * au telephone uniquement".
  */
 export function EmergencyBanner({ className = "" }: { className?: string }) {
   const { state, loading } = useEmergencyMode();
@@ -23,25 +26,20 @@ export function EmergencyBanner({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`w-full bg-gradient-to-r from-red-600 to-rose-600 text-white border-b border-red-700 px-4 py-3 ${className}`}
-      role="alert"
-      aria-live="polite"
+      className={`w-full bg-[#1d1d1f] text-white border-b border-black/10 px-4 py-2.5 ${className}`}
+      role="status"
     >
       <div className="mx-auto max-w-4xl flex items-center gap-3">
-        <AlertTriangle className="h-5 w-5 shrink-0" aria-hidden />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold leading-tight">{message}</p>
-          <p className="text-[11px] opacity-90 mt-0.5">
-            Commande par telephone uniquement
-          </p>
-        </div>
+        <Phone className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
+        <p className="flex-1 min-w-0 text-[13px] sm:text-sm font-medium leading-tight truncate">
+          {message}
+        </p>
         <a
           href={telHref}
-          className="shrink-0 inline-flex items-center gap-2 bg-white text-red-700 rounded-full px-4 py-2 text-sm font-bold shadow-md hover:shadow-lg active:scale-95 transition-all"
+          className="shrink-0 inline-flex items-center gap-1.5 bg-white text-[#1d1d1f] rounded-full px-3.5 py-1.5 text-[13px] font-semibold shadow-sm hover:shadow-md active:scale-95 transition-all"
         >
-          <Phone className="h-4 w-4" />
-          <span className="hidden sm:inline">{BRAND.phone}</span>
-          <span className="sm:hidden">Appeler</span>
+          <Phone className="h-3.5 w-3.5" />
+          {BRAND.phone}
         </a>
       </div>
     </div>

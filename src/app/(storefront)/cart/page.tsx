@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, Info } from "lucide-react";
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, Truck, UtensilsCrossed, ShoppingBag, Clock, Info, Phone } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
-import { DELIVERY_ZONES, getDeliveryFeeForCity, getMinOrderForCity } from "@/lib/constants";
+import { DELIVERY_ZONES, getDeliveryFeeForCity, getMinOrderForCity, BRAND } from "@/lib/constants";
 import {
   AddressAutocomplete,
   osmEmbedUrl,
@@ -377,7 +377,27 @@ export default function CartPage() {
             Choisissez votre mode de commande
           </div>
         )}
-        {!orderTypeSelected || belowMin || !deliveryValid || !isRestaurantOpen || emergency.active ? (
+        {emergency.active ? (
+          <div className="space-y-3">
+            <div className="rounded-2xl border border-[#e5e5ea] bg-white p-4 text-sm text-[#1d1d1f] leading-relaxed">
+              <p className="font-semibold mb-1">
+                Commande au telephone aujourd&apos;hui
+              </p>
+              <p className="text-[#86868b] text-[13px]">
+                Pour cette session, on prend les commandes par tel. Votre
+                panier est sauvegarde, vous pourrez revenir le valider en
+                ligne plus tard.
+              </p>
+            </div>
+            <a
+              href={`tel:${BRAND.phone.replace(/\s/g, "")}`}
+              className="block w-full h-13 rounded-2xl bg-[#1d1d1f] text-white font-semibold text-[15px] hover:bg-[#1d1d1f]/90 transition-colors text-center leading-[3.25rem]"
+            >
+              <Phone className="inline h-4 w-4 mr-2 -mt-0.5" />
+              Appeler {BRAND.phone}
+            </a>
+          </div>
+        ) : !orderTypeSelected || belowMin || !deliveryValid || !isRestaurantOpen ? (
           <>
             {orderTypeSelected && !deliveryValid && orderType === "delivery" && (
               <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">
