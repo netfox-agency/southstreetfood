@@ -66,18 +66,19 @@ function MenuItemRow({
   item,
   categorySlug,
   onOpenSheet,
+  emergencyActive,
 }: {
   item: MenuItemData;
   categorySlug: string;
   onOpenSheet: (preview: SheetPreview) => void;
+  emergencyActive: boolean;
 }) {
   const addItem = useCartStore((s) => s.addItem);
-  const { state: emergency } = useEmergencyMode();
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (emergency.active) {
+    if (emergencyActive) {
       toast.error("Commande en ligne desactivee. Appelez le restaurant.");
       return;
     }
@@ -200,6 +201,9 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
   // la page se refresh automatiquement (debounce 400ms) pour refleter
   // l'etat reel sans refresh manuel du client.
   useStockRealtime();
+  // Mode urgence hoisté ici : un seul channel Realtime + polling pour toute
+  // la page menu, partagé entre tous les MenuItemRow via prop.
+  const { state: emergency } = useEmergencyMode();
 
   const [search, setSearch] = useState("");
   const [activeSlug, setActiveSlug] = useState(categories[0]?.slug || "");
@@ -397,6 +401,7 @@ export function MenuClient({ categories }: { categories: CategoryData[] }) {
                   item={item}
                   categorySlug={cat.slug}
                   onOpenSheet={setSheetData}
+                  emergencyActive={emergency.active}
                 />
               ))}
             </div>
