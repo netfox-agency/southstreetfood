@@ -24,6 +24,7 @@ import type { OrderWithItems } from "@/types/order";
 import type { OrderStatus } from "@/types/database";
 import { KitchenNav } from "@/components/kitchen/kitchen-nav";
 import { StatusWidget } from "@/components/kitchen/status-widget";
+import { KitchenEmergencyButton } from "@/components/kitchen/emergency-button";
 
 /* ─────────────────────────────────────────────
    Flow ultra simple — Uber Eats style
@@ -705,8 +706,9 @@ export default function KitchenPage() {
       </header>
 
       {/* ───── Restaurant status widget (horaires + override manuel) ───── */}
-      <div className="shrink-0 bg-white border-b border-[#e5e5ea] px-5 py-3">
+      <div className="shrink-0 bg-white border-b border-[#e5e5ea] px-5 py-3 flex items-center justify-between gap-3 flex-wrap">
         <StatusWidget />
+        <KitchenEmergencyButton />
       </div>
 
       {/* ───── All-Day batch strip ───── */}

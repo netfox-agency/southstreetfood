@@ -9,11 +9,13 @@ import {
   Plus,
   AlertTriangle,
   Check,
+  Phone,
 } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { MENU_UPGRADE_PRICE } from "@/lib/constants";
+import { MENU_UPGRADE_PRICE, BRAND } from "@/lib/constants";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 
 interface ExtraItem {
   id: string;
@@ -114,6 +116,7 @@ export function ItemClient({
     menuOptions?.fries[0]?.slug ?? null, // default: salées (first option, 0€ supplement)
   );
   const addItem = useCartStore((s) => s.addItem);
+  const { state: emergency } = useEmergencyMode();
 
   const isUnbounded = (group: ExtraGroup) =>
     group.max_selections === null || group.max_selections >= 999;
@@ -746,13 +749,23 @@ export function ItemClient({
                 </button>
               </div>
 
-              <button
-                onClick={handleAddToCart}
-                disabled={!item.is_available}
-                className="flex-1 h-12 rounded-full bg-foreground text-background font-semibold text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Ajouter {quantity} au panier &middot; {formatPrice(lineTotal)}
-              </button>
+              {emergency.active ? (
+                <a
+                  href={`tel:${BRAND.phone.replace(/\s/g, "")}`}
+                  className="flex-1 h-12 rounded-full bg-red-600 text-white font-semibold text-[15px] flex items-center justify-center gap-2 hover:bg-red-700 active:scale-[0.98] transition-all"
+                >
+                  <Phone className="h-4 w-4" />
+                  Appeler pour commander
+                </a>
+              ) : (
+                <button
+                  onClick={handleAddToCart}
+                  disabled={!item.is_available}
+                  className="flex-1 h-12 rounded-full bg-foreground text-background font-semibold text-[15px] flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Ajouter {quantity} au panier &middot; {formatPrice(lineTotal)}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   ClosedBanner,
   useIsRestaurantOpen,
 } from "@/components/storefront/closed-banner";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 import { LoyaltyCartSection } from "@/components/storefront/loyalty-cart-section";
 import { CartSkeleton } from "@/components/ui/skeleton";
 
@@ -44,6 +45,7 @@ export default function CartPage() {
   const currentSubtotal = subtotal();
   const total = currentSubtotal + deliveryFee;
   const { isOpen: isRestaurantOpen } = useIsRestaurantOpen();
+  const { state: emergency } = useEmergencyMode();
 
   const formatPrice = (cents: number) => `${(cents / 100).toFixed(2)} \u20ac`;
   // Minimum par zone (15\u20ac Bayonne, 20\u20ac Anglet, 25\u20ac, 30\u20ac). Fallback sur le
@@ -375,7 +377,7 @@ export default function CartPage() {
             Choisissez votre mode de commande
           </div>
         )}
-        {!orderTypeSelected || belowMin || !deliveryValid || !isRestaurantOpen ? (
+        {!orderTypeSelected || belowMin || !deliveryValid || !isRestaurantOpen || emergency.active ? (
           <>
             {orderTypeSelected && !deliveryValid && orderType === "delivery" && (
               <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-sm flex items-center gap-2">

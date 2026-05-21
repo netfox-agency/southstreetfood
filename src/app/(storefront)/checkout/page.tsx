@@ -10,6 +10,7 @@ import { getDeliveryFeeForCity } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { CheckoutSkeleton } from "@/components/ui/skeleton";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -22,7 +23,20 @@ export default function CheckoutPage() {
     setCustomerName, setCustomerPhone, setCustomerEmail,
   } = useCartStore();
   const { settings } = useRestaurantSettings();
+  const { state: emergency } = useEmergencyMode();
   const [loading, setLoading] = useState(false);
+
+  // Kill-switch : si le mode urgence est active pendant que le client est sur
+  // /checkout (ex : la cuisine vient de flip le toggle en panique), on le
+  // renvoie sur /menu avec un toast. La page /menu affichera le banner rouge.
+  useEffect(() => {
+    if (emergency.active) {
+      toast.error(
+        "Commande en ligne desactivee. Appelez le restaurant pour commander.",
+      );
+      router.replace("/menu");
+    }
+  }, [emergency.active, router]);
   // Etat de connexion + balance fidelite (auth-based, pas phone-based)
   const [account, setAccount] = useState<{
     id: string;

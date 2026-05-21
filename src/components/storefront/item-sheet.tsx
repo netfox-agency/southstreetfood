@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { X, Minus, Plus, AlertTriangle, Check } from "lucide-react";
+import { X, Minus, Plus, AlertTriangle, Check, Phone } from "lucide-react";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { MENU_UPGRADE_PRICE } from "@/lib/constants";
+import { MENU_UPGRADE_PRICE, BRAND } from "@/lib/constants";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 
 /* ───────── types ───────── */
 
@@ -154,6 +155,7 @@ export function ItemSheet({
   const friesSectionRef = useRef<HTMLDivElement>(null);
   const drinkSectionRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((s) => s.addItem);
+  const { state: emergency } = useEmergencyMode();
 
   // Slide-in animation
   useEffect(() => {
@@ -954,19 +956,29 @@ export function ItemSheet({
               </button>
             </div>
 
-            <button
-              onClick={handleAddToCart}
-              disabled={!item?.is_available || loading}
-              className="flex-1 h-11 rounded-full bg-foreground text-background font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {loading ? (
-                <div className="h-4 w-4 border-2 border-background/20 border-t-background rounded-full animate-spin" />
-              ) : (
-                <>
-                  Ajouter {quantity} au panier &middot; {formatPrice(lineTotal)}
-                </>
-              )}
-            </button>
+            {emergency.active ? (
+              <a
+                href={`tel:${BRAND.phone.replace(/\s/g, "")}`}
+                className="flex-1 h-11 rounded-full bg-red-600 text-white font-semibold text-sm flex items-center justify-center gap-2 hover:bg-red-700 active:scale-[0.98] transition-all"
+              >
+                <Phone className="h-4 w-4" />
+                Appeler pour commander
+              </a>
+            ) : (
+              <button
+                onClick={handleAddToCart}
+                disabled={!item?.is_available || loading}
+                className="flex-1 h-11 rounded-full bg-foreground text-background font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {loading ? (
+                  <div className="h-4 w-4 border-2 border-background/20 border-t-background rounded-full animate-spin" />
+                ) : (
+                  <>
+                    Ajouter {quantity} au panier &middot; {formatPrice(lineTotal)}
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

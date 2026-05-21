@@ -12,6 +12,7 @@ import { ItemSheet } from "@/components/storefront/item-sheet";
 import { MENU_ELIGIBLE_SLUGS } from "@/lib/constants";
 import { useStockRealtime } from "@/hooks/use-stock-realtime";
 import { ClosedBanner } from "@/components/storefront/closed-banner";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 
 interface MenuItemData {
   id: string;
@@ -71,10 +72,15 @@ function MenuItemRow({
   onOpenSheet: (preview: SheetPreview) => void;
 }) {
   const addItem = useCartStore((s) => s.addItem);
+  const { state: emergency } = useEmergencyMode();
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (emergency.active) {
+      toast.error("Commande en ligne desactivee. Appelez le restaurant.");
+      return;
+    }
     addItem({
       menuItemId: item.id,
       menuItemName: item.name,

@@ -1,5 +1,6 @@
 import { Navbar } from "@/components/storefront/navbar";
 import { Footer } from "@/components/storefront/footer";
+import { EmergencyBanner } from "@/components/storefront/emergency-banner";
 
 export default function StorefrontLayout({
   children,
@@ -8,6 +9,10 @@ export default function StorefrontLayout({
 }) {
   return (
     <>
+      {/* Banner mode urgence — affiche au-dessus de la navbar quand le
+          kill-switch online ordering est ON. Realtime branche, le client
+          voit le changement sans refresh. */}
+      <EmergencyBanner />
       <Navbar />
       {/* Navbar = pills flottantes au top, pas de barre full-width.
           Le contenu hero peut s'etaler dessous (overlap intentionnel,

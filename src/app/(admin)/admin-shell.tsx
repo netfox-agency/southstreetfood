@@ -20,6 +20,7 @@ import {
   Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EmergencyActiveBanner } from "@/components/admin/emergency-active-banner";
 
 const sidebarItems = [
   { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -163,6 +164,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           "mt-12 lg:mt-0"
         )}
       >
+        <EmergencyActiveBanner />
         <div className="p-5 lg:p-8">{children}</div>
       </main>
     </div>

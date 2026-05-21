@@ -139,10 +139,24 @@ export async function POST(request: NextRequest) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: settings } = await (admin as any)
         .from("restaurant_settings")
-        .select("manual_status, temp_closed_until, opening_hours")
+        .select("manual_status, temp_closed_until, opening_hours, emergency_mode_active, emergency_mode_message")
         .eq("id", 1)
         .single();
       if (settings) {
+        // Kill-switch mode urgence : prioritaire sur tout le reste. Si admin
+        // a coupe les commandes online, on refuse meme si le client a slip
+        // past le client-side gate (cache stale, race condition...).
+        if (settings.emergency_mode_active) {
+          return NextResponse.json(
+            {
+              error:
+                settings.emergency_mode_message?.trim() ||
+                "Systeme de commande en ligne temporairement indisponible. Appelez-nous pour commander.",
+              reason: "emergency_mode",
+            },
+            { status: 423 },
+          );
+        }
         const status = computeCurrentStatus(settings);
         if (!status.isOpen) {
           return NextResponse.json(
