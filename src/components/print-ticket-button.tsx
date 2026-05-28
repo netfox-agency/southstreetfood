@@ -1,48 +1,32 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Printer, Check, Loader2 } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Printer, Check, Loader2, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 /**
- * Bouton d'impression du ticket.
+ * Bouton d'impression du ticket via le bridge local.
  *
- * 2 strategies selon le device :
+ * Flow :
+ *   1. Clic → POST /api/admin/printer/print-order { orderId }
+ *   2. L'endpoint cree un print_job en 'pending' dans Supabase
+ *   3. Le bridge (Mac/PC du resto) le voit via Realtime
+ *   4. Le bridge envoie l'XML ePOS a l'imprimante Epson TM-m30
+ *   5. Ticket sort dans 1-3 sec
  *
- * 1. **Desktop / Mac / Windows (Chrome, Edge, Firefox, Safari Mac)** :
- *    Iframe cachée qui charge /ticket/[id] → contentWindow.print().
- *    Le staff reste sur la page kitchen, le dialog d'impression apparaît,
- *    il imprime, dialog se ferme, retour direct au board. C'est le flow
- *    le plus fluide en cuisine quand on a un PC ou Mac.
+ * Visuellement le bouton montre :
+ *   - idle    : icone imprimante
+ *   - loading : spinner
+ *   - done    : check vert (2 sec, retour idle)
+ *   - error   : icone alerte (toast erreur)
  *
- * 2. **iPad / iPhone (iOS Safari + Chrome iOS)** :
- *    L'iframe + contentWindow.print() est buggé sur iOS Safari (le
- *    moteur Webkit interdit print() dans certains contextes iframe).
- *    Solution propre : on ouvre /ticket/[id] dans la même fenêtre.
- *    La page ticket a son propre bouton "Imprimer" qui appelle
- *    window.print() sur l'onglet principal → dialog AirPrint natif iOS
- *    → l'imprimante Epson TM-m30 apparait → impression.
- *
- *    Sur iPad cuisine, le staff fait :
- *      a) Clic icône imprimante sur la card commande
- *      b) Le ticket s'affiche en plein écran
- *      c) Clic gros bouton "Imprimer" en haut
- *      d) Dialog iOS → "Imprimer" → ticket sort
- *      e) Clic "Retour" pour revenir au board cuisine
- *
- *    1 clic de plus que le desktop, mais c'est le seul flow fiable
- *    sur iPad (Webkit ne laisse pas le choix).
+ * Si le bridge ne tourne pas, le job reste 'pending' indefiniment cote
+ * Supabase mais le bouton aura quand meme affiche un check vert (la
+ * creation du job a reussi). C'est OK : on peut pas savoir si l'imprimante
+ * physique a recu sans attendre. Pour de la confirmation reelle, voir
+ * /admin/printer.
  */
-function isIOS(): boolean {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent;
-  // iPad iOS 13+ se déclare en "MacIntel" avec touch — détection moderne
-  return (
-    /iPad|iPhone|iPod/.test(ua) ||
-    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
-  );
-}
-
 export function PrintTicketButton({
   orderId,
   size = "md",
@@ -52,81 +36,44 @@ export function PrintTicketButton({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+  const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   const handlePrint = useCallback(
-    (e: React.MouseEvent) => {
+    async (e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-
       if (state === "loading") return;
 
-      // 📱 iPad / iPhone : iframe + print() est buggué sur iOS Webkit.
-      // On ouvre la page ticket directement, le staff tap "Imprimer" sur la
-      // page → dialog AirPrint iOS natif → imprimante détectée. Marche à
-      // 100% avec l'Epson TM-m30 qui est déjà appairée en AirPrint.
-      if (isIOS()) {
-        // Use window.location pour rester dans le même onglet (iOS Safari
-        // bloque souvent window.open en popup, surtout en kiosk mode).
-        window.location.href = `/ticket/${orderId}`;
-        return;
-      }
-
-      // 💻 Desktop : iframe cachée + print() direct, staff reste sur kitchen.
       setState("loading");
-
-      let iframe = iframeRef.current;
-      if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.style.position = "fixed";
-        iframe.style.top = "-9999px";
-        iframe.style.left = "-9999px";
-        iframe.style.width = "302px";
-        iframe.style.height = "0";
-        iframe.style.border = "none";
-        iframe.style.opacity = "0";
-        iframe.style.pointerEvents = "none";
-        document.body.appendChild(iframe);
-        iframeRef.current = iframe;
-      }
-
-      let printed = false;
-      const doPrint = () => {
-        if (printed) return;
-        printed = true;
-        try {
-          iframe!.contentWindow?.print();
-        } catch {
-          window.open(`/ticket/${orderId}`, "_blank");
+      try {
+        const res = await fetch("/api/admin/printer/print-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `HTTP ${res.status}`);
         }
+        const data = await res.json();
         setState("done");
-        setTimeout(() => setState("idle"), 2000);
-      };
-
-      const onMessage = (ev: MessageEvent) => {
-        if (ev.origin !== window.location.origin) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = ev.data as any;
-        if (data?.type === "ssf-ticket-ready" && data?.orderId === orderId) {
-          window.removeEventListener("message", onMessage);
-          setTimeout(doPrint, 100);
+        if (data.reused) {
+          toast.info("Ticket deja en attente d'impression");
+        } else {
+          toast.success("Ticket envoye a l'imprimante");
         }
-      };
-      window.addEventListener("message", onMessage);
-
-      const fallback = setTimeout(() => {
-        window.removeEventListener("message", onMessage);
-        doPrint();
-      }, 5000);
-
-      iframe.onload = () => {
-        void fallback;
-      };
-
-      iframe.src = `/ticket/${orderId}`;
+        setTimeout(() => setState("idle"), 2000);
+      } catch (err) {
+        setState("error");
+        toast.error(
+          err instanceof Error
+            ? `Impression echouee : ${err.message}`
+            : "Impression echouee",
+        );
+        setTimeout(() => setState("idle"), 3000);
+      }
     },
-    [orderId, state]
+    [orderId, state],
   );
 
   const sizes = {
@@ -151,15 +98,19 @@ export function PrintTicketButton({
         "flex items-center justify-center border-2 border-[#e5e5ea] transition-all cursor-pointer shrink-0",
         state === "done"
           ? "bg-emerald-50 border-emerald-200"
-          : "hover:bg-[#f5f5f7]",
+          : state === "error"
+            ? "bg-red-50 border-red-200"
+            : "hover:bg-[#f5f5f7]",
         state === "loading" && "opacity-60",
-        className
+        className,
       )}
     >
       {state === "loading" ? (
         <Loader2 className={cn(iconSizes[size], "text-[#86868b] animate-spin")} />
       ) : state === "done" ? (
         <Check className={cn(iconSizes[size], "text-emerald-600")} />
+      ) : state === "error" ? (
+        <AlertCircle className={cn(iconSizes[size], "text-red-600")} />
       ) : (
         <Printer className={cn(iconSizes[size], "text-[#1d1d1f]")} />
       )}
