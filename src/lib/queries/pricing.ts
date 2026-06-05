@@ -315,9 +315,13 @@ export async function priceCartServerSide(
       variantName = variant.name;
     }
 
-    // Formule "En Menu" : detectee par la presence d'un marqueur frites.
-    // On recalcule le surcout cote serveur (jamais le unitPrice client).
-    const isMenu = item.extras.some((e) => isMenuFriesId(e.id));
+    // Formule "En Menu" : detectee par la presence d'un marqueur frites OU
+    // boisson (pas seulement frites, sinon un panier forge avec uniquement
+    // menu-drink-* obtiendrait la boisson sans payer le +3e). On recalcule
+    // le surcout cote serveur (jamais le unitPrice client).
+    const isMenu = item.extras.some(
+      (e) => isMenuFriesId(e.id) || isMenuDrinkId(e.id),
+    );
     if (isMenu) {
       unitPrice += MENU_UPGRADE_PRICE;
     }

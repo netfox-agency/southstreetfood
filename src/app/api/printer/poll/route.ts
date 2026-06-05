@@ -104,6 +104,29 @@ export async function POST(request: Request) {
   // CAS 2 : GetRequest — l'imprimante demande s'il y a un ticket
   // ─────────────────────────────────────────────────────────────────────
 
+  // 0. Requeue les jobs bloques en 'in_flight' depuis > 90s. Si l'imprimante
+  //    a recupere un ticket mais n'a jamais confirme (bourrage papier, coupure
+  //    courant, contenu illisible), le job restait bloque a vie et le ticket
+  //    ne sortait jamais. On le repasse en 'pending' pour qu'il soit re-tente.
+  const STUCK_THRESHOLD_MS = 90_000;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any)
+    .from("print_jobs")
+    .update({ status: "pending" })
+    .eq("status", "in_flight")
+    .lt("served_at", new Date(Date.now() - STUCK_THRESHOLD_MS).toISOString())
+    .lt("attempts", 4) // au-dela de 4 tentatives, on abandonne (voir plus bas)
+    .gt("expires_at", new Date().toISOString());
+
+  // Les jobs in_flight trop vieux ET trop re-tentes → 'failed' (visible admin)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (admin as any)
+    .from("print_jobs")
+    .update({ status: "failed", last_error: "no printer confirmation after retries" })
+    .eq("status", "in_flight")
+    .gte("attempts", 4)
+    .lt("served_at", new Date(Date.now() - STUCK_THRESHOLD_MS).toISOString());
+
   // 1. Plus ancien job 'pending' (FIFO)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: jobs } = await (admin as any)
