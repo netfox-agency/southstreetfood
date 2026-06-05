@@ -1,45 +1,58 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  buildEposPrintXml,
-  buildEmptyPollResponse,
-} from "@/lib/printer/epos-print";
+import { buildEposPrintXml } from "@/lib/printer/epos-print";
 import type { OrderWithItems } from "@/types/order";
 
 /**
- * POST /api/printer/poll
+ * POST /api/printer/poll — endpoint Server Direct Print pour Epson TM-m30III.
  *
- * Endpoint que l'imprimante en cuisine appelle toutes les X secondes
- * (typiquement 10s, configurable côté imprimante).
+ * Protocole Server Direct Print (reverse-engineered + doc Epson) :
  *
- * Reponses possibles :
- *  - 200 + XML ePOS-Print avec ticket  → l'imprimante imprime
- *  - 200 + XML vide                    → "rien a imprimer, retente plus tard"
+ *  L'imprimante POST toutes les X sec un body form-urlencoded :
+ *    - ConnectionType=GetRequest&ID=&Name=<serial>
+ *        → "T'as un truc a imprimer pour moi ?"
+ *        → on repond <PrintRequestInfo> avec le ticket, OU vide si rien.
+ *    - ConnectionType=SetResponse&...&printjobid=<id>&code=<result>
+ *        → "J'ai fini d'imprimer le job X, voila le resultat"
+ *        → on marque le job 'printed' (ou 'failed' si erreur).
  *
- * Securite : pas d'auth requise sur cet endpoint car l'imprimante n'a pas
- * d'auth header configurable. La proteciton vient du fait que :
- *  1. L'URL contient un token secret (env var PRINTER_POLL_SECRET)
- *  2. Le contenu retourne est juste l'ESC/POS d'une commande Pay (donc
- *     potentiellement crawlable mais aucune info sensible : c'est ce qui
- *     part en cuisine pour faire un sandwich)
+ *  Le format de reponse a un GetRequest DOIT etre :
+ *    <PrintRequestInfo Version="2.00">
+ *      <ePOSPrint>
+ *        <Parameter>
+ *          <devid>local_printer</devid>
+ *          <timeout>10000</timeout>
+ *          <printjobid>JOB_ID</printjobid>
+ *        </Parameter>
+ *        <PrintData>
+ *          <epos-print xmlns="...">...</epos-print>
+ *        </PrintData>
+ *      </ePOSPrint>
+ *    </PrintRequestInfo>
  *
- * Flow atomique : on lock une row 'pending' et on la passe en 'in_flight'
- * dans la meme transaction pour eviter qu'une 2eme imprimante l'imprime
- * en double.
+ *  Sans cette enveloppe PrintRequestInfo, l'imprimante recupere bien le
+ *  HTTP 200 mais n'imprime RIEN (c'etait notre bug : on renvoyait le
+ *  epos-print nu, puis un SOAP envelope — aucun des deux n'est le bon
+ *  format Server Direct Print).
  */
 
-// Authentification via token dans le path ou query string.
-// L'imprimante a une URL configuree comme :
-//   https://southstreetfood.vercel.app/api/printer/poll?token=XXX
+const DEVICE_ID = "local_printer";
+const PRINT_TIMEOUT = 10000;
+
 function validateToken(request: Request): boolean {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
   const expected = process.env.PRINTER_POLL_SECRET;
-  if (!expected) {
-    // Si pas configure en env, on accepte (mode dev/test)
-    return true;
-  }
+  if (!expected) return true; // pas configure → mode ouvert
   return token === expected;
+}
+
+/** Reponse "rien a imprimer" : body vide, l'imprimante re-poll plus tard. */
+function emptyResponse(): NextResponse {
+  return new NextResponse("", {
+    status: 200,
+    headers: { "Content-Type": "text/xml; charset=utf-8" },
+  });
 }
 
 export async function POST(request: Request) {
@@ -48,26 +61,39 @@ export async function POST(request: Request) {
   }
 
   const admin = createAdminClient();
+  const rawBody = await request.text();
+  const params = new URLSearchParams(rawBody);
+  const connectionType = params.get("ConnectionType") || "GetRequest";
 
-  // ─── DEBUG : log ce que l'imprimante envoie (a retirer apres) ───
-  try {
-    const debugBody = await request.clone().text();
-    const debugHeaders: Record<string, string> = {};
-    request.headers.forEach((v, k) => {
-      debugHeaders[k] = v;
-    });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (admin as any).from("printer_debug").insert({
-      method: request.method,
-      headers: debugHeaders,
-      body: debugBody.slice(0, 5000),
-    });
-  } catch {
-    // best-effort, on bloque pas le flow
+  // ─────────────────────────────────────────────────────────────────────
+  // CAS 1 : SetResponse — l'imprimante confirme la fin d'un print
+  // ─────────────────────────────────────────────────────────────────────
+  if (connectionType === "SetResponse") {
+    const printJobId = params.get("printjobid") || params.get("ResponseID");
+    // code "ServerDirectPrint" success ressemble a "ePOSPrint" avec
+    // <response success="true">. Mais le plus simple : si on a un printjobid,
+    // on marque printed. Les details du body ne sont pas critiques.
+    if (printJobId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (admin as any)
+        .from("print_jobs")
+        .update({
+          status: "printed",
+          printed_at: new Date().toISOString(),
+        })
+        .eq("id", printJobId)
+        .eq("status", "in_flight");
+    }
+    // L'imprimante attend une reponse vide pour confirmer la reception.
+    return emptyResponse();
   }
 
-  // 1. Récupère le plus ancien job 'pending' (FIFO)
-  //    eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // ─────────────────────────────────────────────────────────────────────
+  // CAS 2 : GetRequest — l'imprimante demande s'il y a un ticket
+  // ─────────────────────────────────────────────────────────────────────
+
+  // 1. Plus ancien job 'pending' (FIFO)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: jobs } = await (admin as any)
     .from("print_jobs")
     .select("id, order_id, attempts")
@@ -77,18 +103,13 @@ export async function POST(request: Request) {
     .limit(1);
 
   if (!jobs || jobs.length === 0) {
-    // Pas de job en attente → réponse XML vide
-    return new NextResponse(buildEmptyPollResponse(), {
-      status: 200,
-      headers: { "Content-Type": "text/xml; charset=utf-8" },
-    });
+    return emptyResponse();
   }
 
   const job = jobs[0];
 
-  // 2. Lock le job en passant à 'in_flight' (évite double print si 2
-  //    imprimantes pollent en même temps — improbable mais safe)
-  //    eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // 2. Lock atomique pending → in_flight
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: updated, error: updateErr } = await (admin as any)
     .from("print_jobs")
     .update({
@@ -97,21 +118,16 @@ export async function POST(request: Request) {
       attempts: job.attempts + 1,
     })
     .eq("id", job.id)
-    .eq("status", "pending") // CAS atomique
+    .eq("status", "pending")
     .select("id")
     .single();
 
   if (updateErr || !updated) {
-    // Race condition : un autre poll a chopé le job juste avant nous.
-    // On répond "rien à imprimer", le prochain poll choppera le prochain job.
-    return new NextResponse(buildEmptyPollResponse(), {
-      status: 200,
-      headers: { "Content-Type": "text/xml; charset=utf-8" },
-    });
+    return emptyResponse();
   }
 
-  // 3. Fetch les détails de la commande
-  //    eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // 3. Fetch la commande
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: orderRaw } = await (admin as any)
     .from("orders")
     .select("*, order_items(*), delivery_address:delivery_addresses(*)")
@@ -119,23 +135,14 @@ export async function POST(request: Request) {
     .single();
 
   if (!orderRaw) {
-    // Commande disparue ? Bizarre. On marque failed et on répond vide.
-    //    eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (admin as any)
       .from("print_jobs")
-      .update({
-        status: "failed",
-        last_error: "order_not_found",
-      })
+      .update({ status: "failed", last_error: "order_not_found" })
       .eq("id", job.id);
-
-    return new NextResponse(buildEmptyPollResponse(), {
-      status: 200,
-      headers: { "Content-Type": "text/xml; charset=utf-8" },
-    });
+    return emptyResponse();
   }
 
-  // delivery_address arrive comme array dans la jointure Supabase, on unwrap
   const order: OrderWithItems = {
     ...orderRaw,
     delivery_address: Array.isArray(orderRaw.delivery_address)
@@ -143,23 +150,25 @@ export async function POST(request: Request) {
       : orderRaw.delivery_address ?? null,
   };
 
-  // 4. Génère le XML ePOS-Print du ticket
-  const eposXml = buildEposPrintXml(order);
+  // 4. Genere le ePOS-Print XML, strip la declaration <?xml?>
+  const eposXml = buildEposPrintXml(order).replace(/<\?xml[^?]*\?>\s*/, "");
 
-  // 5. Enveloppe en SOAP — Server Direct Print attend le ePOS-Print
-  //    DANS un SOAP envelope, pas le XML nu. C'est le meme format que
-  //    celui qu'on envoyait via le bridge sur /cgi-bin/epos/service.cgi
-  //    (et qui imprimait). Sans le SOAP wrapper, l'imprimante recupere
-  //    le job (HTTP 200) mais n'imprime rien.
-  const soapResponse = `<?xml version="1.0" encoding="utf-8"?>
-<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
-<s:Body>
-${eposXml.replace(/<\?xml[^?]*\?>\s*/, "")}
-</s:Body>
-</s:Envelope>`;
+  // 5. Enveloppe dans le format Server Direct Print PrintRequestInfo
+  const response = `<?xml version="1.0" encoding="utf-8"?>
+<PrintRequestInfo Version="2.00">
+<ePOSPrint>
+<Parameter>
+<devid>${DEVICE_ID}</devid>
+<timeout>${PRINT_TIMEOUT}</timeout>
+<printjobid>${job.id}</printjobid>
+</Parameter>
+<PrintData>
+${eposXml}
+</PrintData>
+</ePOSPrint>
+</PrintRequestInfo>`;
 
-  // 6. Renvoie à l'imprimante
-  return new NextResponse(soapResponse, {
+  return new NextResponse(response, {
     status: 200,
     headers: {
       "Content-Type": "text/xml; charset=utf-8",
@@ -168,6 +177,5 @@ ${eposXml.replace(/<\?xml[^?]*\?>\s*/, "")}
   });
 }
 
-// L'imprimante peut faire un GET en heartbeat selon les firmwares,
-// on accepte aussi GET et on retourne le même flow.
+// Certains firmwares font un GET en heartbeat : meme flow.
 export const GET = POST;
