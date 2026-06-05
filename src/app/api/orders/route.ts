@@ -84,19 +84,6 @@ export async function POST(request: NextRequest) {
     const parsed = createOrderSchema.safeParse(body);
 
     if (!parsed.success) {
-      // DEBUG temporaire : log le payload + le champ fautif pour
-      // diagnostiquer les "Invalid UUID". A retirer apres.
-      try {
-        const admin = createAdminClient();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (admin as any).from("printer_debug").insert({
-          method: "ORDER_VALIDATION_FAIL",
-          headers: { issue: parsed.error.issues[0] },
-          body: JSON.stringify(body).slice(0, 5000),
-        });
-      } catch {
-        // best-effort
-      }
       return NextResponse.json(
         { error: parsed.error.issues[0].message },
         { status: 400 }
@@ -197,7 +184,7 @@ export async function POST(request: NextRequest) {
           menuItemId: it.menuItemId,
           variantId: it.variantId ?? null,
           quantity: it.quantity,
-          extras: it.extras.map((e) => ({ id: e.id })),
+          extras: it.extras.map((e) => ({ id: e.id, name: e.name })),
           specialInstructions: it.specialInstructions ?? null,
         })),
         orderType: data.orderType,

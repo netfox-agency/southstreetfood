@@ -53,7 +53,20 @@ export const createOrderSchema = z.object({
         extras: z
           .array(
             z.object({
-              id: z.string().uuid(),
+              // Soit un UUID (vrai supplement DB), soit un marqueur
+              // synthetique de la formule "En Menu" : "menu-fries-<slug>"
+              // ou "menu-drink-<uuid>". Ces marqueurs sont des lignes
+              // d'affichage prix 0 (le +3e + suppléments sont bakés dans
+              // unitPrice et recalcules cote serveur).
+              id: z
+                .string()
+                .max(80)
+                .refine(
+                  (v) =>
+                    /^[0-9a-fA-F-]{36}$/.test(v) ||
+                    /^menu-(fries|drink)-/.test(v),
+                  { message: "Invalid extra id" },
+                ),
               name: z.string().max(MAX_NAME),
               price: z.number().int().nonnegative().max(1_000_00),
             })

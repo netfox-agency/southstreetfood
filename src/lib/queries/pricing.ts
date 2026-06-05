@@ -1,5 +1,30 @@
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getDeliveryFeeForCity, getMinOrderForCity } from "@/lib/constants";
+import {
+  getDeliveryFeeForCity,
+  getMinOrderForCity,
+  MENU_UPGRADE_PRICE,
+  MENU_DRINK_SUPPLEMENTS,
+  MENU_FRIES_OPTIONS,
+} from "@/lib/constants";
+
+/**
+ * Detecte les marqueurs synthetiques de la formule "En Menu" dans les
+ * extras. Le client ajoute deux lignes prix-0 pour l'affichage :
+ *   - "menu-fries-<slug>"  → frites choisies
+ *   - "menu-drink-<uuid>"  → boisson choisie (uuid = menu_item de la boisson)
+ * Le serveur recalcule le vrai prix menu a partir de ces marqueurs +
+ * constantes (MENU_UPGRADE_PRICE, suppléments frites/boisson), sans faire
+ * confiance au unitPrice client.
+ */
+function isMenuFriesId(id: string): boolean {
+  return id.startsWith("menu-fries-");
+}
+function isMenuDrinkId(id: string): boolean {
+  return id.startsWith("menu-drink-");
+}
+function isSyntheticMenuId(id: string): boolean {
+  return isMenuFriesId(id) || isMenuDrinkId(id);
+}
 
 /**
  * Server-authoritative pricing for an incoming cart.
@@ -55,7 +80,7 @@ type InputItem = {
   menuItemId: string;
   variantId?: string | null;
   quantity: number;
-  extras: Array<{ id: string }>;
+  extras: Array<{ id: string; name?: string }>;
   specialInstructions?: string | null;
 };
 
@@ -83,8 +108,26 @@ export async function priceCartServerSide(
         .filter((v): v is string => typeof v === "string" && v.length > 0)
     )
   );
+  // Vrais supplements DB uniquement (on exclut les marqueurs menu-* qui
+  // ne sont pas des rows extra_items et feraient planter le .in() uuid).
   const extraIds = Array.from(
-    new Set(input.items.flatMap((i) => i.extras.map((e) => e.id)))
+    new Set(
+      input.items.flatMap((i) =>
+        i.extras.map((e) => e.id).filter((id) => !isSyntheticMenuId(id)),
+      ),
+    ),
+  );
+
+  // Boissons menu : on a besoin du slug pour connaitre le supplement
+  // (Red Bull +1e). Le marqueur "menu-drink-<uuid>" contient le menu_item id.
+  const menuDrinkIds = Array.from(
+    new Set(
+      input.items.flatMap((i) =>
+        i.extras
+          .filter((e) => isMenuDrinkId(e.id))
+          .map((e) => e.id.replace("menu-drink-", "")),
+      ),
+    ),
   );
 
   // Parallel fetch — one round-trip per table instead of N+1.
@@ -161,23 +204,38 @@ export async function priceCartServerSide(
     };
   };
 
-  const [menuItemsRes, variantsRes, extrasRes, settingsRes] = await Promise.all([
-    fetchMenuItems(),
-    variantIds.length > 0
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (supabase as any)
-          .from("menu_item_variants")
-          .select("id, menu_item_id, name, price_modifier, is_available")
-          .in("id", variantIds)
-      : Promise.resolve({ data: [], error: null }),
-    fetchExtras(),
+  const [menuItemsRes, variantsRes, extrasRes, settingsRes, menuDrinksRes] =
+    await Promise.all([
+      fetchMenuItems(),
+      variantIds.length > 0
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("menu_item_variants")
+            .select("id, menu_item_id, name, price_modifier, is_available")
+            .in("id", variantIds)
+        : Promise.resolve({ data: [], error: null }),
+      fetchExtras(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (supabase as any)
+        .from("restaurant_settings")
+        .select("base_delivery_fee, min_order_delivery, delivery_enabled")
+        .limit(1)
+        .maybeSingle(),
+      // Slugs des boissons menu (pour le supplement Red Bull)
+      menuDrinkIds.length > 0
+        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (supabase as any)
+            .from("menu_items")
+            .select("id, slug")
+            .in("id", menuDrinkIds)
+        : Promise.resolve({ data: [], error: null }),
+    ]);
+
+  // Map drink uuid → slug pour resoudre le supplement boisson
+  const drinkSlugById = new Map<string, string>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (supabase as any)
-      .from("restaurant_settings")
-      .select("base_delivery_fee, min_order_delivery, delivery_enabled")
-      .limit(1)
-      .maybeSingle(),
-  ]);
+    ((menuDrinksRes?.data as any[]) || []).map((d) => [d.id, d.slug]),
+  );
 
   if (menuItemsRes.error) throw new Error(menuItemsRes.error.message);
   if (variantsRes.error) throw new Error(variantsRes.error.message);
@@ -257,9 +315,44 @@ export async function priceCartServerSide(
       variantName = variant.name;
     }
 
+    // Formule "En Menu" : detectee par la presence d'un marqueur frites.
+    // On recalcule le surcout cote serveur (jamais le unitPrice client).
+    const isMenu = item.extras.some((e) => isMenuFriesId(e.id));
+    if (isMenu) {
+      unitPrice += MENU_UPGRADE_PRICE;
+    }
+
     let extrasPrice = 0;
     const extrasJson: PricedCartItem["extrasJson"] = [];
     for (const e of item.extras) {
+      // ─── Marqueur menu synthetique (frites/boisson, prix 0 affichage) ───
+      if (isMenuFriesId(e.id)) {
+        const slug = e.id.replace("menu-fries-", "");
+        const friesOpt = MENU_FRIES_OPTIONS.find((f) => f.slug === slug);
+        // Supplement frites (cheddar, bacon...) baké dans unitPrice
+        if (friesOpt) unitPrice += friesOpt.supplement;
+        extrasJson.push({
+          id: e.id,
+          name: e.name ?? friesOpt?.label ?? "Frites menu",
+          price: 0,
+        });
+        continue;
+      }
+      if (isMenuDrinkId(e.id)) {
+        const drinkUuid = e.id.replace("menu-drink-", "");
+        const slug = drinkSlugById.get(drinkUuid);
+        const supp = slug ? MENU_DRINK_SUPPLEMENTS[slug] ?? 0 : 0;
+        // Supplement boisson (Red Bull) baké dans unitPrice
+        unitPrice += supp;
+        extrasJson.push({
+          id: e.id,
+          name: e.name ?? "Boisson menu",
+          price: 0,
+        });
+        continue;
+      }
+
+      // ─── Vrai supplement DB ───
       const extra = extraIndex.get(e.id);
       if (!extra) {
         throw new PricingError(
