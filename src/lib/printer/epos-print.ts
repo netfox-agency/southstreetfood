@@ -28,9 +28,26 @@ const RESTAURANT = {
   phone: "07 69 79 91 89",
 };
 
+/**
+ * Strip les caracteres que l'imprimante thermique ne sait pas rendre.
+ * Les emojis (🍟🥤🥩...) sont des sequences multi-octets U+1F000+ qui font
+ * planter l'impression sur l'Epson TM-m30III (le job reste bloque in_flight,
+ * rien ne sort). On garde l'ASCII + le Latin-1 (accents francais é è à ç ê
+ * etc. sont tous < U+0100), on vire tout le reste (emoji, pictogrammes,
+ * fleches, variation selectors). Puis on nettoie les espaces orphelins
+ * laisses par les emoji supprimes.
+ */
+function sanitizeForPrinter(s: string): string {
+  return s
+    // eslint-disable-next-line no-control-regex
+    .replace(/[^\x09\x0A\x0D\x20-\xFF]/g, "") // garde tab/newline + ASCII + Latin-1
+    .replace(/[ \t]{2,}/g, " ") // collapse espaces multiples
+    .replace(/^\s+/, ""); // trim espace de tete (laisse par emoji vire)
+}
+
 function escapeXml(s: string | null | undefined): string {
   if (s == null) return "";
-  return s
+  return sanitizeForPrinter(s)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
