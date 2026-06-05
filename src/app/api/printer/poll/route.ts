@@ -49,6 +49,23 @@ export async function POST(request: Request) {
 
   const admin = createAdminClient();
 
+  // ─── DEBUG : log ce que l'imprimante envoie (a retirer apres) ───
+  try {
+    const debugBody = await request.clone().text();
+    const debugHeaders: Record<string, string> = {};
+    request.headers.forEach((v, k) => {
+      debugHeaders[k] = v;
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (admin as any).from("printer_debug").insert({
+      method: request.method,
+      headers: debugHeaders,
+      body: debugBody.slice(0, 5000),
+    });
+  } catch {
+    // best-effort, on bloque pas le flow
+  }
+
   // 1. Récupère le plus ancien job 'pending' (FIFO)
   //    eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: jobs } = await (admin as any)
