@@ -69,22 +69,34 @@ export async function POST(request: Request) {
   // CAS 1 : SetResponse — l'imprimante confirme la fin d'un print
   // ─────────────────────────────────────────────────────────────────────
   if (connectionType === "SetResponse") {
-    const printJobId = params.get("printjobid") || params.get("ResponseID");
-    // code "ServerDirectPrint" success ressemble a "ePOSPrint" avec
-    // <response success="true">. Mais le plus simple : si on a un printjobid,
-    // on marque printed. Les details du body ne sont pas critiques.
-    if (printJobId) {
+    // Protocole 1.00 : le SetResponse ne contient PAS de printjobid. Le
+    // ResponseFile contient le resultat (<PrintResponseInfo>). On marque
+    // le job 'in_flight' le plus recent comme 'printed' (l'imprimante
+    // traite les tickets sequentiellement, 1 a la fois).
+    const responseFile = params.get("ResponseFile") || "";
+    // Si le resultat contient success="false", c'est un echec.
+    const failed = /success\s*=\s*"false"/i.test(responseFile);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: recent } = await (admin as any)
+      .from("print_jobs")
+      .select("id")
+      .eq("status", "in_flight")
+      .order("served_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recent?.id) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (admin as any)
         .from("print_jobs")
-        .update({
-          status: "printed",
-          printed_at: new Date().toISOString(),
-        })
-        .eq("id", printJobId)
-        .eq("status", "in_flight");
+        .update(
+          failed
+            ? { status: "failed", last_error: "printer reported failure" }
+            : { status: "printed", printed_at: new Date().toISOString() },
+        )
+        .eq("id", recent.id);
     }
-    // L'imprimante attend une reponse vide pour confirmer la reception.
     return emptyResponse();
   }
 
@@ -153,14 +165,17 @@ export async function POST(request: Request) {
   // 4. Genere le ePOS-Print XML, strip la declaration <?xml?>
   const eposXml = buildEposPrintXml(order).replace(/<\?xml[^?]*\?>\s*/, "");
 
-  // 5. Enveloppe dans le format Server Direct Print PrintRequestInfo
+  // 5. Enveloppe dans le format Server Direct Print PrintRequestInfo.
+  //    L'imprimante parle le protocole Version 1.00 (vu dans son
+  //    SetResponse : <PrintResponseInfo Version="1.00"/>). En 1.00 il n'y
+  //    a PAS de tag <printjobid> (c'est une feature 2.00). Si on envoie du
+  //    2.00 avec printjobid, l'imprimante recoit le job mais n'imprime pas.
   const response = `<?xml version="1.0" encoding="utf-8"?>
-<PrintRequestInfo Version="2.00">
+<PrintRequestInfo Version="1.00">
 <ePOSPrint>
 <Parameter>
 <devid>${DEVICE_ID}</devid>
 <timeout>${PRINT_TIMEOUT}</timeout>
-<printjobid>${job.id}</printjobid>
 </Parameter>
 <PrintData>
 ${eposXml}
