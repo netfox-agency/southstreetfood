@@ -14,6 +14,7 @@ import {
   Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { computeTva } from "@/lib/constants";
 import { PrintTicketButton } from "@/components/print-ticket-button";
 
 type Order = {
@@ -189,8 +190,18 @@ export default function ReportsPage() {
                   {formatPrice(stats.totalRevenue)}
                 </p>
                 <p className="text-[13px] text-[#86868b] mt-0.5">
-                  Chiffre d&apos;affaires
+                  Chiffre d&apos;affaires <span className="text-[#aeaeb2]">TTC</span>
                 </p>
+                <div className="mt-2 pt-2 border-t border-[#f0f0f2] space-y-0.5">
+                  <p className="text-[11px] text-[#86868b] flex justify-between tabular-nums">
+                    <span>HT</span>
+                    <span>{formatPrice(computeTva(stats.totalRevenue).ht)}</span>
+                  </p>
+                  <p className="text-[11px] text-[#86868b] flex justify-between tabular-nums">
+                    <span>TVA 5,5%</span>
+                    <span>{formatPrice(computeTva(stats.totalRevenue).tva)}</span>
+                  </p>
+                </div>
               </div>
 
               <div className="bg-white rounded-2xl border border-[#e5e5ea] p-5">

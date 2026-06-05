@@ -95,6 +95,24 @@ export const LOYALTY = {
 } as const;
 
 /**
+ * TVA — restauration vente a emporter : taux reduit 5,5%.
+ *
+ * Les prix du menu sont affiches TTC (toujours, B2C France). On calcule le
+ * detail HT / TVA a partir du TTC pour l'afficher sur la confirmation, le
+ * ticket et le recap admin (utile au comptable).
+ *
+ * Formules (montants en centimes) :
+ *   HT  = round(TTC / 1.055)
+ *   TVA = TTC - HT
+ */
+export const TVA_RATE = 0.055;
+
+export function computeTva(ttcCents: number): { ht: number; tva: number } {
+  const ht = Math.round(ttcCents / (1 + TVA_RATE));
+  return { ht, tva: ttcCents - ht };
+}
+
+/**
  * Menu (formule +3€) — items eligible to be upgraded to "Menu".
  * A Menu = item + drink 33cl + frites for +3€ flat.
  *   - Drinks: any standard 33cl included, Red Bull +1€ supplement

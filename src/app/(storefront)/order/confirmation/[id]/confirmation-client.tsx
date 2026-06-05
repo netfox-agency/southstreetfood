@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { CheckCircle, Clock, MapPin, ArrowRight, Truck, Store } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { computeTva } from "@/lib/constants";
 import { useRestaurantSettings } from "@/hooks/use-restaurant-settings";
 import type { OrderWithItems } from "@/types/order";
 
@@ -53,6 +54,9 @@ export function ConfirmationClient({ order }: { order: OrderWithItems }) {
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {order.order_items.length} article{order.order_items.length > 1 ? "s" : ""} · {formatPrice(order.total)}
+                </p>
+                <p className="text-[11px] text-muted-foreground/70">
+                  dont TVA 5,5% : {formatPrice(computeTva(order.total).tva)}
                 </p>
               </div>
             </div>

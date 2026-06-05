@@ -20,6 +20,7 @@
  */
 
 import type { OrderWithItems } from "@/types/order";
+import { computeTva } from "@/lib/constants";
 
 const RESTAURANT = {
   name: "SOUTH STREET FOOD",
@@ -202,6 +203,15 @@ export function buildEposPrintXml(order: OrderWithItems): string {
     `<text>${escapeXml(lineLR("TOTAL", fmtPrice(order.total), 32))}\n</text>`,
   );
   lines.push('<text width="1" height="1"/>');
+
+  // ─── Detail TVA (vente a emporter, taux reduit 5,5%) ───
+  const { ht, tva } = computeTva(order.total);
+  lines.push(
+    `<text>${escapeXml(lineLR("Dont HT", fmtPrice(ht), 32))}\n</text>`,
+  );
+  lines.push(
+    `<text>${escapeXml(lineLR("Dont TVA 5,5%", fmtPrice(tva), 32))}\n</text>`,
+  );
 
   // ─── Footer ───
   lines.push("<feed/>");
