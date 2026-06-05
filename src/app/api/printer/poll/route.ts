@@ -127,10 +127,22 @@ export async function POST(request: Request) {
   };
 
   // 4. Génère le XML ePOS-Print du ticket
-  const xml = buildEposPrintXml(order);
+  const eposXml = buildEposPrintXml(order);
 
-  // 5. Renvoie à l'imprimante
-  return new NextResponse(xml, {
+  // 5. Enveloppe en SOAP — Server Direct Print attend le ePOS-Print
+  //    DANS un SOAP envelope, pas le XML nu. C'est le meme format que
+  //    celui qu'on envoyait via le bridge sur /cgi-bin/epos/service.cgi
+  //    (et qui imprimait). Sans le SOAP wrapper, l'imprimante recupere
+  //    le job (HTTP 200) mais n'imprime rien.
+  const soapResponse = `<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+<s:Body>
+${eposXml.replace(/<\?xml[^?]*\?>\s*/, "")}
+</s:Body>
+</s:Envelope>`;
+
+  // 6. Renvoie à l'imprimante
+  return new NextResponse(soapResponse, {
     status: 200,
     headers: {
       "Content-Type": "text/xml; charset=utf-8",

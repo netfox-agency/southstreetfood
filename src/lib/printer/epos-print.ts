@@ -210,9 +210,13 @@ ${inner}
 
 /**
  * Reponse "no job" — l'imprimante continue de poller.
- * Format minimal compatible Server Direct Print.
+ * Server Direct Print attend un SOAP envelope avec un body vide quand il
+ * n'y a rien a imprimer. L'imprimante voit le body vide, comprend "rien
+ * a imprimer", et re-poll a l'intervalle suivant.
  */
 export function buildEmptyPollResponse(): string {
   return `<?xml version="1.0" encoding="utf-8"?>
-<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print"/>`;
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+<s:Body></s:Body>
+</s:Envelope>`;
 }
