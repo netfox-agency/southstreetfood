@@ -101,6 +101,18 @@ export const createOrderSchema = z.object({
       friesId: optionalUuid,
       drinkId: optionalUuid,
       dessertId: optionalUuid,
+      // Personnalisation du plat principal (protéine, sauces). Offert, prix 0.
+      // Validé serveur-side : les extras doivent appartenir au main item.
+      mainExtras: z
+        .array(
+          z.object({
+            id: z.string().uuid(),
+            name: z.string().max(MAX_NAME),
+          }),
+        )
+        .max(MAX_EXTRAS_PER_ITEM)
+        .optional(),
+      mainVariantId: optionalUuid,
     })
     .optional()
     .nullable(),

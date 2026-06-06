@@ -7,6 +7,10 @@ import { X, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LoyaltyTier } from "@/app/api/loyalty/catalog/route";
 import type { EligibleItem } from "@/app/api/loyalty/eligible-items/route";
+import type {
+  OptionGroup,
+  ItemVariant,
+} from "@/app/api/loyalty/item-options/route";
 
 /**
  * Picker pour un palier fidelite.
@@ -38,6 +42,9 @@ export interface LoyaltyPickerSelection {
   friesId: string | null;
   drinkId: string | null;
   dessertId: string | null;
+  /** Personnalisation du plat principal (protéine, sauces...) — offert, prix 0 */
+  mainExtras: { id: string; name: string }[];
+  mainVariantId: string | null;
 }
 
 interface Props {
@@ -61,6 +68,18 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
   );
   const [items, setItems] = useState<EligibleItem[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Étape "options" du plat principal (protéine, sauces). Quand le client a
+  // choisi son sandwich, on charge ses options ; s'il y en a, on affiche ce
+  // sous-écran avant de passer au slot suivant.
+  const [showOptions, setShowOptions] = useState(false);
+  const [optionsLoading, setOptionsLoading] = useState(false);
+  const [optionGroups, setOptionGroups] = useState<OptionGroup[]>([]);
+  const [optionVariants, setOptionVariants] = useState<ItemVariant[]>([]);
+  const [pickedExtras, setPickedExtras] = useState<
+    Record<string, { id: string; name: string }[]>
+  >({}); // groupId -> selected
+  const [pickedVariant, setPickedVariant] = useState<string | null>(null);
 
   const currentSlot = requiredSlots[stepIdx];
 
@@ -97,28 +116,120 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
+  const finalize = useCallback(
+    (
+      sels: Partial<Record<Slot, string>>,
+      extras: { id: string; name: string }[],
+      variantId: string | null,
+    ) => {
+      onConfirm({
+        rewardId: tier.id,
+        mainId: sels.main ?? null,
+        friesId: sels.fries ?? null,
+        drinkId: sels.drink ?? null,
+        dessertId: sels.dessert ?? null,
+        mainExtras: extras,
+        mainVariantId: variantId,
+      });
+    },
+    [tier.id, onConfirm],
+  );
+
+  const advance = useCallback(
+    (sels: Partial<Record<Slot, string>>) => {
+      if (stepIdx + 1 < requiredSlots.length) {
+        setStepIdx(stepIdx + 1);
+      } else {
+        // Plus de step : on confirme avec les extras du main deja captures
+        const extras = Object.values(pickedExtras).flat();
+        finalize(sels, extras, pickedVariant);
+      }
+    },
+    [stepIdx, requiredSlots.length, pickedExtras, pickedVariant, finalize],
+  );
+
   const handlePick = useCallback(
     (itemId: string) => {
       const newSelections = { ...selections, [currentSlot]: itemId };
       setSelections(newSelections);
 
-      // Auto-advance au step suivant. Si c'est le dernier, confirm.
-      if (stepIdx + 1 < requiredSlots.length) {
-        setStepIdx(stepIdx + 1);
-      } else {
-        onConfirm({
-          rewardId: tier.id,
-          mainId: newSelections.main ?? null,
-          friesId: newSelections.fries ?? null,
-          drinkId: newSelections.drink ?? null,
-          dessertId: newSelections.dessert ?? null,
-        });
+      // Slot "main" : on charge les options de l'item (protéine, sauces).
+      // S'il y en a, on affiche l'étape options avant d'avancer.
+      if (currentSlot === "main") {
+        setOptionsLoading(true);
+        setShowOptions(true);
+        setPickedExtras({});
+        setPickedVariant(null);
+        fetch(`/api/loyalty/item-options?itemId=${itemId}`)
+          .then((r) => r.json())
+          .then((data) => {
+            const groups: OptionGroup[] = data.groups || data.extraGroups || [];
+            const variants: ItemVariant[] = data.variants || [];
+            setOptionGroups(groups);
+            setOptionVariants(variants);
+            setOptionsLoading(false);
+            // Aucune option a choisir → on skip l'ecran options
+            if (groups.length === 0 && variants.length === 0) {
+              setShowOptions(false);
+              advance(newSelections);
+            }
+          })
+          .catch(() => {
+            setOptionsLoading(false);
+            setShowOptions(false);
+            advance(newSelections);
+          });
+        return;
       }
+
+      advance(newSelections);
     },
-    [selections, currentSlot, stepIdx, requiredSlots.length, tier.id, onConfirm],
+    [selections, currentSlot, advance],
   );
 
+  // Toggle un extra dans un groupe (respecte max : radio si max=1)
+  const toggleExtra = useCallback(
+    (group: OptionGroup, item: { id: string; name: string }) => {
+      setPickedExtras((prev) => {
+        const cur = prev[group.id] || [];
+        const has = cur.some((e) => e.id === item.id);
+        const max = group.maxSelections ?? 99;
+        let next: { id: string; name: string }[];
+        if (has) {
+          next = cur.filter((e) => e.id !== item.id);
+        } else if (max === 1) {
+          next = [item]; // radio : remplace
+        } else if (cur.length < max) {
+          next = [...cur, item];
+        } else {
+          next = cur; // max atteint, ignore
+        }
+        return { ...prev, [group.id]: next };
+      });
+    },
+    [],
+  );
+
+  // Toutes les contraintes min satisfaites ?
+  const optionsValid = optionGroups.every(
+    (g) => (pickedExtras[g.id]?.length ?? 0) >= (g.minSelections ?? 0),
+  );
+
+  const confirmOptions = useCallback(() => {
+    if (!optionsValid) return;
+    const extras = Object.values(pickedExtras).flat();
+    setShowOptions(false);
+    advance(selections);
+    // Note: advance lit pickedExtras/pickedVariant via closure de finalize
+    void extras;
+  }, [optionsValid, pickedExtras, selections, advance]);
+
   const handleBack = () => {
+    if (showOptions) {
+      // Revenir au choix du plat principal
+      setShowOptions(false);
+      return;
+    }
     if (stepIdx === 0) {
       onClose();
     } else {
@@ -153,7 +264,7 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
             <div className="sm:hidden absolute top-1.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-[#d1d1d6]" />
 
             <div className="flex items-center gap-3">
-              {stepIdx > 0 ? (
+              {stepIdx > 0 || showOptions ? (
                 <button
                   onClick={handleBack}
                   className="h-8 w-8 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
@@ -170,7 +281,7 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
                   {tier.name} · {tier.pointsCost} pts
                 </p>
                 <h2 className="font-display text-xl text-[#1d1d1f] tracking-tight leading-tight mt-0.5">
-                  {labels.title}
+                  {showOptions ? "Personnalise ton plat" : labels.title}
                 </h2>
               </div>
 
@@ -195,13 +306,70 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
               </div>
             )}
             <p className="mt-2 text-[12px] text-[#86868b] text-center">
-              {labels.subtitle}
+              {showOptions ? "Choisis tes options" : labels.subtitle}
             </p>
           </div>
 
-          {/* Items grid */}
+          {/* Items grid OU étape options du plat principal */}
           <div className="flex-1 overflow-y-auto px-5 py-4">
-            {loading ? (
+            {showOptions ? (
+              optionsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 text-[#e8416f] animate-spin" />
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {optionVariants.length > 0 && (
+                    <div>
+                      <p className="text-[13px] font-semibold text-[#1d1d1f] mb-2">
+                        Taille / version
+                      </p>
+                      <div className="space-y-2">
+                        {optionVariants.map((v) => (
+                          <OptionRow
+                            key={v.id}
+                            label={v.name}
+                            checked={pickedVariant === v.id}
+                            radio
+                            onClick={() => setPickedVariant(v.id)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {optionGroups.map((g) => (
+                    <div key={g.id}>
+                      <p className="text-[13px] font-semibold text-[#1d1d1f] mb-0.5">
+                        {g.name}
+                      </p>
+                      <p className="text-[11px] text-[#86868b] mb-2">
+                        {g.minSelections > 0
+                          ? `Obligatoire${g.maxSelections === 1 ? " · choisis 1" : ""}`
+                          : g.maxSelections
+                            ? `Optionnel · max ${g.maxSelections}`
+                            : "Optionnel"}
+                      </p>
+                      <div className="space-y-2">
+                        {g.items.map((it) => {
+                          const sel = (pickedExtras[g.id] || []).some(
+                            (e) => e.id === it.id,
+                          );
+                          return (
+                            <OptionRow
+                              key={it.id}
+                              label={it.name}
+                              checked={sel}
+                              radio={g.maxSelections === 1}
+                              onClick={() => toggleExtra(g, it)}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : loading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="h-6 w-6 text-[#e8416f] animate-spin" />
               </div>
@@ -225,18 +393,73 @@ export function LoyaltyTierPicker({ tier, onClose, onConfirm }: Props) {
             )}
           </div>
 
-          {/* Footer hint */}
-          <div className="px-5 py-3 border-t border-[#e5e5ea] bg-[#fafafa]">
-            <p className="text-[11px] text-[#86868b] text-center">
-              {stepIdx + 1} / {requiredSlots.length} ·{" "}
-              {requiredSlots.length > 1
-                ? "Choisis pour passer a l'etape suivante"
-                : "Choisis pour valider"}
-            </p>
-          </div>
+          {/* Bouton continuer pour l'étape options */}
+          {showOptions && !optionsLoading && (
+            <div className="px-5 py-3 border-t border-[#e5e5ea]">
+              <button
+                onClick={confirmOptions}
+                disabled={!optionsValid}
+                className={cn(
+                  "w-full h-12 rounded-2xl font-semibold text-[15px] transition-all",
+                  optionsValid
+                    ? "bg-[#1d1d1f] text-white hover:bg-[#1d1d1f]/90 active:scale-[0.98]"
+                    : "bg-[#e5e5ea] text-[#aeaeb2] cursor-not-allowed",
+                )}
+              >
+                {optionsValid ? "Continuer" : "Choisis les options obligatoires"}
+              </button>
+            </div>
+          )}
+
+          {/* Footer hint (masqué pendant l'étape options) */}
+          {!showOptions && (
+            <div className="px-5 py-3 border-t border-[#e5e5ea] bg-[#fafafa]">
+              <p className="text-[11px] text-[#86868b] text-center">
+                {stepIdx + 1} / {requiredSlots.length} ·{" "}
+                {requiredSlots.length > 1
+                  ? "Choisis pour passer a l'etape suivante"
+                  : "Choisis pour valider"}
+              </p>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function OptionRow({
+  label,
+  checked,
+  radio,
+  onClick,
+}: {
+  label: string;
+  checked: boolean;
+  radio?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all",
+        checked
+          ? "border-[#e8416f] bg-[#fff5f8]"
+          : "border-[#e5e5ea] hover:border-[#e8416f]/40",
+      )}
+    >
+      <span
+        className={cn(
+          "h-5 w-5 shrink-0 flex items-center justify-center border-2",
+          radio ? "rounded-full" : "rounded-md",
+          checked ? "border-[#e8416f] bg-[#e8416f]" : "border-[#d1d1d6]",
+        )}
+      >
+        {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+      </span>
+      <span className="text-[14px] text-[#1d1d1f]">{label}</span>
+    </button>
   );
 }
 

@@ -296,17 +296,61 @@ export async function POST(request: NextRequest) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rows = (itemsRows ?? []) as any[];
 
-        loyaltyRewardLines = rows.map((mi) => ({
-          menuItemId: mi.id,
-          variantId: null,
-          quantity: 1,
-          unitPrice: 0,
-          extrasPrice: 0,
-          itemName: `${mi.name} (fidelite)`,
-          variantName: null,
-          extrasJson: [],
-          specialInstructions: `Offert · ${pointsSpent} pts`,
-        }));
+        // Personnalisation du plat principal : on valide cote serveur que les
+        // extras choisis appartiennent bien au main item et sont dispos, puis
+        // on les attache (prix 0, c'est offert) pour que la cuisine sache quoi
+        // preparer (steak/poulet, sauces...).
+        let validatedMainExtras: { name: string; price: number }[] = [];
+        let mainVariantName: string | null = null;
+        const clientMainExtras = sel.mainExtras ?? [];
+        if (sel.mainId && clientMainExtras.length > 0) {
+          const extraIds = clientMainExtras.map((e) => e.id);
+          // groupes de l'item -> extras valides
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: junctions } = await (admin as any)
+            .from("menu_item_extra_groups")
+            .select("extra_group_id")
+            .eq("menu_item_id", sel.mainId);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const gids = ((junctions ?? []) as any[]).map((j) => j.extra_group_id);
+          if (gids.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const { data: validExtras } = await (admin as any)
+              .from("extra_items")
+              .select("id, name, is_available")
+              .in("extra_group_id", gids)
+              .in("id", extraIds);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            validatedMainExtras = ((validExtras ?? []) as any[])
+              .filter((e) => e.is_available !== false)
+              .map((e) => ({ name: e.name, price: 0 }));
+          }
+        }
+        if (sel.mainId && sel.mainVariantId) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const { data: v } = await (admin as any)
+            .from("menu_item_variants")
+            .select("name")
+            .eq("id", sel.mainVariantId)
+            .eq("menu_item_id", sel.mainId)
+            .maybeSingle();
+          mainVariantName = v?.name ?? null;
+        }
+
+        loyaltyRewardLines = rows.map((mi) => {
+          const isMain = mi.id === sel.mainId;
+          return {
+            menuItemId: mi.id,
+            variantId: isMain ? sel.mainVariantId ?? null : null,
+            quantity: 1,
+            unitPrice: 0,
+            extrasPrice: 0,
+            itemName: `${mi.name} (fidelite)`,
+            variantName: isMain ? mainVariantName : null,
+            extrasJson: isMain ? validatedMainExtras : [],
+            specialInstructions: `Offert · ${pointsSpent} pts`,
+          };
+        });
       }
 
       loyaltyRewardId = sel.rewardId;

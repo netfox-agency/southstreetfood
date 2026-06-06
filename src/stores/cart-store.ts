@@ -18,6 +18,10 @@ export interface LoyaltySelection {
   drinkId: string | null;
   /** menu_item_id choisi pour le slot dessert — required si slot_dessert */
   dessertId: string | null;
+  /** Personnalisation du plat principal (protéine, sauces) — offert, prix 0 */
+  mainExtras?: { id: string; name: string }[];
+  /** variante choisie pour le plat principal (taille...) */
+  mainVariantId?: string | null;
 }
 
 interface CartState {

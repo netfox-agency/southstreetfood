@@ -85,6 +85,8 @@ export function LoyaltyCartSection() {
       friesId: sel.friesId,
       drinkId: sel.drinkId,
       dessertId: sel.dessertId,
+      mainExtras: sel.mainExtras,
+      mainVariantId: sel.mainVariantId,
     };
     setLoyaltySelection(newSelection);
     setPickerTier(null);
