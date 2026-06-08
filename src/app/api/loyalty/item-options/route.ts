@@ -62,27 +62,34 @@ export async function GET(req: Request) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (admin as any)
         .from("extra_items")
-        .select("id, name, extra_group_id, is_available")
+        .select("id, name, extra_group_id, is_available, price")
         .in("extra_group_id", groupIds)
         .order("display_order"),
     ]);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const groups = (groupsRes.data || []) as any[];
+    // Récompense OFFERTE : on ne propose QUE les choix inclus gratuits
+    // (protéine, sauces de base — price 0). Les suppléments PAYANTS (raclette,
+    // tenders, sides...) ne sont pas offerts, sinon le client chargerait son
+    // burger gratuit de suppléments a 0€.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const items = ((itemsRes.data || []) as any[]).filter(
-      (i) => i.is_available !== false,
+      (i) => i.is_available !== false && (i.price ?? 0) === 0,
     );
 
-    extraGroups = groups.map((g) => ({
-      id: g.id,
-      name: g.name,
-      minSelections: g.min_selections ?? 0,
-      maxSelections: g.max_selections ?? null,
-      items: items
-        .filter((i) => i.extra_group_id === g.id)
-        .map((i) => ({ id: i.id, name: i.name })),
-    }));
+    extraGroups = groups
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        minSelections: g.min_selections ?? 0,
+        maxSelections: g.max_selections ?? null,
+        items: items
+          .filter((i) => i.extra_group_id === g.id)
+          .map((i) => ({ id: i.id, name: i.name })),
+      }))
+      // On retire les groupes qui n'ont plus aucun item gratuit
+      .filter((g) => g.items.length > 0);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

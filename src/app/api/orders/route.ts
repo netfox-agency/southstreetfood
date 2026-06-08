@@ -317,12 +317,16 @@ export async function POST(request: NextRequest) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const { data: validExtras } = await (admin as any)
               .from("extra_items")
-              .select("id, name, is_available")
+              .select("id, name, is_available, price")
               .in("extra_group_id", gids)
               .in("id", extraIds);
+            // Backstop securite : on n'attache QUE les extras gratuits
+            // (price 0). Un client ne peut pas se faire offrir un supplement
+            // payant (raclette, tenders...) sur sa recompense en forgeant
+            // la requete.
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             validatedMainExtras = ((validExtras ?? []) as any[])
-              .filter((e) => e.is_available !== false)
+              .filter((e) => e.is_available !== false && (e.price ?? 0) === 0)
               .map((e) => ({ name: e.name, price: 0 }));
           }
         }
