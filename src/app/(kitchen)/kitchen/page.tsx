@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useRealtimeOrders } from "@/hooks/use-realtime-orders";
 import { useSound } from "@/hooks/use-sound";
+import { KitchenAlert } from "@/components/kitchen/kitchen-alert";
 import { PrintTicketButton } from "@/components/print-ticket-button";
 import { createClient } from "@/lib/supabase/client";
 import { cn, formatPrice } from "@/lib/utils";
@@ -440,6 +441,10 @@ export default function KitchenPage() {
     play: playNewOrder,
     enabled: soundEnabled,
     setEnabled: setSoundEnabled,
+    unlocked: audioUnlocked,
+    unlock: unlockAudio,
+    startAlertLoop,
+    stopAlertLoop,
   } = useSound("/sounds/new-order.mp3");
 
   const [selected, setSelected] = useState<OrderWithItems | null>(null);
@@ -460,21 +465,76 @@ export default function KitchenPage() {
   } | null>(null);
 
   const undoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const prevCountRef = useRef(orders.length);
+
+  /* ── Detection nouvelles commandes par ID (fiable) ──
+     L'ancienne detection par compteur (orders.length > prev) ratait des
+     commandes : si une commande arrivait pile quand une autre partait, le
+     compteur ne bougeait pas → aucun son. On track les IDs vus a la place.
+     - `seenIdsRef` : tous les IDs jamais observes (seed au 1er chargement
+       pour ne PAS alerter sur les commandes deja la a l'ouverture).
+     - `pendingAlertIds` : nouvelles commandes 'paid' pas encore acquittees
+       → declenchent l'overlay + le son en boucle. */
+  const seenIdsRef = useRef<Set<string>>(new Set());
+  const seededRef = useRef(false);
+  const [pendingAlertIds, setPendingAlertIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  useEffect(() => {
+    if (loading) return;
+    // 1er chargement : on memorise tout sans alerter (les commandes deja
+    // presentes ne sont pas "nouvelles").
+    if (!seededRef.current) {
+      orders.forEach((o) => seenIdsRef.current.add(o.id));
+      seededRef.current = true;
+      return;
+    }
+    // Commandes 'paid' jamais vues = vraiment nouvelles
+    const fresh = orders.filter(
+      (o) => o.status === "paid" && !seenIdsRef.current.has(o.id),
+    );
+    if (fresh.length > 0) {
+      fresh.forEach((o) => seenIdsRef.current.add(o.id));
+      setPendingAlertIds((prev) => {
+        const next = new Set(prev);
+        fresh.forEach((o) => next.add(o.id));
+        return next;
+      });
+    }
+  }, [orders, loading]);
+
+  // Les commandes a afficher dans l'overlay : pending ET toujours 'paid'
+  // (si une commande est prise sur un autre ecran, elle disparait de l'alerte)
+  const pendingOrders = orders.filter(
+    (o) => pendingAlertIds.has(o.id) && o.status === "paid",
+  );
+
+  const acknowledgeAlerts = useCallback(() => {
+    setPendingAlertIds(new Set());
+  }, []);
+
+  /* ── Son en boucle tant qu'il y a des commandes non acquittees ──
+     Boucle a l'infini (facon Uber) jusqu'au tap "Accepter". S'arrete aussi
+     si la commande quitte 'paid' (prise ailleurs) → pendingOrders vide. */
+  useEffect(() => {
+    if (audioUnlocked && soundEnabled && pendingOrders.length > 0) {
+      startAlertLoop();
+    } else {
+      stopAlertLoop();
+    }
+  }, [
+    audioUnlocked,
+    soundEnabled,
+    pendingOrders.length,
+    startAlertLoop,
+    stopAlertLoop,
+  ]);
 
   /* ── Tick every 30s for timer refresh ── */
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30000);
     return () => clearInterval(t);
   }, []);
-
-  /* ── Sound on new order ── */
-  useEffect(() => {
-    if (orders.length > prevCountRef.current) {
-      playNewOrder();
-    }
-    prevCountRef.current = orders.length;
-  }, [orders.length, playNewOrder]);
 
   /* ── Wake Lock — keep tablet screen awake ── */
   useEffect(() => {
@@ -622,6 +682,13 @@ export default function KitchenPage() {
 
   return (
     <div className="h-dvh flex flex-col">
+      {/* Alerte plein ecran : gate audio au demarrage + nouvelles commandes */}
+      <KitchenAlert
+        unlocked={audioUnlocked}
+        onUnlock={unlockAudio}
+        pendingOrders={pendingOrders}
+        onAcknowledge={acknowledgeAlerts}
+      />
       {/* ───── Header ───── */}
       <header className="shrink-0 bg-white border-b border-[#e5e5ea] px-5 py-3 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 min-w-0">
