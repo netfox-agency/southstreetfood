@@ -100,8 +100,8 @@ export function buildEposPrintXml(order: OrderWithItems): string {
   lines.push(`<text>${escapeXml(RESTAURANT.phone)}\n</text>`);
   lines.push("<feed/>");
 
-  // ─── Numéro commande GRAND ───
-  lines.push('<text width="2" height="2"/>');
+  // ─── Numéro commande GRAND (4x = bien gros, saute aux yeux) ───
+  lines.push('<text width="4" height="4"/>');
   lines.push(
     `<text>#${String(order.order_number).padStart(4, "0")}\n</text>`,
   );
