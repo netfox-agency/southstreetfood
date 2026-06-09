@@ -9,6 +9,7 @@ import { Logo } from "@/components/shared/logo";
 import { useCartStore } from "@/stores/cart-store";
 import { cn } from "@/lib/utils";
 import { NavbarAuth } from "@/components/storefront/navbar-auth";
+import { useEmergencyMode } from "@/hooks/use-emergency-mode";
 
 /**
  * Navbar refonte — Apple polish + brand identity South Street.
@@ -43,6 +44,10 @@ export function Navbar() {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const itemCount = useCartStore((s) => s.itemCount());
+  // Mode urgence : le bandeau "commande par tel" (h-12 = 48px) occupe le haut.
+  // On descend les pills flottantes juste en dessous pour ne pas les chevaucher.
+  const { state: emergency } = useEmergencyMode();
+  const emergencyActive = emergency.active;
   // Pulse the cart badge whenever count changes (item added)
   const [pulse, setPulse] = useState(false);
 
@@ -74,7 +79,8 @@ export function Navbar() {
       {/* ═══════ DESKTOP HEADER ═══════ */}
       <header
         className={cn(
-          "fixed top-3 sm:top-4 left-0 right-0 z-50 px-3 sm:px-6 transition-transform duration-500 pointer-events-none",
+          "fixed left-0 right-0 z-50 px-3 sm:px-6 transition-all duration-300 pointer-events-none",
+          emergencyActive ? "top-[3.5rem] sm:top-[3.75rem]" : "top-3 sm:top-4",
         )}
       >
         <div className="mx-auto max-w-6xl flex items-center justify-between gap-3 pointer-events-none">

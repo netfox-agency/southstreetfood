@@ -26,20 +26,21 @@ export function EmergencyBanner({ className = "" }: { className?: string }) {
 
   return (
     <div
-      className={`w-full bg-[#1d1d1f] text-white border-b border-black/10 px-4 py-2.5 ${className}`}
+      className={`w-full h-12 bg-[#1d1d1f] text-white flex items-center px-3 sm:px-4 ${className}`}
       role="status"
     >
-      <div className="mx-auto max-w-4xl flex items-center gap-3">
+      <div className="mx-auto max-w-5xl w-full flex items-center gap-2.5">
         <Phone className="h-4 w-4 shrink-0 opacity-80" aria-hidden />
-        <p className="flex-1 min-w-0 text-[13px] sm:text-sm font-medium leading-tight truncate">
+        <p className="flex-1 min-w-0 text-[12.5px] sm:text-sm font-medium leading-tight truncate">
           {message}
         </p>
         <a
           href={telHref}
-          className="shrink-0 inline-flex items-center gap-1.5 bg-white text-[#1d1d1f] rounded-full px-3.5 py-1.5 text-[13px] font-semibold shadow-sm hover:shadow-md active:scale-95 transition-all"
+          className="shrink-0 inline-flex items-center gap-1.5 bg-white text-[#1d1d1f] rounded-full pl-3 pr-3.5 h-8 text-[13px] font-bold shadow-sm hover:shadow-md active:scale-95 transition-all"
         >
           <Phone className="h-3.5 w-3.5" />
-          {BRAND.phone}
+          <span className="hidden sm:inline">{BRAND.phone}</span>
+          <span className="sm:hidden">Appeler</span>
         </a>
       </div>
     </div>
